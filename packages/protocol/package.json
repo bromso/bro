@@ -11,7 +11,7 @@
     "./tools": "./src/tools.ts"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "types": "tsc --noEmit",
     "lint": "biome check ."
