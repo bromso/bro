@@ -1,0 +1,122 @@
+---
+title: UI Components
+description: All 14+ pre-built components available for your plugin's interface.
+---
+
+## Overview
+
+The template includes 14+ UI components that look native inside Figma. They're built with [shadcn/ui](https://ui.shadcn.com) and styled with Tailwind CSS.
+
+Import them from `@repo/ui`:
+
+```tsx
+import { Button, Input, Select } from "@repo/ui";
+```
+
+Run `bun run storybook` to see all components live in your browser.
+
+## Input components
+
+### Button
+
+```tsx
+<Button onClick={handleClick}>Primary action</Button>
+<Button variant="secondary">Cancel</Button>
+<Button variant="outline">Settings</Button>
+<Button variant="destructive">Delete</Button>
+<Button disabled>Loading...</Button>
+```
+
+Variants: `default`, `secondary`, `outline`, `ghost`, `destructive`, `link`
+
+### Input
+
+```tsx
+<Input placeholder="Enter a name..." value={name} onChange={e => setName(e.target.value)} />
+```
+
+### Textarea
+
+```tsx
+<Textarea placeholder="Longer text..." rows={3} />
+```
+
+### Select
+
+```tsx
+<Select value={selected} onValueChange={setSelected}>
+  <SelectTrigger><SelectValue placeholder="Choose..." /></SelectTrigger>
+  <SelectContent>
+    <SelectItem value="opt1">Option 1</SelectItem>
+    <SelectItem value="opt2">Option 2</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+### Checkbox, Switch, RadioGroup
+
+```tsx
+<Checkbox checked={enabled} onCheckedChange={setEnabled} />
+<Switch checked={on} onCheckedChange={setOn} />
+<RadioGroup value={choice} onValueChange={setChoice}>
+  <RadioGroupItem value="a" /> Option A
+  <RadioGroupItem value="b" /> Option B
+</RadioGroup>
+```
+
+## Display components
+
+### Icon
+
+```tsx
+<Icon name="lucide:plus" />
+<Icon name="lucide:info" />
+<Icon name="lucide:star" />
+```
+
+Built-in icons: `lucide:plus`, `lucide:info`, `lucide:star`. Add more with `registerIcons()`.
+
+### Type (text)
+
+```tsx
+<Type size="large" weight="bold">Heading</Type>
+<Type size="small">Body text</Type>
+<Type as="h2" size="xlarge">Page Title</Type>
+```
+
+### Alert
+
+```tsx
+<Alert>
+  <AlertDescription>Select at least one layer.</AlertDescription>
+</Alert>
+```
+
+### SectionTitle
+
+```tsx
+<SectionTitle>Settings</SectionTitle>
+```
+
+## Layout components
+
+### Accordion
+
+```tsx
+<Accordion type="single" collapsible>
+  <AccordionItem value="advanced">
+    <AccordionTrigger>Advanced Settings</AccordionTrigger>
+    <AccordionContent>Content here</AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
+
+## Styling with Tailwind CSS
+
+All components accept a `className` prop for custom styling:
+
+```tsx
+<div className="flex flex-col gap-2 p-4">
+  <Button className="w-full">Full width button</Button>
+</div>
+```

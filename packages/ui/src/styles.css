@@ -1,0 +1,396 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Tailwind v4 auto-scan: scan this directory for utility classes.
+   Required because Vite root is set to this directory but the build
+   runs from apps/figma-plugin. */
+@source ".";
+
+@custom-variant dark (&:where(.dark, .dark *, html.figma-dark, html.figma-dark *));
+
+/* Figma UI3 design tokens — light theme */
+:root {
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.23 0 0);
+  --primary: oklch(0.62 0.19 245);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0 0);
+  --secondary-foreground: oklch(0.23 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.93 0.01 245);
+  --accent-foreground: oklch(0.23 0 0);
+  --destructive: oklch(0.59 0.22 25);
+  --border: oklch(0.90 0 0);
+  --input: oklch(0.90 0 0);
+  --ring: oklch(0.62 0.19 245);
+  --radius: 0.5rem;
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0 0);
+  --sidebar: oklch(0.97 0 0);
+  --sidebar-foreground: oklch(0.23 0 0);
+  --sidebar-border: oklch(0.90 0 0);
+  --chart-1: oklch(0.62 0.19 245);
+  --chart-2: oklch(0.65 0.18 160);
+  --chart-3: oklch(0.70 0.15 70);
+  --chart-4: oklch(0.60 0.20 310);
+  --chart-5: oklch(0.65 0.22 25);
+}
+
+/* Figma UI3 design tokens — dark theme, activated by .dark (tests/Storybook) or html.figma-dark (Figma runtime). */
+.dark,
+html.figma-dark {
+  --background: oklch(0.18 0 0);
+  --foreground: oklch(0.93 0 0);
+  --primary: oklch(0.65 0.19 245);
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.26 0 0);
+  --secondary-foreground: oklch(0.93 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.60 0 0);
+  --accent: oklch(0.27 0.01 245);
+  --accent-foreground: oklch(0.93 0 0);
+  --destructive: oklch(0.62 0.22 25);
+  --border: oklch(0.35 0 0);
+  --input: oklch(0.35 0 0);
+  --ring: oklch(0.65 0.19 245);
+  --card: oklch(0.22 0 0);
+  --card-foreground: oklch(0.93 0 0);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: oklch(0.93 0 0);
+  --sidebar: oklch(0.16 0 0);
+  --sidebar-foreground: oklch(0.93 0 0);
+  --sidebar-border: oklch(0.35 0 0);
+  --chart-1: oklch(0.65 0.19 245);
+  --chart-2: oklch(0.68 0.18 160);
+  --chart-3: oklch(0.73 0.15 70);
+  --chart-4: oklch(0.63 0.20 310);
+  --chart-5: oklch(0.68 0.22 25);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+}
+
+/* ============================================================
+   Figma UI3 Component Overrides
+   Uses data-slot selectors to style shadcn components
+   without modifying .tsx files.
+   ============================================================ */
+
+/* --- Buttons --- */
+[data-slot="button"] {
+  font-weight: 500;
+}
+
+[data-slot="button"][data-variant="default"] {
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.05);
+}
+
+[data-slot="button"][data-variant="outline"] {
+  box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.03);
+}
+
+/* --- Inputs & Textarea --- */
+[data-slot="input"],
+[data-slot="textarea"] {
+  box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.05);
+}
+
+[data-slot="input"]:focus,
+[data-slot="textarea"]:focus {
+  box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.05), 0 0 0 3px oklch(from var(--ring) l c h / 0.2);
+}
+
+/* --- Select --- */
+[data-slot="select-trigger"] {
+  box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.03);
+  font-weight: 500;
+}
+
+[data-slot="select-content"] {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.08), 0 1px 4px oklch(0 0 0 / 0.04);
+}
+
+[data-slot="select-item"] {
+  font-weight: 500;
+}
+
+/* --- Checkbox --- */
+[data-slot="checkbox"] {
+  border-width: 1.5px;
+}
+
+/* --- Radio --- */
+[data-slot="radio-group-item"] {
+  border-width: 1.5px;
+}
+
+/* --- Switch --- */
+[data-slot="switch-thumb"] {
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.15), 0 1px 1px oklch(0 0 0 / 0.06);
+}
+
+/* --- Menus (dropdown, context, menubar) --- */
+[data-slot="dropdown-menu-content"],
+[data-slot="context-menu-content"],
+[data-slot="menubar-content"],
+[data-slot="dropdown-menu-sub-content"],
+[data-slot="context-menu-sub-content"],
+[data-slot="menubar-sub-content"] {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.08), 0 1px 4px oklch(0 0 0 / 0.04);
+}
+
+[data-slot="dropdown-menu-item"],
+[data-slot="context-menu-item"],
+[data-slot="menubar-item"],
+[data-slot="dropdown-menu-checkbox-item"],
+[data-slot="context-menu-checkbox-item"],
+[data-slot="menubar-checkbox-item"],
+[data-slot="dropdown-menu-radio-item"],
+[data-slot="context-menu-radio-item"],
+[data-slot="menubar-radio-item"] {
+  font-weight: 500;
+  padding-block: 0.25rem;
+}
+
+[data-slot="dropdown-menu-separator"],
+[data-slot="context-menu-separator"],
+[data-slot="menubar-separator"] {
+  opacity: 0.6;
+}
+
+[data-slot="dropdown-menu-sub-trigger"],
+[data-slot="context-menu-sub-trigger"],
+[data-slot="menubar-sub-trigger"] {
+  font-weight: 500;
+}
+
+/* --- Dialogs & Sheets --- */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"],
+[data-slot="sheet-content"] {
+  box-shadow: 0 8px 32px oklch(0 0 0 / 0.12), 0 2px 8px oklch(0 0 0 / 0.06);
+}
+
+[data-slot="dialog-overlay"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="sheet-overlay"] {
+  background-color: oklch(0 0 0 / 0.08);
+  backdrop-filter: blur(2px);
+}
+
+[data-slot="dialog-title"],
+[data-slot="alert-dialog-title"],
+[data-slot="sheet-title"],
+[data-slot="drawer-title"] {
+  font-weight: 600;
+}
+
+[data-slot="dialog-description"],
+[data-slot="alert-dialog-description"],
+[data-slot="sheet-description"],
+[data-slot="drawer-description"] {
+  font-weight: 400;
+}
+
+/* --- Cards --- */
+[data-slot="card"] {
+  box-shadow: 0 0 0 1px var(--border), 0 1px 2px oklch(0 0 0 / 0.03);
+}
+
+[data-slot="card-title"] {
+  font-weight: 600;
+}
+
+/* --- Tabs --- */
+[data-slot="tabs-list"] {
+  font-weight: 500;
+}
+
+[data-slot="tabs-trigger"] {
+  font-weight: 500;
+}
+
+/* --- Accordion --- */
+[data-slot="accordion-trigger"] {
+  font-weight: 500;
+}
+
+/* --- Tooltip --- */
+[data-slot="tooltip-content"] {
+  backdrop-filter: blur(8px);
+  font-weight: 500;
+}
+
+/* --- Badge --- */
+[data-slot="badge"] {
+  font-weight: 600;
+}
+
+/* --- Progress --- */
+[data-slot="progress"] {
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+[data-slot="progress-indicator"] {
+  border-radius: 9999px;
+}
+
+/* --- Slider --- */
+[data-slot="slider-thumb"] {
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.15), 0 1px 1px oklch(0 0 0 / 0.06);
+}
+
+[data-slot="slider-track"] {
+  height: 5px;
+}
+
+/* --- Skeleton --- */
+@keyframes ui3-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+[data-slot="skeleton"] {
+  animation-name: ui3-pulse;
+  animation-duration: 2s;
+}
+
+/* --- Popover --- */
+[data-slot="popover-content"] {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.08), 0 1px 4px oklch(0 0 0 / 0.04);
+}
+
+/* --- Command --- */
+[data-slot="command"] {
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.08);
+}
+
+[data-slot="command-item"] {
+  font-weight: 500;
+}
+
+/* --- Breadcrumb --- */
+[data-slot="breadcrumb-separator"] {
+  opacity: 0.5;
+}
+
+[data-slot="breadcrumb-link"] {
+  font-weight: 500;
+}
+
+/* --- Sidebar --- */
+[data-slot="sidebar-group-label"] {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+[data-slot="sidebar-menu-button"] {
+  font-weight: 500;
+}
+
+/* --- Dark Mode Override Adjustments --- */
+:where(.dark, html.figma-dark) {
+  [data-slot="button"][data-variant="default"] {
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.2);
+  }
+
+  [data-slot="button"][data-variant="outline"] {
+    box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.1);
+  }
+
+  [data-slot="input"],
+  [data-slot="textarea"] {
+    box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.15);
+  }
+
+  [data-slot="input"]:focus,
+  [data-slot="textarea"]:focus {
+    box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.15), 0 0 0 3px oklch(from var(--ring) l c h / 0.25);
+  }
+
+  [data-slot="select-trigger"] {
+    box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.1);
+  }
+
+  [data-slot="card"] {
+    box-shadow: 0 0 0 1px var(--border), 0 1px 2px oklch(0 0 0 / 0.1);
+  }
+
+  [data-slot="switch-thumb"] {
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.3), 0 1px 1px oklch(0 0 0 / 0.15);
+  }
+
+  [data-slot="slider-thumb"] {
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.3), 0 1px 1px oklch(0 0 0 / 0.15);
+  }
+
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="sheet-content"] {
+    box-shadow: 0 8px 32px oklch(0 0 0 / 0.3), 0 2px 8px oklch(0 0 0 / 0.15);
+  }
+
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"],
+  [data-slot="sheet-overlay"] {
+    background-color: oklch(0 0 0 / 0.25);
+  }
+
+  [data-slot="dropdown-menu-content"],
+  [data-slot="context-menu-content"],
+  [data-slot="menubar-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="context-menu-sub-content"],
+  [data-slot="menubar-sub-content"],
+  [data-slot="select-content"],
+  [data-slot="popover-content"],
+  [data-slot="command"] {
+    box-shadow: 0 4px 16px oklch(0 0 0 / 0.2), 0 1px 4px oklch(0 0 0 / 0.1);
+  }
+}

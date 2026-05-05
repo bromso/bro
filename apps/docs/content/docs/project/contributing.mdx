@@ -1,0 +1,59 @@
+---
+title: Contributing
+description: How to contribute to this template — branches, commits, and pull requests.
+---
+
+## Getting set up
+
+```bash
+git clone https://github.com/bromso/figma-plugin-template.git
+cd figma-plugin-template
+bun install
+bun run build
+```
+
+## Branch naming
+
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `feat/` | New features | `feat/color-picker-plugin` |
+| `fix/` | Bug fixes | `fix/icon-render-crash` |
+| `chore/` | Maintenance | `chore/update-dependencies` |
+| `docs/` | Documentation | `docs/add-api-guide` |
+
+## Commit messages
+
+Use [conventional commits](https://www.conventionalcommits.org/):
+
+```
+feat: add color picker component
+fix: resolve icon rendering in dark mode
+chore: update dependencies
+docs: add plugin testing guide
+```
+
+## Pull request workflow
+
+1. Create a feature branch: `git checkout -b feat/my-feature`
+2. Make your changes
+3. Run checks: `bun run build && bun run test && bun run lint`
+4. Add a changeset: `bun changeset` (if your change affects users)
+5. Push and open a PR against `master`
+6. CI runs automatically — wait for green checks
+7. Pre-commit hooks auto-format your code via Biome
+
+## CI pipeline
+
+Every push and PR runs:
+- Biome linting
+- TypeScript type-checking
+- Vitest tests (27+ tests)
+- Plugin build
+- Storybook build
+
+## Code style
+
+- **Biome** handles formatting and linting automatically
+- Pre-commit hooks run on every commit via Husky
+- TypeScript strict mode is enabled everywhere
+- Use `@repo/*` imports for cross-package references

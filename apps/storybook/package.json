@@ -1,0 +1,33 @@
+{
+  "name": "@repo/storybook",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@repo/ui": "workspace:*",
+    "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
+    "embla-carousel-react": "^8.6.0",
+    "input-otp": "^1.4.2",
+    "lucide-react": "^1.8.0",
+    "react-day-picker": "^9.14.0",
+    "react-resizable-panels": "^4.10.0",
+    "recharts": "^3.8.1",
+    "sonner": "^2.0.7",
+    "vaul": "^1.1.2"
+  },
+  "devDependencies": {
+    "@storybook/addon-docs": "10.3.5",
+    "@storybook/react": "10.3.5",
+    "@storybook/react-vite": "10.3.5",
+    "@tailwindcss/vite": "^4.2.4",
+    "@vitejs/plugin-react": "^6.0.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "storybook": "10.3.5",
+    "vite": "^8.0.0"
+  }
+}

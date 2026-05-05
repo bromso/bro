@@ -1,0 +1,25 @@
+{
+  "name": "@repo/common",
+  "version": "1.3.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./networkSides": "./src/networkSides.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "monorepo-networker": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "typescript": "^6.0.0",
+    "vitest": "^4.1.4"
+  }
+}

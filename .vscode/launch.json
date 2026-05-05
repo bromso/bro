@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Vitest (current file)",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "program": "${workspaceFolder}/packages/ui/node_modules/.bin/vitest",
+      "args": ["run", "${relativeFile}"],
+      "smartStep": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug UI (Chrome)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/packages/ui/src",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "chrome",
+      "request": "attach",
+      "name": "Attach to Figma Plugin (Developer VM)",
+      "port": 9222,
+      "urlFilter": "*figma*",
+      "skipFiles": ["<node_internals>/**"],
+      "pathMapping": {
+        "/": "${workspaceFolder}/apps/figma-plugin/src/"
+      }
+    }
+  ]
+}

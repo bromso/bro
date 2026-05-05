@@ -1,0 +1,147 @@
+---
+title: MCP Servers
+description: Configure Model Context Protocol servers to give Claude access to Figma files and up-to-date documentation.
+---
+
+## What are MCP servers?
+
+MCP (Model Context Protocol) servers extend what Claude can do by connecting it to external tools and data sources. Instead of copying and pasting information into your conversation, MCP servers let Claude access it directly.
+
+This template comes with three MCP servers pre-configured in `.claude/settings.json`:
+
+- **Figma Dev Mode** — Claude can read your Figma files, inspect layers, and extract design tokens
+- **Context7** — Claude gets up-to-date library documentation so it doesn't use outdated APIs
+- **Sequential Thinking** — Claude reasons through complex problems step-by-step
+
+## Figma Dev Mode
+
+The Figma MCP server lets Claude read your design files directly. When you say "look at my Figma file", Claude can actually inspect the layers, styles, and structure.
+
+### Getting your API key
+
+1. Open [Figma](https://www.figma.com) and log in
+2. Click your profile icon in the top-left corner and select **Settings**
+3. Scroll down to **Personal access tokens**
+4. Click **Generate new token**
+5. Give it a descriptive name (e.g., "Claude Code")
+6. Copy the token — you won't be able to see it again
+
+### Adding the key to your project
+
+Open `.claude/settings.json` and paste your token into the `FIGMA_API_KEY` field:
+
+```json
+{
+  "mcpServers": {
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp", "--stdio"],
+      "env": {
+        "FIGMA_API_KEY": "figd_your-token-here"
+      }
+    }
+  }
+}
+```
+
+> **Important:** `.claude/settings.json` is checked into git. If your repository is public, use `.claude/settings.local.json` instead — this file is gitignored and takes precedence over the shared config.
+
+### Verifying it works
+
+Start a Claude Code session and ask Claude to read a Figma file:
+
+> "Look at this Figma file: https://www.figma.com/design/abc123/MyFile"
+
+If configured correctly, Claude will describe the file's contents. If the key is missing or expired, you'll see an authentication error.
+
+## Context7
+
+Context7 fetches live documentation for libraries and frameworks. When Claude writes code that uses a library, Context7 ensures it references the current API — not a version from its training data.
+
+### Configuration
+
+No setup needed. Context7 works out of the box:
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
+```
+
+Context7 is maintained by [Upstash](https://upstash.com) and supports most popular JavaScript/TypeScript libraries.
+
+## Sequential Thinking
+
+Sequential Thinking helps Claude break down complex problems into step-by-step reasoning. Instead of jumping to a solution, Claude works through the logic one piece at a time — which leads to better results for tricky plugin features.
+
+### Configuration
+
+No setup needed. Sequential Thinking works out of the box:
+
+```json
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}
+```
+
+This is especially useful when your plugin needs complex logic, like transforming data between formats or handling multiple edge cases.
+
+## Troubleshooting
+
+### "FIGMA_API_KEY is not set"
+
+You haven't added your Figma API key yet. Follow the [setup steps above](#adding-the-key-to-your-project).
+
+### "npx: command not found"
+
+MCP servers use `npx` to run without installing globally. Make sure Node.js is installed:
+
+```bash
+node --version  # Should print v18 or higher
+```
+
+### Server not responding
+
+MCP servers start on demand when Claude needs them. If a server isn't responding:
+
+1. Check your internet connection — both servers fetch packages via npm
+2. Try clearing the npx cache: `npx clear-npx-cache`
+3. Restart your Claude Code session
+
+### Figma token expired
+
+Personal access tokens don't expire by default, but they can be revoked. If you get authentication errors with a previously working token, generate a new one in Figma settings.
+
+## Adding your own MCP servers
+
+You can add more MCP servers to `.claude/settings.json`. Each entry needs a `command` and `args` array:
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["-y", "my-mcp-package", "--stdio"],
+      "env": {
+        "API_KEY": "your-key"
+      }
+    }
+  }
+}
+```
+
+The `env` field is optional — only include it if the server requires environment variables.
+
+Browse available MCP servers at the [MCP Server Registry](https://registry.modelcontextprotocol.io) or build your own following the [MCP specification](https://modelcontextprotocol.io).
+
+Looking for more servers to install? See [Extending Claude](/docs/ai/extending-claude) for optional add-ons like GitHub, Playwright, and more.
