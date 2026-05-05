@@ -134,18 +134,25 @@ plugin starter is no longer needed. See docs/plans/2026-05-06-figma-mcp-rewrite-
 
 **Step 2: Create `packages/protocol/tsconfig.json`**
 
+Standalone, matching the pattern of `packages/common/tsconfig.json`:
+
 ```json
 {
-  "extends": "../../apps/design-plugin/tsconfig.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "noEmit": true
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
   },
-  "include": ["src/**/*", "*.config.ts"]
+  "include": ["src/**/*.ts"]
 }
 ```
-
-> **Note:** `apps/design-plugin/tsconfig.json` was deleted in Task 1.1. Either copy its config to a new `tsconfig.base.json` at repo root **before** Task 1.1, or pick another existing tsconfig to extend. Pick the cleanest option when executing.
 
 **Step 3: Create empty `src/index.ts`**
 
