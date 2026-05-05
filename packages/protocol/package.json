@@ -1,0 +1,27 @@
+{
+  "name": "@repo/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./envelope": "./src/envelope.ts",
+    "./errors": "./src/errors.ts",
+    "./streaming": "./src/streaming.ts",
+    "./tools": "./src/tools.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "fast-check": "^3.23.0",
+    "vitest": "^4.0.0",
+    "typescript": "^6.0.0"
+  }
+}
