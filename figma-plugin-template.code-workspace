@@ -4,7 +4,6 @@
     { "name": "🤖 Claude", "path": ".claude/" },
     { "name": "🦋 Version Control", "path": ".changeset/" },
     { "name": "📟 VS Code", "path": ".vscode/" },
-    { "name": "🧩 Plugin/Design", "path": "apps/design-plugin" },
     { "name": "⚛️ Common", "path": "packages/common" },
     { "name": "🎨 Design System", "path": "packages/ui" },
     { "name": "📕 Storybook", "path": "packages/ui" },
