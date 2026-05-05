@@ -76,14 +76,14 @@ describe("parseEnvelope (discriminated union)", () => {
   });
 
   it("throws on unknown kind", () => {
-    expect(() => parseEnvelope({ kind: "nope", id: "1" } as unknown)).toThrow();
+    expect(() => parseEnvelope({ kind: "nope", id: "1" })).toThrow();
   });
 });
 
 describe("envelope roundtrip", () => {
   it("encode -> JSON -> decode preserves shape", () => {
     const original = {
-      kind: "request" as const,
+      kind: "request",
       id: "req_1",
       sourceClientId: "claude-code",
       tool: "extract_styles",
