@@ -1,0 +1,40 @@
+{
+  "name": "@repo/bridge-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build --config vite.config.plugin.ts && vite build --config vite.config.ui.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "lint": "biome check .",
+    "dev": "vite --config vite.config.ui.ts"
+  },
+  "dependencies": {
+    "@repo/figma-adapter": "workspace:*",
+    "@repo/protocol": "workspace:*",
+    "@repo/tools-extract": "workspace:*",
+    "@repo/transport": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.111.0",
+    "@tailwindcss/vite": "^4.2.4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^25.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
+    "@vitest/coverage-v8": "4.1.4",
+    "happy-dom": "^20.9.0",
+    "tailwindcss": "^4.2.3",
+    "typescript": "^6.0.0",
+    "vite": "^8.0.0",
+    "vite-plugin-singlefile": "^2.0.0",
+    "vitest": "4.1.4"
+  }
+}
