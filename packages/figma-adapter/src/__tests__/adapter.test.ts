@@ -1,5 +1,15 @@
 import { describe, expectTypeOf, it } from "vitest";
-import type { EditorType, FigmaAdapter, PageSelection, RectangleNode, Variable } from "../adapter";
+import type {
+  Component,
+  EditorType,
+  EffectStyle,
+  FigmaAdapter,
+  PageSelection,
+  PaintStyle,
+  RectangleNode,
+  TextStyle,
+  Variable,
+} from "../adapter";
 
 describe("FigmaAdapter (type contract)", () => {
   it("declares the editorType discriminator", () => {
@@ -26,5 +36,28 @@ describe("FigmaAdapter (type contract)", () => {
 
   it("declares currentPageSelection", () => {
     expectTypeOf<FigmaAdapter["currentPageSelection"]>().toEqualTypeOf<PageSelection>();
+  });
+});
+
+describe("FigmaAdapter (extended Phase 3 surface)", () => {
+  it("declares getLocalPaintStylesAsync", () => {
+    expectTypeOf<FigmaAdapter["getLocalPaintStylesAsync"]>().returns.resolves.toEqualTypeOf<
+      PaintStyle[]
+    >();
+  });
+  it("declares getLocalTextStylesAsync", () => {
+    expectTypeOf<FigmaAdapter["getLocalTextStylesAsync"]>().returns.resolves.toEqualTypeOf<
+      TextStyle[]
+    >();
+  });
+  it("declares getLocalEffectStylesAsync", () => {
+    expectTypeOf<FigmaAdapter["getLocalEffectStylesAsync"]>().returns.resolves.toEqualTypeOf<
+      EffectStyle[]
+    >();
+  });
+  it("declares getLocalComponentsAsync", () => {
+    expectTypeOf<FigmaAdapter["getLocalComponentsAsync"]>().returns.resolves.toEqualTypeOf<
+      Component[]
+    >();
   });
 });

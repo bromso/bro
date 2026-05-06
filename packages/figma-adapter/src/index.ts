@@ -6,9 +6,14 @@
  * - REST API client (lands in Phase 8 with `@repo/tools-rest`).
  */
 export type {
+  Component,
   EditorType,
+  EffectStyle,
   FigmaAdapter,
   PageSelection,
+  PaintStyle,
   RectangleNode,
+  StyleBase,
+  TextStyle,
   Variable,
 } from "./adapter";

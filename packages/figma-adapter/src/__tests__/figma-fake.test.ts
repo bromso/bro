@@ -104,3 +104,47 @@ describe("FigmaFake.__setEditorType", () => {
     expect(fake.editorType).toBe("figjam");
   });
 });
+
+describe("FigmaFake.getLocalPaintStylesAsync", () => {
+  it("returns seeded paint styles", async () => {
+    const fake = new FigmaFake();
+    fake.__seedPaintStyles([
+      { id: "p1", name: "primary", type: "PAINT", paints: [{ type: "SOLID" }] },
+    ]);
+    expect(await fake.getLocalPaintStylesAsync()).toHaveLength(1);
+  });
+});
+
+describe("FigmaFake.getLocalTextStylesAsync", () => {
+  it("returns seeded text styles", async () => {
+    const fake = new FigmaFake();
+    fake.__seedTextStyles([
+      {
+        id: "t1",
+        name: "body",
+        type: "TEXT",
+        fontName: { family: "Inter", style: "Regular" },
+        fontSize: 16,
+      },
+    ]);
+    expect((await fake.getLocalTextStylesAsync())[0].fontName.family).toBe("Inter");
+  });
+});
+
+describe("FigmaFake.getLocalEffectStylesAsync", () => {
+  it("returns seeded effect styles", async () => {
+    const fake = new FigmaFake();
+    fake.__seedEffectStyles([
+      { id: "e1", name: "shadow", type: "EFFECT", effects: [{ type: "DROP_SHADOW" }] },
+    ]);
+    expect(await fake.getLocalEffectStylesAsync()).toHaveLength(1);
+  });
+});
+
+describe("FigmaFake.getLocalComponentsAsync", () => {
+  it("returns seeded components", async () => {
+    const fake = new FigmaFake();
+    fake.__seedComponents([{ id: "c1", name: "Button", key: "abc" }]);
+    expect((await fake.getLocalComponentsAsync())[0].key).toBe("abc");
+  });
+});
