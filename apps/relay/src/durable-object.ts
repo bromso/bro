@@ -9,8 +9,13 @@ export interface Env {
 
 export class RelayDurableObject {
   private readonly pairing: PairingCodeStore;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: read in Task 6.6 message routing
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: assigned in handleConnectPlugin, cleared in webSocketClose, read by Task 6.8 routing and hibernation tests
   private pluginWs: WebSocket | null = null;
+  // Test-only diagnostic: counts plugin frames observed by webSocketMessage so
+  // hibernation tests can verify dispatch without mocking the runtime. Stays
+  // through Phase 6 — an integer field is a cheap, durable test seam.
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: read by hibernation tests via runInDurableObject
+  private __pluginMessageCount = 0;
 
   constructor(
     private readonly state: DurableObjectState,
@@ -76,15 +81,45 @@ export class RelayDurableObject {
     return new Response("not implemented", { status: 501 });
   }
 
-  // Hibernation API contract: the runtime requires `webSocketClose` (and, for
-  // robustness, `webSocketError`) to be defined on the class once we call
-  // `state.acceptWebSocket`. Real lifecycle handling — message routing,
-  // pluginWs cleanup, reconnect signalling — lands in Task 6.6.
-  async webSocketClose(_ws: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
-    // intentionally empty until Task 6.6
+  // Hibernation API handlers. workerd dispatches these by name on the DO class
+  // for any WebSocket registered via `state.acceptWebSocket`. They run whether
+  // the DO is awake or freshly resurrected from hibernation; tags on the WS
+  // (set in `acceptWebSocket(server, ["plugin", sessionId])`) survive the
+  // hibernate/restore boundary and let us identify which side a frame came from.
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    const tags = this.state.getTags(ws);
+    const payload = typeof message === "string" ? message : new TextDecoder().decode(message);
+    if (tags.includes("plugin")) {
+      this.__pluginMessageCount++;
+      await this.routePluginMessage(payload);
+    } else if (tags.includes("ai")) {
+      await this.routeAiMessage(payload);
+    }
   }
 
-  async webSocketError(_ws: WebSocket, _error: unknown) {
-    // intentionally empty until Task 6.6
+  async webSocketClose(
+    ws: WebSocket,
+    _code: number,
+    _reason: string,
+    _wasClean: boolean
+  ): Promise<void> {
+    const tags = this.state.getTags(ws);
+    if (tags.includes("plugin")) {
+      this.pluginWs = null;
+    }
+    // Task 6.11 extends this to notify pending AI requests of plugin disconnect.
+  }
+
+  async webSocketError(_ws: WebSocket, _error: unknown): Promise<void> {
+    // Best-effort log seam. The WS lifecycle guarantees `webSocketClose` fires
+    // after an error, so state cleanup happens there.
+  }
+
+  private async routePluginMessage(_payload: string): Promise<void> {
+    // Forward to the AI side. Implemented in Task 6.8.
+  }
+
+  private async routeAiMessage(_payload: string): Promise<void> {
+    // Forward to the plugin. Implemented in Task 6.8.
   }
 }
