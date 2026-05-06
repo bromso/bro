@@ -10,7 +10,9 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["@figma/plugin-typings"]
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node", "@figma/plugin-typings"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "vite.config.*.ts", "vitest.config.ts"]
 }

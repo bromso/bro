@@ -67,6 +67,7 @@ async function main(): Promise<void> {
     const lifecycleStartedAt = Date.now();
     const daemon = await Daemon.start({
       socketPath: startup.socketPath,
+      version: VERSION,
       figma,
       packs: [
         {

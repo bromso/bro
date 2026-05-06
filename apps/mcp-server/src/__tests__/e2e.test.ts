@@ -43,6 +43,8 @@ const setupDaemonAndShim = async () => {
 
   const daemon = await Daemon.start({
     socketPath,
+    wsPort: 0,
+    version: "0.0.0",
     figma,
     packs: [
       {

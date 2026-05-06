@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ERROR_CATEGORIES, ErrorCode } from "./errors";
+import { HandshakeRequestEnvelope, HandshakeResponseEnvelope } from "./handshake";
 
 export const RequestEnvelope = z.object({
   kind: z.literal("request"),
@@ -39,6 +40,8 @@ export const Envelope = z.discriminatedUnion("kind", [
   RequestEnvelope,
   ResponseEnvelope,
   ErrorEnvelope,
+  HandshakeRequestEnvelope,
+  HandshakeResponseEnvelope,
 ]);
 export type Envelope = z.infer<typeof Envelope>;
 

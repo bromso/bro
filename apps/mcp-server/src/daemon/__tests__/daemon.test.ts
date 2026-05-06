@@ -24,6 +24,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -56,6 +58,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [],
     });
@@ -94,6 +98,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma,
       packs: [
         {
@@ -127,6 +133,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -170,6 +178,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [],
     });
@@ -194,6 +204,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -244,6 +256,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -280,5 +294,203 @@ describe("Daemon", () => {
     // No unhandled rejection should bubble out — vitest will fail this
     // test if one does. The assertion is structural (test reaching here).
     expect(true).toBe(true);
+  });
+});
+
+describe("Daemon WS server", () => {
+  it("binds a WebSocket server on a configurable port", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-ws-"));
+    const socketPath = join(dir, "daemon.sock");
+
+    const daemon = await Daemon.start({
+      socketPath,
+      wsPort: 0, // ephemeral
+      version: "0.0.0",
+      figma: new FigmaFake(),
+      packs: [],
+    });
+    expect(daemon.wsPort).toBeGreaterThan(0);
+    await daemon.stop();
+  });
+
+  it("stop() releases the WS port", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-ws-stop-"));
+    const socketPath = join(dir, "daemon.sock");
+    const daemon = await Daemon.start({
+      socketPath,
+      wsPort: 0,
+      version: "0.0.0",
+      figma: new FigmaFake(),
+      packs: [],
+    });
+    const port = daemon.wsPort;
+    await daemon.stop();
+    // Try to listen on the same port — should succeed because daemon released it.
+    const { WebSocketServer } = await import("ws");
+    const wss = new WebSocketServer({ port, host: "127.0.0.1" });
+    await new Promise<void>((resolve) => wss.once("listening", () => resolve()));
+    await new Promise<void>((resolve) => wss.close(() => resolve()));
+  });
+});
+
+const waitFor = <T>(fn: () => T | undefined, timeoutMs = 5000): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      const v = fn();
+      if (v !== undefined) return resolve(v);
+      if (Date.now() - start > timeoutMs) return reject(new Error("timeout"));
+      setTimeout(tick, 10);
+    };
+    tick();
+  });
+
+describe("Daemon plugin handshake", () => {
+  it("completes handshake with a matching protocolVersion", { timeout: 15000 }, async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-handshake-"));
+    const daemon = await Daemon.start({
+      socketPath: join(dir, "daemon.sock"),
+      wsPort: 0,
+      figma: new FigmaFake(),
+      packs: [],
+      version: "0.0.0",
+    });
+
+    const { WebSocketClientTransport } = await import("@repo/transport");
+    const { WebSocket } = await import("ws");
+    const client = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${daemon.wsPort}`,
+      WebSocketCtor: WebSocket as never,
+    });
+
+    // Daemon sends HandshakeRequestEnvelope on connect; client responds.
+    let received: unknown;
+    client.onMessage((env) => {
+      received = env;
+    });
+    await waitFor(() => (received !== undefined ? received : undefined));
+    expect((received as { kind: string }).kind).toBe("handshake-request");
+
+    await client.send({
+      kind: "handshake-response",
+      clientVersion: "0.0.0",
+      protocolVersion: 1,
+      accepted: true,
+    } as never);
+
+    await waitFor(() => (daemon.isPluginConnected ? true : undefined));
+    expect(daemon.isPluginConnected).toBe(true);
+    expect(daemon.pluginVersion).toBe("0.0.0");
+
+    await client.close();
+    await daemon.stop();
+  });
+
+  it("rejects a client with mismatched protocolVersion", { timeout: 15000 }, async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-handshake-mismatch-"));
+    const daemon = await Daemon.start({
+      socketPath: join(dir, "daemon.sock"),
+      wsPort: 0,
+      figma: new FigmaFake(),
+      packs: [],
+      version: "0.0.0",
+    });
+
+    const { WebSocketClientTransport } = await import("@repo/transport");
+    const { WebSocket } = await import("ws");
+    const client = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${daemon.wsPort}`,
+      WebSocketCtor: WebSocket as never,
+    });
+
+    await client.send({
+      kind: "handshake-response",
+      clientVersion: "0.0.0",
+      protocolVersion: 999, // bogus
+      accepted: true,
+    } as never);
+
+    let disconnected = false;
+    client.onDisconnect(() => {
+      disconnected = true;
+    });
+    await waitFor(() => (disconnected ? true : undefined));
+    expect(daemon.isPluginConnected).toBe(false);
+
+    await daemon.stop();
+  });
+
+  it("forwards a plugin-registry tool over WS when a plugin is connected", {
+    timeout: 15000,
+  }, async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-route-ws-"));
+    const PluginPing = defineTool({
+      name: "plugin_ping",
+      description: "ping over the WS plugin",
+      streaming: false,
+      input: z.object({}).strict(),
+      output: z.object({ ok: z.literal(true) }),
+    });
+
+    const daemon = await Daemon.start({
+      socketPath: join(dir, "daemon.sock"),
+      wsPort: 0,
+      figma: new FigmaFake(),
+      version: "0.0.0",
+      packs: [
+        {
+          name: "ping-pack",
+          tools: [PluginPing],
+          registerPlugin: () => {
+            /* intentionally empty — proves WS path is used, not in-process */
+          },
+        },
+      ],
+    });
+
+    const { WebSocketClientTransport } = await import("@repo/transport");
+    const { WebSocket } = await import("ws");
+    const pluginTransport = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${daemon.wsPort}`,
+      WebSocketCtor: WebSocket as never,
+    });
+
+    // Plugin side: respond to handshake AND to plugin tool requests.
+    pluginTransport.onMessage(async (env) => {
+      if (env.kind === "handshake-request") {
+        await pluginTransport.send({
+          kind: "handshake-response",
+          clientVersion: "0.0.0",
+          protocolVersion: 1,
+          accepted: true,
+        } as never);
+      }
+      if (env.kind === "request" && env.tool === "plugin_ping") {
+        await pluginTransport.send({
+          kind: "response",
+          id: env.id,
+          ok: true,
+          result: { ok: true },
+        } as never);
+      }
+    });
+
+    await waitFor(() => (daemon.isPluginConnected ? true : undefined));
+
+    // IPC client (a stand-in for a stdio shim) issues the request.
+    const ipcClient = await UnixSocketClientTransport.connect({ path: join(dir, "daemon.sock") });
+    const correlator = new Correlator(ipcClient);
+    const result = await correlator.request<{ ok: true }>({
+      kind: "request",
+      id: "shim-r1",
+      sourceClientId: "shim-A",
+      tool: "plugin_ping",
+      args: {},
+    });
+    expect(result).toEqual({ ok: true });
+
+    await ipcClient.close();
+    await pluginTransport.close();
+    await daemon.stop();
   });
 });

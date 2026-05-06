@@ -8,6 +8,7 @@ import {
   tryParseEnvelope,
 } from "../envelope";
 import { ErrorCode } from "../errors";
+import type { HandshakeRequestEnvelope, HandshakeResponseEnvelope } from "../handshake";
 
 describe("RequestEnvelope", () => {
   it("validates a well-formed request", () => {
@@ -107,6 +108,25 @@ describe("parseEnvelope (discriminated union)", () => {
   it("throws on unknown kind", () => {
     expect(() => parseEnvelope({ kind: "nope", id: "1" })).toThrow();
   });
+
+  it("accepts a handshake-request via parseEnvelope", () => {
+    const env = parseEnvelope({
+      kind: "handshake-request",
+      serverVersion: "0.0.0",
+      protocolVersion: 1,
+    });
+    expect(env.kind).toBe("handshake-request");
+  });
+
+  it("accepts a handshake-response via parseEnvelope", () => {
+    const env = parseEnvelope({
+      kind: "handshake-response",
+      clientVersion: "0.0.0",
+      protocolVersion: 1,
+      accepted: true,
+    });
+    expect(env.kind).toBe("handshake-response");
+  });
 });
 
 describe("tryParseEnvelope (safe variant)", () => {
@@ -174,9 +194,15 @@ function _typeLevelNarrowingCheck(env: ReturnType<typeof parseEnvelope>): void {
   } else if (env.kind === "response") {
     const _s: z.infer<typeof ResponseEnvelope> = env;
     void _s;
-  } else {
+  } else if (env.kind === "error") {
     const _e: z.infer<typeof ErrorEnvelope> = env;
     void _e;
+  } else if (env.kind === "handshake-request") {
+    const _hreq: z.infer<typeof HandshakeRequestEnvelope> = env;
+    void _hreq;
+  } else {
+    const _hres: z.infer<typeof HandshakeResponseEnvelope> = env;
+    void _hres;
   }
 }
 void _typeLevelNarrowingCheck;
