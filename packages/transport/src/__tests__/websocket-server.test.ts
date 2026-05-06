@@ -116,4 +116,84 @@ describe("WebSocketServerTransport", () => {
 
     await server.close();
   });
+
+  it("rejects listen when the port is already bound", async () => {
+    const first = await WebSocketServerTransport.listen({ port: 0 });
+    // Attempt to bind a second server on the same port — `wss.once('error')`
+    // fires and rejects with an EADDRINUSE-style error.
+    await expect(WebSocketServerTransport.listen({ port: first.port })).rejects.toThrow();
+    await first.close();
+  });
+
+  it("fires onConnect immediately when a client is already connected", async () => {
+    const server = await WebSocketServerTransport.listen({ port: 0 });
+    const port = server.port;
+
+    const client = new WebSocket(`ws://127.0.0.1:${port}`);
+    await new Promise<void>((r) => client.once("open", () => r()));
+    await waitFor(() => (server.isConnected ? true : undefined));
+
+    let calls = 0;
+    const off = server.onConnect(() => {
+      calls++;
+    });
+    expect(calls).toBe(1);
+    off();
+
+    client.close();
+    await server.close();
+  });
+
+  it("rejects send when no client is connected", async () => {
+    const server = await WebSocketServerTransport.listen({ port: 0 });
+    await expect(
+      server.send({
+        kind: "request",
+        id: "no_client",
+        sourceClientId: "test",
+        tool: "ping",
+        args: {},
+      })
+    ).rejects.toThrow(/no client/);
+    await server.close();
+  });
+
+  it("rejects send after close", async () => {
+    const server = await WebSocketServerTransport.listen({ port: 0 });
+    await server.close();
+    await expect(
+      server.send({
+        kind: "request",
+        id: "closed",
+        sourceClientId: "test",
+        tool: "ping",
+        args: {},
+      })
+    ).rejects.toThrow(/closed/i);
+  });
+
+  it("forwards underlying ws errors to onDisconnect handlers", async () => {
+    const server = await WebSocketServerTransport.listen({ port: 0 });
+    const port = server.port;
+
+    const errors: Array<Error | undefined> = [];
+    server.onDisconnect((err) => errors.push(err));
+
+    const client = new WebSocket(`ws://127.0.0.1:${port}`);
+    await new Promise<void>((r) => client.once("open", () => r()));
+    await waitFor(() => (server.isConnected ? true : undefined));
+
+    // Reach into the server-held socket and emit an error event so the
+    // `ws.on('error', ...)` listener registered by onConnection runs.
+    // biome-ignore lint/suspicious/noExplicitAny: reach into private socket.
+    const wsRef = (server as any).socket as { emit: (event: string, arg: unknown) => void };
+    wsRef.emit("error", new Error("kaboom"));
+
+    await waitFor(() => (errors.length > 0 ? errors : undefined));
+    expect(errors[0]).toBeInstanceOf(Error);
+    expect((errors[0] as Error).message).toBe("kaboom");
+
+    client.close();
+    await server.close();
+  });
 });

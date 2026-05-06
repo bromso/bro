@@ -91,4 +91,27 @@ describe("withReconnect", () => {
     await vi.runAllTimersAsync();
     await assertion;
   });
+
+  it("aborts mid-sleep via the AbortSignal listener", async () => {
+    // Use real timers so we can fire `abort` between `setTimeout` and its
+    // expiry — that drives the `onAbort` branch (clearTimeout + reject)
+    // that the pre-aborted/early-return branch can't reach.
+    vi.useRealTimers();
+    const connect = vi.fn().mockRejectedValueOnce(new Error("boom"));
+    const ac = new AbortController();
+    const promise = withReconnect(connect, {
+      maxAttempts: 5,
+      baseMs: 50,
+      maxMs: 200,
+      random: () => 0.5,
+      signal: ac.signal,
+    });
+    const assertion = expect(promise).rejects.toThrow(/abort/i);
+    // Wait long enough for the first attempt to fail and `sleep` to register
+    // its abort listener, then abort while the timeout is still pending.
+    await new Promise<void>((r) => setTimeout(r, 5));
+    ac.abort();
+    await assertion;
+    vi.useFakeTimers();
+  });
 });

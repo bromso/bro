@@ -184,4 +184,46 @@ describe("Correlator", () => {
 
     expect(removeSpy).toHaveBeenCalledWith("abort", expect.any(Function));
   });
+
+  it("throws synchronously on a duplicate request id", async () => {
+    const [client, server] = createInMemoryTransportPair();
+    const correlator = new Correlator(client);
+    // Hold the first request open by never replying.
+    server.onMessage(() => {});
+
+    // Don't await — the first request stays pending so the id is in the map.
+    void correlator.request(baseRequest("dup_id"));
+    await Promise.resolve();
+
+    await expect(correlator.request(baseRequest("dup_id"))).rejects.toThrow(/duplicate request id/);
+  });
+
+  it("rejects when the underlying transport.send fails after registration", async () => {
+    const [client] = createInMemoryTransportPair();
+    // After the request is registered in `pending`, force `transport.send`
+    // to reject — exercises the `.catch` cleanup branch at the bottom of
+    // `request`.
+    const sendErr = new Error("send blew up");
+    vi.spyOn(client, "send").mockRejectedValueOnce(sendErr);
+    const correlator = new Correlator(client);
+
+    await expect(correlator.request(baseRequest("send_fail"))).rejects.toBe(sendErr);
+  });
+
+  it("does not arm a timer when timeoutMs is zero", async () => {
+    const [client, server] = createInMemoryTransportPair();
+    const correlator = new Correlator(client, { timeoutMs: 0 });
+
+    server.onMessage(async (env) => {
+      if (env.kind !== "request") return;
+      await server.send({
+        kind: "response",
+        id: env.id,
+        ok: true,
+        result: "ok",
+      });
+    });
+
+    await expect(correlator.request(baseRequest("no_timer"), { timeoutMs: 0 })).resolves.toBe("ok");
+  });
 });
