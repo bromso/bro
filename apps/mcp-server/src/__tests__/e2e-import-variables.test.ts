@@ -28,6 +28,27 @@ interface PipelineOpts {
   readonly injectFailureAt?: number;
 }
 
+interface ImportSummary {
+  sessionId: string;
+  total: number;
+  applied: number;
+  failed: number;
+  failedDetails: unknown[];
+}
+
+/**
+ * Unwrap the MCP CallToolResult — the SDK wraps a tool's structured
+ * output as `content[0].text` (JSON-encoded). Parse it back into the
+ * import_variables summary shape.
+ */
+function parseToolResult(r: unknown): ImportSummary {
+  const content = (r as { content?: Array<{ type: string; text: string }> }).content;
+  if (!content?.[0] || content[0].type !== "text") {
+    throw new Error(`unexpected tool result shape: ${JSON.stringify(r)}`);
+  }
+  return JSON.parse(content[0].text) as ImportSummary;
+}
+
 interface Pipeline {
   readonly daemon: Daemon;
   readonly client: Client;
@@ -152,8 +173,11 @@ describe("e2e: import_variables", () => {
         undefined,
         { timeout: 60_000 }
       );
-      const text = JSON.stringify(r);
-      expect(text).toContain('"applied":2000');
+      // The MCP CallToolResult wraps tool output in `content[0].text` as a
+      // JSON string. Parse it to assert against the structured summary.
+      const summary = parseToolResult(r);
+      expect(summary.applied).toBe(2000);
+      expect(summary.failed).toBe(0);
       const vars = await p.figma.getLocalVariablesAsync();
       expect(vars.length).toBe(2000);
     } finally {
@@ -208,8 +232,8 @@ describe("e2e: import_variables", () => {
         { timeout: 180_000 }
       );
       const elapsed = Date.now() - t0;
-      const text = JSON.stringify(r);
-      expect(text).toContain('"applied":10000');
+      const summary = parseToolResult(r);
+      expect(summary.applied).toBe(10_000);
       // Local target: <30s. CI is slower — the vitest test timeout
       // (240_000) is the hard cap; assert a generous bound here.
       expect(elapsed).toBeLessThan(180_000);
