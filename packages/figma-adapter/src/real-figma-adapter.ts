@@ -1,3 +1,4 @@
+/// <reference types="@figma/plugin-typings" />
 import type {
   Component,
   EditorType,
