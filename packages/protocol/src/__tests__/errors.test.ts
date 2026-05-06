@@ -20,4 +20,12 @@ describe("ErrorCode enum", () => {
   it.each(Object.values(ErrorCode))("maps %s to a category without throwing", (code) => {
     expect(() => errorCategoryFor(code)).not.toThrow();
   });
+
+  it("throws on an unknown error code prefix", () => {
+    // Cast through unknown to bypass the literal type — exercises the
+    // defensive throw branch in errorCategoryFor.
+    expect(() => errorCategoryFor("E_UNKNOWN_PREFIX_XYZ" as unknown as ErrorCode)).toThrow(
+      /Unknown error code prefix/
+    );
+  });
 });
