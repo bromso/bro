@@ -43,6 +43,7 @@ export class Daemon {
   private readonly figma: FigmaAdapter;
   private readonly logger: Logger;
   private readonly startedAt = Date.now();
+  private closed = false;
 
   static async start(options: DaemonStartOptions): Promise<Daemon> {
     const ipc = await UnixSocketServerTransport.listen({ path: options.socketPath });
@@ -74,12 +75,14 @@ export class Daemon {
   }
 
   async stop(): Promise<void> {
+    this.closed = true;
     await this.ipc.close();
   }
 
   private async handleRequest(req: RequestEnvelope): Promise<void> {
     try {
       const result = await this.dispatch(req);
+      if (this.closed) return;
       const response: ResponseEnvelope = {
         kind: "response",
         id: req.id,
@@ -88,8 +91,15 @@ export class Daemon {
       };
       await this.ipc.broadcast(response);
     } catch (err) {
+      if (this.closed) return;
       const errEnv = this.toErrorEnvelope(req.id, err);
-      await this.ipc.broadcast(errEnv);
+      try {
+        await this.ipc.broadcast(errEnv);
+      } catch {
+        // Daemon was closed mid-flight; the originating shim will see
+        // its request time out via Correlator. Swallow the broadcast
+        // failure rather than propagate as an unhandled rejection.
+      }
     }
   }
 
@@ -117,6 +127,10 @@ export class Daemon {
         message: err.message,
       };
     }
+    // TODO(phase-4): richer error wrapping. Every non-RegistryError is
+    // bucketed as E_FIGMA_UNKNOWN regardless of origin (server vs plugin
+    // handler), which is misleading. Consider a per-handler wrapper that
+    // narrows category before reaching here, or a synthetic E_INTERNAL.
     return {
       kind: "error",
       id,
