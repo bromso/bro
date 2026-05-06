@@ -3,8 +3,11 @@ import {
   ErrorCode,
   type ErrorEnvelope,
   errorCategoryFor,
+  type HandshakeRequestEnvelope,
+  type HandshakeResponseEnvelope,
   type Logger,
   type Pack,
+  PROTOCOL_VERSION,
   type RequestEnvelope,
   type ResponseEnvelope,
 } from "@repo/protocol";
@@ -50,6 +53,8 @@ export class Daemon {
   private readonly logger: Logger;
   private readonly startedAt = Date.now();
   private closed = false;
+  private pluginConnected = false;
+  private _pluginVersion: string | null = null;
 
   static async start(options: DaemonStartOptions): Promise<Daemon> {
     const ipc = await UnixSocketServerTransport.listen({ path: options.socketPath });
@@ -70,6 +75,9 @@ export class Daemon {
       if (env.kind === "request") {
         void daemon.handleRequest(env);
       }
+    });
+    ws.onConnect(() => {
+      void daemon.runHandshake();
     });
     return daemon;
   }
@@ -98,6 +106,14 @@ export class Daemon {
 
   get wsPort(): number {
     return this.ws.port;
+  }
+
+  get isPluginConnected(): boolean {
+    return this.pluginConnected;
+  }
+
+  get pluginVersion(): string | null {
+    return this._pluginVersion;
   }
 
   async stop(): Promise<void> {
@@ -165,5 +181,44 @@ export class Daemon {
       category: "figma",
       message: err instanceof Error ? err.message : String(err),
     };
+  }
+
+  private async runHandshake(): Promise<void> {
+    const request: HandshakeRequestEnvelope = {
+      kind: "handshake-request",
+      serverVersion: this.version,
+      protocolVersion: PROTOCOL_VERSION,
+    };
+    // Subscribe to ONE handshake-response, then unsubscribe so reconnects
+    // (Phase 5) don't stack listeners.
+    const unsub = this.ws.onMessage((env) => {
+      if ((env as unknown as { kind: string }).kind === "handshake-response") {
+        unsub();
+        void this.completeHandshake(env as unknown as HandshakeResponseEnvelope);
+      }
+    });
+    // Yield to the event loop so the client's "open" event fires and any
+    // user-side message listeners attach before the request hits the wire.
+    // Without this yield, fast loopback delivery races the client setup and
+    // the request can be dropped (the WS client transport doesn't queue
+    // messages received before any onMessage handler is registered).
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    try {
+      await this.ws.send(request as never);
+    } catch {
+      // The client may have responded and we may have closed the transport
+      // before the deferred send runs (e.g. version-mismatch closes the WS
+      // synchronously). Swallow rather than emit an unhandled rejection.
+      unsub();
+    }
+  }
+
+  private async completeHandshake(response: HandshakeResponseEnvelope): Promise<void> {
+    if (response.protocolVersion !== PROTOCOL_VERSION || !response.accepted) {
+      await this.ws.close();
+      return;
+    }
+    this.pluginConnected = true;
+    this._pluginVersion = response.clientVersion;
   }
 }

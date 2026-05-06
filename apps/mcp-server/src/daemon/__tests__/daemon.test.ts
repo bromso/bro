@@ -332,3 +332,91 @@ describe("Daemon WS server", () => {
     await new Promise<void>((resolve) => wss.close(() => resolve()));
   });
 });
+
+const waitFor = <T>(fn: () => T | undefined, timeoutMs = 1000): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      const v = fn();
+      if (v !== undefined) return resolve(v);
+      if (Date.now() - start > timeoutMs) return reject(new Error("timeout"));
+      setTimeout(tick, 10);
+    };
+    tick();
+  });
+
+describe("Daemon plugin handshake", () => {
+  it("completes handshake with a matching protocolVersion", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-handshake-"));
+    const daemon = await Daemon.start({
+      socketPath: join(dir, "daemon.sock"),
+      wsPort: 0,
+      figma: new FigmaFake(),
+      packs: [],
+      version: "0.0.0",
+    });
+
+    const { WebSocketClientTransport } = await import("@repo/transport");
+    const { WebSocket } = await import("ws");
+    const client = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${daemon.wsPort}`,
+      WebSocketCtor: WebSocket as never,
+    });
+
+    // Daemon sends HandshakeRequestEnvelope on connect; client responds.
+    let received: unknown;
+    client.onMessage((env) => {
+      received = env;
+    });
+    await waitFor(() => (received !== undefined ? received : undefined));
+    expect((received as { kind: string }).kind).toBe("handshake-request");
+
+    await client.send({
+      kind: "handshake-response",
+      clientVersion: "0.0.0",
+      protocolVersion: 1,
+      accepted: true,
+    } as never);
+
+    await waitFor(() => (daemon.isPluginConnected ? true : undefined));
+    expect(daemon.isPluginConnected).toBe(true);
+    expect(daemon.pluginVersion).toBe("0.0.0");
+
+    await client.close();
+    await daemon.stop();
+  });
+
+  it("rejects a client with mismatched protocolVersion", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-handshake-mismatch-"));
+    const daemon = await Daemon.start({
+      socketPath: join(dir, "daemon.sock"),
+      wsPort: 0,
+      figma: new FigmaFake(),
+      packs: [],
+      version: "0.0.0",
+    });
+
+    const { WebSocketClientTransport } = await import("@repo/transport");
+    const { WebSocket } = await import("ws");
+    const client = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${daemon.wsPort}`,
+      WebSocketCtor: WebSocket as never,
+    });
+
+    await client.send({
+      kind: "handshake-response",
+      clientVersion: "0.0.0",
+      protocolVersion: 999, // bogus
+      accepted: true,
+    } as never);
+
+    let disconnected = false;
+    client.onDisconnect(() => {
+      disconnected = true;
+    });
+    await waitFor(() => (disconnected ? true : undefined));
+    expect(daemon.isPluginConnected).toBe(false);
+
+    await daemon.stop();
+  });
+});
