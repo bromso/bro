@@ -9,6 +9,7 @@
  * Task 3.16's spawn smoke test.
  */
 import { spawn } from "node:child_process";
+import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,6 +61,8 @@ async function main(): Promise<void> {
   });
 
   if (startup.mode === "daemon") {
+    // Ensure ~/.figma-mcp exists before binding the Unix socket inside it.
+    await mkdir(DEFAULT_DIR, { recursive: true });
     const figma = new FigmaFake();
     const lifecycleStartedAt = Date.now();
     const daemon = await Daemon.start({
