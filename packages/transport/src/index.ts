@@ -7,4 +7,7 @@
  * - Figma plugin manifest / allowedDomains (Phase 4's apps/bridge-plugin).
  * - Cloudflare relay routing (Phase 6's apps/relay).
  */
+
+export type { CorrelatorOptions, RequestOptions } from "./correlator";
+export { Correlator, TransportError } from "./correlator";
 export type { Transport } from "./transport";
