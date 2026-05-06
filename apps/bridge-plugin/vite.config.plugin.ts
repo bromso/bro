@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     lib: {
-      entry: "src/plugin.ts",
+      entry: "src/plugin-bootstrap.ts",
       formats: ["iife"],
       name: "BridgePlugin",
       fileName: () => "plugin.js",
