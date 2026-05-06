@@ -8,5 +8,6 @@
  */
 export * from "./envelope";
 export * from "./errors";
+export * from "./handshake";
 export * from "./streaming";
 export * from "./tools";
