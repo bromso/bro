@@ -9,6 +9,12 @@ import {
 } from "../envelope";
 import { ErrorCode } from "../errors";
 import type { HandshakeRequestEnvelope, HandshakeResponseEnvelope } from "../handshake";
+import type {
+  ChunkAckEnvelope,
+  ChunkEnvelope,
+  StreamDoneEnvelope,
+  StreamOpenEnvelope,
+} from "../streaming";
 
 describe("RequestEnvelope", () => {
   it("validates a well-formed request", () => {
@@ -127,6 +133,53 @@ describe("parseEnvelope (discriminated union)", () => {
     });
     expect(env.kind).toBe("handshake-response");
   });
+
+  it("accepts a stream-open via parseEnvelope", () => {
+    const env = parseEnvelope({
+      kind: "stream-open",
+      id: "req_1",
+      sessionId: "ses_a",
+      tool: "import_variables",
+      total: 100,
+      atomic: false,
+    });
+    expect(env.kind).toBe("stream-open");
+  });
+
+  it("accepts a chunk via parseEnvelope", () => {
+    const env = parseEnvelope({
+      kind: "chunk",
+      id: "req_1",
+      sessionId: "ses_a",
+      seq: 0,
+      total: 100,
+      items: [],
+      idempotencyKey: "ses_a:0",
+    });
+    expect(env.kind).toBe("chunk");
+  });
+
+  it("accepts a chunk-ack via parseEnvelope", () => {
+    const env = parseEnvelope({
+      kind: "chunk-ack",
+      id: "req_1",
+      sessionId: "ses_a",
+      seq: 0,
+      applied: 100,
+      failed: 0,
+    });
+    expect(env.kind).toBe("chunk-ack");
+  });
+
+  it("accepts a stream-done via parseEnvelope", () => {
+    const env = parseEnvelope({
+      kind: "stream-done",
+      id: "req_1",
+      sessionId: "ses_a",
+      summary: { total: 100, applied: 100, failed: 0 },
+    });
+    expect(env.kind).toBe("stream-done");
+  });
 });
 
 describe("tryParseEnvelope (safe variant)", () => {
@@ -198,11 +251,23 @@ function _typeLevelNarrowingCheck(env: ReturnType<typeof parseEnvelope>): void {
     const _e: z.infer<typeof ErrorEnvelope> = env;
     void _e;
   } else if (env.kind === "handshake-request") {
-    const _hreq: z.infer<typeof HandshakeRequestEnvelope> = env;
+    const _hreq: HandshakeRequestEnvelope = env;
     void _hreq;
-  } else {
-    const _hres: z.infer<typeof HandshakeResponseEnvelope> = env;
+  } else if (env.kind === "handshake-response") {
+    const _hres: HandshakeResponseEnvelope = env;
     void _hres;
+  } else if (env.kind === "stream-open") {
+    const _so: StreamOpenEnvelope = env;
+    void _so;
+  } else if (env.kind === "chunk") {
+    const _c: ChunkEnvelope = env;
+    void _c;
+  } else if (env.kind === "chunk-ack") {
+    const _ca: ChunkAckEnvelope = env;
+    void _ca;
+  } else {
+    const _sd: StreamDoneEnvelope = env;
+    void _sd;
   }
 }
 void _typeLevelNarrowingCheck;

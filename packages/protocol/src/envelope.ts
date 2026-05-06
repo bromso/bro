@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { ERROR_CATEGORIES, ErrorCode } from "./errors";
 import { HandshakeRequestEnvelope, HandshakeResponseEnvelope } from "./handshake";
+import {
+  ChunkAckEnvelope,
+  ChunkEnvelope,
+  StreamDoneEnvelope,
+  StreamOpenEnvelope,
+} from "./streaming";
 
 export const RequestEnvelope = z.object({
   kind: z.literal("request"),
@@ -42,6 +48,10 @@ export const Envelope = z.discriminatedUnion("kind", [
   ErrorEnvelope,
   HandshakeRequestEnvelope,
   HandshakeResponseEnvelope,
+  StreamOpenEnvelope,
+  ChunkEnvelope,
+  ChunkAckEnvelope,
+  StreamDoneEnvelope,
 ]);
 export type Envelope = z.infer<typeof Envelope>;
 
