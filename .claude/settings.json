@@ -2,6 +2,13 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   },
+  "permissions": {
+    "allow": [
+      "Bash(bun run --filter @repo/protocol test *)",
+      "Bash(bun run --filter @repo/protocol types)",
+      "Bash(bun run --filter @repo/protocol lint)"
+    ]
+  },
   "mcpServers": {
     "figma": {
       "command": "npx",
