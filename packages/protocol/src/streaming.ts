@@ -1,3 +1,14 @@
+/**
+ * Streaming envelope schemas for chunked import/export operations.
+ *
+ * MCP integration note: streaming envelopes do not carry an MCP
+ * `progressToken` directly. The original `RequestEnvelope.meta.progressToken`
+ * (envelope.ts) is what MCP uses to correlate `notifications/progress` to
+ * the originating tool call. The server keeps an internal map of
+ * `sessionId -> progressToken` and emits progress notifications using the
+ * stored token whenever it receives a `ChunkAckEnvelope`. This avoids
+ * duplicating the token in every chunk on the wire.
+ */
 import { z } from "zod";
 
 export const StreamOpenEnvelope = z.object({
@@ -52,6 +63,35 @@ export const StreamDoneEnvelope = z.object({
 });
 export type StreamDoneEnvelope = z.infer<typeof StreamDoneEnvelope>;
 
+export const StreamingEnvelope = z.discriminatedUnion("kind", [
+  StreamOpenEnvelope,
+  ChunkEnvelope,
+  ChunkAckEnvelope,
+  StreamDoneEnvelope,
+]);
+export type StreamingEnvelope = z.infer<typeof StreamingEnvelope>;
+
+export function parseStreamingEnvelope(input: unknown): StreamingEnvelope {
+  return StreamingEnvelope.parse(input);
+}
+
+export function tryParseStreamingEnvelope(
+  input: unknown
+): z.SafeParseReturnType<unknown, StreamingEnvelope> {
+  return StreamingEnvelope.safeParse(input);
+}
+
+/**
+ * Returns `true` iff every element is exactly `prev + 1`.
+ *
+ * Note: this is *contiguity*, not classical monotonicity. `[0, 1, 3]`
+ * returns `false` (gap), and `[5, 6, 7]` returns `true` because the
+ * helper does NOT check that the sequence starts at 0 — that's the
+ * caller's responsibility (e.g., the stream session manager that
+ * tracks `seqs[0] === 0` separately).
+ *
+ * Empty arrays return `true` (vacuously contiguous).
+ */
 export function isMonotonic(seqs: readonly number[]): boolean {
   for (let i = 1; i < seqs.length; i++) {
     if (seqs[i] !== seqs[i - 1] + 1) return false;
