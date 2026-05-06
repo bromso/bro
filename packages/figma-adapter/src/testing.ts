@@ -1,1 +1,1 @@
-export {};
+export { FigmaFake } from "./figma-fake";
