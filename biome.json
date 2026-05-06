@@ -59,6 +59,7 @@
       "!**/.next",
       "!**/.source",
       "!**/out",
+      "!**/coverage",
       "!**/bun.lock"
     ]
   }
