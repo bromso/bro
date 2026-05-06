@@ -19,10 +19,4 @@ export default {
   },
 };
 
-// DO class lands in Task 6.3.
-export class RelayDurableObject {
-  constructor(_state: DurableObjectState, _env: Env) {}
-  async fetch(_request: Request): Promise<Response> {
-    return new Response("DO scaffold", { status: 200 });
-  }
-}
+export { RelayDurableObject } from "./durable-object";
