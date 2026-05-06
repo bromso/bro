@@ -37,6 +37,12 @@ export class WebSocketClientTransport implements Transport {
   private readonly messageHandlers = new Set<Handler<Envelope>>();
   private readonly connectHandlers = new Set<Handler<void>>();
   private readonly disconnectHandlers = new Set<Handler<Error | undefined>>();
+  // Messages parsed off the wire BEFORE the first onMessage handler attaches.
+  // The peer (e.g. the daemon's handshake-request) can deliver a frame in the
+  // narrow window between `connect()` resolving and the caller registering
+  // `onMessage`. Without buffering, those frames are silently dropped — flake
+  // surfaces on slow CI runners. Drained on the first onMessage subscription.
+  private readonly pendingMessages: Envelope[] = [];
   private closed = false;
 
   private constructor(socket: WebSocketLike) {
@@ -52,6 +58,10 @@ export class WebSocketClientTransport implements Transport {
       try {
         envelope = parseEnvelope(parsed);
       } catch {
+        return;
+      }
+      if (this.messageHandlers.size === 0) {
+        this.pendingMessages.push(envelope);
         return;
       }
       for (const h of this.messageHandlers) h(envelope);
@@ -107,7 +117,12 @@ export class WebSocketClientTransport implements Transport {
   }
 
   onMessage(handler: Handler<Envelope>): () => void {
+    const isFirst = this.messageHandlers.size === 0;
     this.messageHandlers.add(handler);
+    if (isFirst && this.pendingMessages.length > 0) {
+      const drain = this.pendingMessages.splice(0);
+      for (const env of drain) handler(env);
+    }
     return () => this.messageHandlers.delete(handler);
   }
 
