@@ -7,17 +7,25 @@ interface MutableVariable {
   valuesByMode: Record<string, unknown>;
 }
 
+export interface FigmaFakeOptions {
+  readonly editorType?: EditorType;
+}
+
 /**
  * In-memory FigmaAdapter implementation for tests. Methods prefixed
  * with `__` are seeding hooks for tests; production code never calls
  * them.
  */
 export class FigmaFake implements FigmaAdapter {
-  private _editorType: EditorType = "figma";
+  private _editorType: EditorType;
   private readonly variables = new Map<string, MutableVariable>();
   private readonly nodes = new Map<string, RectangleNode>();
   private selection: readonly string[] = [];
   private nodeCounter = 0;
+
+  constructor(options: FigmaFakeOptions = {}) {
+    this._editorType = options.editorType ?? "figma";
+  }
 
   get editorType(): EditorType {
     return this._editorType;
@@ -68,5 +76,9 @@ export class FigmaFake implements FigmaAdapter {
 
   __select(nodeIds: readonly string[]): void {
     this.selection = [...nodeIds];
+  }
+
+  __setEditorType(type: EditorType): void {
+    this._editorType = type;
   }
 }

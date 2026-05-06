@@ -89,3 +89,18 @@ describe("FigmaFake editor type", () => {
     expect(new FigmaFake().editorType).toBe("figma");
   });
 });
+
+describe("FigmaFake.__setEditorType", () => {
+  it("switches editorType after construction", () => {
+    const fake = new FigmaFake();
+    fake.__setEditorType("figjam");
+    expect(fake.editorType).toBe("figjam");
+    fake.__setEditorType("slides");
+    expect(fake.editorType).toBe("slides");
+  });
+
+  it("accepts editorType in the constructor", () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    expect(fake.editorType).toBe("figjam");
+  });
+});

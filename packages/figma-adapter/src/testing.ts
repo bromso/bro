@@ -1,1 +1,1 @@
-export { FigmaFake } from "./figma-fake";
+export { FigmaFake, type FigmaFakeOptions } from "./figma-fake";
