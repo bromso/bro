@@ -44,13 +44,16 @@ export type ServerHandler<T extends ToolDefinition> = (
 
 /**
  * Placeholder for the FigmaAdapter interface that lands in Phase 2's
- * `@repo/figma-adapter` package. `Record<string, unknown>` is intentional:
- * it lets plugin handlers compile (`ctx.figma.someMethod(...)` returns
- * `unknown`) without requiring `as any` casts. When Phase 2 lands, every
- * import-site of this type is replaced with the real `FigmaAdapter` and
- * the compiler will tighten every handler in one pass.
+ * `@repo/figma-adapter` package. The callable index signature lets
+ * plugin handlers compile (`await ctx.figma.someMethod(...)` returns
+ * `unknown`) without `as any` casts. When Phase 2 lands, every
+ * import-site of this type is replaced with the real `FigmaAdapter`,
+ * and the compiler will fail loudly on any method that doesn't exist
+ * on the real adapter.
  */
-export type FigmaAdapterPlaceholder = Record<string, unknown>;
+export interface FigmaAdapterPlaceholder {
+  readonly [method: string]: (...args: readonly unknown[]) => Promise<unknown>;
+}
 
 export type PluginHandlerContext = {
   readonly logger: Logger;
