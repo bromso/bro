@@ -11,6 +11,7 @@ export default defineConfig({
       exclude: [
         "src/__tests__/**",
         "src/plugin.ts", // sandbox entry — wired in Task 4.8
+        "src/plugin-bootstrap.ts", // Vite entry; calls start() at import time
         "src/ui/main.tsx", // UI bootstrap entry
       ],
       thresholds: {

@@ -22,4 +22,28 @@ describe("App status panel", () => {
     );
     expect(getByTestId("status-panel").textContent).toContain("connected");
   });
+
+  it("ignores unrelated postMessages (wrong kind, missing state, null data)", () => {
+    const { getByTestId } = render(<App />);
+    // Wrong kind.
+    fireEvent(
+      window,
+      new MessageEvent("message", {
+        data: { pluginMessage: { kind: "other", state: "connected" } },
+      })
+    );
+    // Missing state.
+    fireEvent(
+      window,
+      new MessageEvent("message", {
+        data: { pluginMessage: { kind: "connection-state" } },
+      })
+    );
+    // Null data.
+    fireEvent(window, new MessageEvent("message", { data: null }));
+    // Empty data.
+    fireEvent(window, new MessageEvent("message", { data: {} }));
+    // State remains 'disconnected'.
+    expect(getByTestId("status-panel").textContent).toContain("disconnected");
+  });
 });

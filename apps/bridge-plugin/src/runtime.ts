@@ -22,11 +22,12 @@ export interface BridgePluginRuntimeOptions {
   readonly logger?: Logger;
 }
 
+const noop = (): void => {};
 const noopLogger: Logger = {
-  debug: () => {},
-  info: () => {},
-  warn: () => {},
-  error: () => {},
+  debug: noop,
+  info: noop,
+  warn: noop,
+  error: noop,
 };
 
 interface Entry {

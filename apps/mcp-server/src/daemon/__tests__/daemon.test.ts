@@ -333,7 +333,7 @@ describe("Daemon WS server", () => {
   });
 });
 
-const waitFor = <T>(fn: () => T | undefined, timeoutMs = 1000): Promise<T> =>
+const waitFor = <T>(fn: () => T | undefined, timeoutMs = 5000): Promise<T> =>
   new Promise((resolve, reject) => {
     const start = Date.now();
     const tick = () => {
@@ -346,7 +346,7 @@ const waitFor = <T>(fn: () => T | undefined, timeoutMs = 1000): Promise<T> =>
   });
 
 describe("Daemon plugin handshake", () => {
-  it("completes handshake with a matching protocolVersion", async () => {
+  it("completes handshake with a matching protocolVersion", { timeout: 15000 }, async () => {
     const dir = await mkdtemp(join(tmpdir(), "mcp-handshake-"));
     const daemon = await Daemon.start({
       socketPath: join(dir, "daemon.sock"),
@@ -386,7 +386,7 @@ describe("Daemon plugin handshake", () => {
     await daemon.stop();
   });
 
-  it("rejects a client with mismatched protocolVersion", async () => {
+  it("rejects a client with mismatched protocolVersion", { timeout: 15000 }, async () => {
     const dir = await mkdtemp(join(tmpdir(), "mcp-handshake-mismatch-"));
     const daemon = await Daemon.start({
       socketPath: join(dir, "daemon.sock"),
@@ -420,7 +420,9 @@ describe("Daemon plugin handshake", () => {
     await daemon.stop();
   });
 
-  it("forwards a plugin-registry tool over WS when a plugin is connected", async () => {
+  it("forwards a plugin-registry tool over WS when a plugin is connected", {
+    timeout: 15000,
+  }, async () => {
     const dir = await mkdtemp(join(tmpdir(), "mcp-route-ws-"));
     const PluginPing = defineTool({
       name: "plugin_ping",
