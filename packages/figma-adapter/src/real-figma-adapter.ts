@@ -9,6 +9,7 @@ import type {
   RectangleNode,
   TextStyle,
   Variable,
+  VariableCollection,
 } from "./adapter";
 
 /**
@@ -97,5 +98,47 @@ export class RealFigmaAdapter implements FigmaAdapter {
       type: "EFFECT" as const,
       effects: s.effects.map((e) => ({ type: e.type, visible: e.visible })),
     }));
+  }
+
+  async getLocalVariableCollectionsAsync(): Promise<VariableCollection[]> {
+    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+    return collections.map((c) => ({
+      id: c.id,
+      name: c.name,
+      modes: c.modes.map((m) => ({ id: m.modeId, name: m.name })),
+    }));
+  }
+
+  async createVariableCollection(args: { name: string }): Promise<VariableCollection> {
+    const c = figma.variables.createVariableCollection(args.name);
+    return {
+      id: c.id,
+      name: c.name,
+      modes: c.modes.map((m) => ({ id: m.modeId, name: m.name })),
+    };
+  }
+
+  async createVariable(args: {
+    name: string;
+    collectionId: string;
+    resolvedType: Variable["resolvedType"];
+  }): Promise<Variable> {
+    const v = figma.variables.createVariable(
+      args.name,
+      args.collectionId,
+      args.resolvedType as never
+    );
+    return {
+      id: v.id,
+      name: v.name,
+      resolvedType: v.resolvedType as Variable["resolvedType"],
+      valuesByMode: { ...v.valuesByMode } as Variable["valuesByMode"],
+    };
+  }
+
+  async deleteVariableAsync(id: string): Promise<void> {
+    const v = await figma.variables.getVariableByIdAsync(id);
+    if (!v) throw new Error(`variable not found: ${id}`);
+    v.remove();
   }
 }

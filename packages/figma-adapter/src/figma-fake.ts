@@ -8,6 +8,7 @@ import type {
   RectangleNode,
   TextStyle,
   Variable,
+  VariableCollection,
 } from "./adapter";
 
 interface MutableVariable {
@@ -29,6 +30,7 @@ export interface FigmaFakeOptions {
 export class FigmaFake implements FigmaAdapter {
   private _editorType: EditorType;
   private readonly variables = new Map<string, MutableVariable>();
+  private readonly collections = new Map<string, VariableCollection>();
   private readonly nodes = new Map<string, RectangleNode>();
   private readonly paintStyles = new Map<string, PaintStyle>();
   private readonly textStyles = new Map<string, TextStyle>();
@@ -36,6 +38,8 @@ export class FigmaFake implements FigmaAdapter {
   private readonly components = new Map<string, Component>();
   private selection: readonly string[] = [];
   private nodeCounter = 0;
+  private collectionCounter = 0;
+  private variableCounter = 0;
 
   constructor(options: FigmaFakeOptions = {}) {
     this._editorType = options.editorType ?? "figma";
@@ -91,6 +95,52 @@ export class FigmaFake implements FigmaAdapter {
     return Array.from(this.components.values());
   }
 
+  async getLocalVariableCollectionsAsync(): Promise<VariableCollection[]> {
+    return Array.from(this.collections.values());
+  }
+
+  async createVariableCollection(args: { name: string }): Promise<VariableCollection> {
+    const id = `vc${++this.collectionCounter}`;
+    const collection: VariableCollection = {
+      id,
+      name: args.name,
+      modes: [{ id: `m${id}_default`, name: "Default" }],
+    };
+    this.collections.set(id, collection);
+    return collection;
+  }
+
+  async createVariable(args: {
+    name: string;
+    collectionId: string;
+    resolvedType: Variable["resolvedType"];
+  }): Promise<Variable> {
+    if (!this.collections.has(args.collectionId)) {
+      throw new Error(`collection not found: ${args.collectionId}`);
+    }
+    const id = `v${++this.variableCounter}`;
+    const variable: MutableVariable = {
+      id,
+      name: args.name,
+      resolvedType: args.resolvedType,
+      valuesByMode: {},
+    };
+    this.variables.set(id, variable);
+    return {
+      id,
+      name: variable.name,
+      resolvedType: variable.resolvedType,
+      valuesByMode: { ...variable.valuesByMode },
+    };
+  }
+
+  async deleteVariableAsync(id: string): Promise<void> {
+    if (!this.variables.has(id)) {
+      throw new Error(`variable not found: ${id}`);
+    }
+    this.variables.delete(id);
+  }
+
   // ---- Test seeding API ----
 
   __seedVariables(variables: readonly Variable[]): void {
@@ -126,5 +176,9 @@ export class FigmaFake implements FigmaAdapter {
 
   __seedComponents(components: readonly Component[]): void {
     for (const c of components) this.components.set(c.id, c);
+  }
+
+  __seedCollections(collections: readonly VariableCollection[]): void {
+    for (const c of collections) this.collections.set(c.id, c);
   }
 }

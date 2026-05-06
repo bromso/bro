@@ -148,3 +148,63 @@ describe("FigmaFake.getLocalComponentsAsync", () => {
     expect((await fake.getLocalComponentsAsync())[0].key).toBe("abc");
   });
 });
+
+describe("FigmaFake.createVariableCollection", () => {
+  it("returns a collection with id starting vc, name as passed, and a Default mode", async () => {
+    const fake = new FigmaFake();
+    const c = await fake.createVariableCollection({ name: "Brand" });
+    expect(c.id).toMatch(/^vc/);
+    expect(c.name).toBe("Brand");
+    expect(c.modes).toHaveLength(1);
+    expect(c.modes[0].name).toBe("Default");
+  });
+});
+
+describe("FigmaFake.createVariable", () => {
+  it("rejects when the collection is missing", async () => {
+    const fake = new FigmaFake();
+    await expect(
+      fake.createVariable({ name: "x", collectionId: "missing", resolvedType: "FLOAT" })
+    ).rejects.toThrow(/not found/i);
+  });
+  it("creates a variable in an existing collection", async () => {
+    const fake = new FigmaFake();
+    const c = await fake.createVariableCollection({ name: "Brand" });
+    const v = await fake.createVariable({
+      name: "color/red",
+      collectionId: c.id,
+      resolvedType: "COLOR",
+    });
+    expect(v.id).toMatch(/^v/);
+    expect(v.resolvedType).toBe("COLOR");
+    const list = await fake.getLocalVariablesAsync();
+    expect(list.find((x) => x.id === v.id)).toBeDefined();
+  });
+});
+
+describe("FigmaFake.deleteVariableAsync", () => {
+  it("removes a variable; subsequent reads don't include it", async () => {
+    const fake = new FigmaFake();
+    const c = await fake.createVariableCollection({ name: "Brand" });
+    const v = await fake.createVariable({
+      name: "x",
+      collectionId: c.id,
+      resolvedType: "FLOAT",
+    });
+    await fake.deleteVariableAsync(v.id);
+    const list = await fake.getLocalVariablesAsync();
+    expect(list.find((x) => x.id === v.id)).toBeUndefined();
+  });
+  it("rejects on a missing id", async () => {
+    const fake = new FigmaFake();
+    await expect(fake.deleteVariableAsync("missing")).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("FigmaFake.getLocalVariableCollectionsAsync", () => {
+  it("returns seeded collections", async () => {
+    const fake = new FigmaFake();
+    fake.__seedCollections([{ id: "vc1", name: "X", modes: [{ id: "m", name: "Default" }] }]);
+    expect((await fake.getLocalVariableCollectionsAsync()).length).toBe(1);
+  });
+});
