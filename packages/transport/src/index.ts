@@ -10,6 +10,8 @@
 
 export type { CorrelatorOptions, RequestOptions } from "./correlator";
 export { Correlator, TransportError } from "./correlator";
+export type { BackoffOptions, ReconnectOptions } from "./reconnect";
+export { computeBackoff, withReconnect } from "./reconnect";
 export type { Transport } from "./transport";
 export type { ConnectOptions } from "./websocket-client";
 export { WebSocketClientTransport } from "./websocket-client";
