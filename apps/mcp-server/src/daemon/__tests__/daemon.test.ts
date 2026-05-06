@@ -24,6 +24,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -56,6 +58,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [],
     });
@@ -94,6 +98,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma,
       packs: [
         {
@@ -127,6 +133,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -170,6 +178,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [],
     });
@@ -194,6 +204,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -244,6 +256,8 @@ describe("Daemon", () => {
 
     const daemon = await Daemon.start({
       socketPath,
+      wsPort: 0,
+      version: "0.0.0",
       figma: new FigmaFake(),
       packs: [
         {
@@ -280,5 +294,41 @@ describe("Daemon", () => {
     // No unhandled rejection should bubble out — vitest will fail this
     // test if one does. The assertion is structural (test reaching here).
     expect(true).toBe(true);
+  });
+});
+
+describe("Daemon WS server", () => {
+  it("binds a WebSocket server on a configurable port", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-ws-"));
+    const socketPath = join(dir, "daemon.sock");
+
+    const daemon = await Daemon.start({
+      socketPath,
+      wsPort: 0, // ephemeral
+      version: "0.0.0",
+      figma: new FigmaFake(),
+      packs: [],
+    });
+    expect(daemon.wsPort).toBeGreaterThan(0);
+    await daemon.stop();
+  });
+
+  it("stop() releases the WS port", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-ws-stop-"));
+    const socketPath = join(dir, "daemon.sock");
+    const daemon = await Daemon.start({
+      socketPath,
+      wsPort: 0,
+      version: "0.0.0",
+      figma: new FigmaFake(),
+      packs: [],
+    });
+    const port = daemon.wsPort;
+    await daemon.stop();
+    // Try to listen on the same port — should succeed because daemon released it.
+    const { WebSocketServer } = await import("ws");
+    const wss = new WebSocketServer({ port, host: "127.0.0.1" });
+    await new Promise<void>((resolve) => wss.once("listening", () => resolve()));
+    await new Promise<void>((resolve) => wss.close(() => resolve()));
   });
 });

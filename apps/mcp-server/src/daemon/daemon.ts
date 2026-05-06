@@ -8,12 +8,16 @@ import {
   type RequestEnvelope,
   type ResponseEnvelope,
 } from "@repo/protocol";
-import { UnixSocketServerTransport } from "@repo/transport";
+import { UnixSocketServerTransport, WebSocketServerTransport } from "@repo/transport";
 import { PluginRegistryImpl } from "../registries/plugin-registry";
 import { RegistryError, ServerRegistryImpl } from "../registries/server-registry";
 
 export interface DaemonStartOptions {
   readonly socketPath: string;
+  /** TCP port for the plugin WebSocket. Defaults to 9223. Pass 0 for ephemeral (tests). */
+  readonly wsPort?: number;
+  /** Daemon version. Sent in the handshake-request (Task 4.4). */
+  readonly version: string;
   readonly figma: FigmaAdapter;
   readonly packs: readonly Pack[];
   readonly logger?: Logger;
@@ -38,16 +42,26 @@ const noopLogger: Logger = {
  */
 export class Daemon {
   private readonly ipc: UnixSocketServerTransport;
+  private readonly ws: WebSocketServerTransport;
   private readonly serverRegistry = new ServerRegistryImpl();
   private readonly pluginRegistry = new PluginRegistryImpl();
   private readonly figma: FigmaAdapter;
+  private readonly version: string;
   private readonly logger: Logger;
   private readonly startedAt = Date.now();
   private closed = false;
 
   static async start(options: DaemonStartOptions): Promise<Daemon> {
     const ipc = await UnixSocketServerTransport.listen({ path: options.socketPath });
-    const daemon = new Daemon(ipc, options.figma, options.logger ?? noopLogger);
+    const wsPort = options.wsPort ?? 9223;
+    const ws = await WebSocketServerTransport.listen({ port: wsPort });
+    const daemon = new Daemon(
+      ipc,
+      ws,
+      options.figma,
+      options.version,
+      options.logger ?? noopLogger
+    );
     for (const pack of options.packs) {
       pack.registerServer?.(daemon.serverRegistry);
       pack.registerPlugin?.(daemon.pluginRegistry);
@@ -60,9 +74,17 @@ export class Daemon {
     return daemon;
   }
 
-  private constructor(ipc: UnixSocketServerTransport, figma: FigmaAdapter, logger: Logger) {
+  private constructor(
+    ipc: UnixSocketServerTransport,
+    ws: WebSocketServerTransport,
+    figma: FigmaAdapter,
+    version: string,
+    logger: Logger
+  ) {
     this.ipc = ipc;
+    this.ws = ws;
     this.figma = figma;
+    this.version = version;
     this.logger = logger;
   }
 
@@ -74,9 +96,13 @@ export class Daemon {
     return Date.now() - this.startedAt;
   }
 
+  get wsPort(): number {
+    return this.ws.port;
+  }
+
   async stop(): Promise<void> {
     this.closed = true;
-    await this.ipc.close();
+    await Promise.all([this.ipc.close(), this.ws.close()]);
   }
 
   private async handleRequest(req: RequestEnvelope): Promise<void> {
