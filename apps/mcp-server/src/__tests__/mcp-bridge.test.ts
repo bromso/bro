@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import { defineTool, ErrorCode } from "@repo/protocol";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -96,6 +97,44 @@ describe("registerToolsWithMcp", () => {
     const result = await client.callTool({ name: "ghost", arguments: {} });
     expect(result.isError).toBe(true);
     expect(JSON.stringify(result)).toContain("unknown tool");
+  });
+
+  it("emits notifications/progress when the resolver fires its emitProgress callback", async () => {
+    const server = new Server({ name: "test", version: "0.0.0" }, { capabilities: { tools: {} } });
+    registerToolsWithMcp({
+      mcpServer: server,
+      tools: [Hello],
+      resolve: async (_name, args, ctx) => {
+        ctx.emitProgress({ progress: 1, total: 3 });
+        ctx.emitProgress({ progress: 2, total: 3 });
+        ctx.emitProgress({ progress: 3, total: 3 });
+        return { greeting: `hi ${(args as { name: string }).name}` };
+      },
+    });
+    const [serverT, clientT] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverT);
+    const client = new Client({ name: "test-client", version: "0.0.0" }, { capabilities: {} });
+    await client.connect(clientT);
+
+    const progresses: Array<{ progress: number; total?: number }> = [];
+    client.setNotificationHandler(ProgressNotificationSchema, async (notification) => {
+      progresses.push({
+        progress: notification.params.progress,
+        total: notification.params.total,
+      });
+    });
+
+    await client.callTool({
+      name: "hello",
+      arguments: { name: "x" },
+      _meta: { progressToken: "tok-1" },
+    });
+
+    // Notifications are async — give them a tick.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(progresses).toHaveLength(3);
+    expect(progresses[0]).toMatchObject({ progress: 1, total: 3 });
+    expect(progresses[2]).toMatchObject({ progress: 3, total: 3 });
   });
 
   it("rethrows non-tool-level errors as JSON-RPC errors (no isError envelope)", async () => {
