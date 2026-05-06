@@ -5,6 +5,13 @@
  * update_variables_batch, stream_status. Pattern follows @repo/tools-extract
  * but adds the streaming wire protocol via stream-open/chunk/ack/done envelopes.
  */
+
+export {
+  createStreamStatusPluginHandler,
+  exportVariablesPluginHandler,
+  type StreamStatusProvider,
+  updateVariablesBatchPluginHandler,
+} from "./plugin-handlers";
 export {
   ExportVariables,
   ImportVariables,
