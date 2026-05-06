@@ -11,3 +11,7 @@
 export type { CorrelatorOptions, RequestOptions } from "./correlator";
 export { Correlator, TransportError } from "./correlator";
 export type { Transport } from "./transport";
+export type { ConnectOptions } from "./websocket-client";
+export { WebSocketClientTransport } from "./websocket-client";
+export type { ListenOptions } from "./websocket-server";
+export { WebSocketServerTransport } from "./websocket-server";
