@@ -9,20 +9,22 @@ export interface Env {
 
 export class RelayDurableObject {
   private readonly pairing: PairingCodeStore;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: assigned in handleConnectPlugin, cleared in webSocketClose, read by Task 6.8 routing and hibernation tests
   private pluginWs: WebSocket | null = null;
   // Test-only diagnostic: counts plugin frames observed by webSocketMessage so
   // hibernation tests can verify dispatch without mocking the runtime. Stays
   // through Phase 6 — an integer field is a cheap, durable test seam.
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: read by hibernation tests via runInDurableObject
   private __pluginMessageCount = 0;
+  // Pending AI requests awaiting a plugin response. Keyed by JSON-RPC `id` as a
+  // string. Task 6.7 sets up the seam (set/timeout-clear); Task 6.8 reads this
+  // map to route plugin → AI replies onto the SSE writer.
+  private readonly pendingAiRequests = new Map<string, WritableStreamDefaultWriter<Uint8Array>>();
 
   constructor(
     private readonly state: DurableObjectState,
-    // biome-ignore lint/correctness/noUnusedPrivateClassMembers: env reserved for future config use
-    private readonly _env: Env
+    private readonly env: Env
   ) {
-    const ttlMs = Number.parseInt(_env.PAIRING_CODE_TTL_MS, 10);
+    const ttlMs = Number.parseInt(env.PAIRING_CODE_TTL_MS, 10);
     this.pairing = new PairingCodeStore({ ttlMs });
   }
 
@@ -77,8 +79,63 @@ export class RelayDurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  private async handleMcp(_request: Request): Promise<Response> {
-    return new Response("not implemented", { status: 501 });
+  private async handleMcp(request: Request): Promise<Response> {
+    // Distinguish "session never created" from "plugin not connected": the
+    // `/seed-pair` handler writes the `pairing` storage entry, so its absence
+    // means no /pair call ever targeted this DO. DOs are conjured on first
+    // access, so without this check unknown sessionIds would fall through to
+    // the 503 branch.
+    const pairing = await this.state.storage.get("pairing");
+    if (!pairing) {
+      return Response.json({ error: "E_RELAY_SESSION_NOT_FOUND" }, { status: 404 });
+    }
+    if (!this.pluginWs) {
+      return Response.json({ error: "E_RELAY_PLUGIN_NOT_CONNECTED" }, { status: 503 });
+    }
+
+    const body = await request.json<{
+      jsonrpc: "2.0";
+      id: number | string;
+      method: string;
+      params?: unknown;
+    }>();
+
+    // SSE response stream. The writable end is parked in `pendingAiRequests`
+    // for Task 6.8 to drain when the plugin responds; the timeout below is the
+    // safety net if no response arrives.
+    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = writable.getWriter();
+    const requestKey = String(body.id);
+    this.pendingAiRequests.set(requestKey, writer);
+
+    // Forward the JSON-RPC frame to the plugin verbatim.
+    this.pluginWs.send(JSON.stringify(body));
+
+    const timeoutMs = Number.parseInt(this.env.RPC_TIMEOUT_MS, 10);
+    setTimeout(async () => {
+      const pending = this.pendingAiRequests.get(requestKey);
+      if (!pending) return;
+      try {
+        await pending.write(
+          new TextEncoder().encode(
+            `event: error\ndata: ${JSON.stringify({ error: "E_RELAY_TIMEOUT" })}\n\n`
+          )
+        );
+        await pending.close();
+      } catch {
+        // Stream may already be aborted by the AI client; nothing to do.
+      }
+      this.pendingAiRequests.delete(requestKey);
+    }, timeoutMs);
+
+    return new Response(readable, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
 
   // Hibernation API handlers. workerd dispatches these by name on the DO class

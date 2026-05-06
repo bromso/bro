@@ -44,10 +44,16 @@ describe("RelayDurableObject (routing)", () => {
     expect(response.status).toBe(426);
   });
 
-  it("routes /mcp POST to a stub returning 501 (not yet implemented)", async () => {
+  it("routes /mcp POST to handleMcp, which returns 404 when no pairing was seeded", async () => {
     const id = env.RELAY.idFromName("test-4");
     const stub = env.RELAY.get(id);
-    const response = await stub.fetch("https://relay/mcp", { method: "POST" });
-    expect(response.status).toBe(501);
+    const response = await stub.fetch("https://relay/mcp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    });
+    expect(response.status).toBe(404);
+    const body = await response.json<{ error: string }>();
+    expect(body.error).toBe("E_RELAY_SESSION_NOT_FOUND");
   });
 });

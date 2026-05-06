@@ -79,6 +79,20 @@ export default {
       return new Response("method not allowed", { status: 405 });
     }
 
+    const mcpMatch = url.pathname.match(/^\/mcp\/(ses_[a-z0-9]+)$/);
+    if (mcpMatch) {
+      if (request.method !== "POST") {
+        return new Response("method not allowed", { status: 405 });
+      }
+      const sessionId = mcpMatch[1];
+      const stub = env.RELAY.get(env.RELAY.idFromName(sessionId));
+      return stub.fetch(`https://do/mcp?sessionId=${sessionId}`, {
+        method: "POST",
+        headers: request.headers,
+        body: await request.text(),
+      });
+    }
+
     return new Response("not found", { status: 404 });
   },
 };
