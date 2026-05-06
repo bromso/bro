@@ -1,4 +1,14 @@
-import type { EditorType, FigmaAdapter, PageSelection, RectangleNode, Variable } from "./adapter";
+import type {
+  Component,
+  EditorType,
+  EffectStyle,
+  FigmaAdapter,
+  PageSelection,
+  PaintStyle,
+  RectangleNode,
+  TextStyle,
+  Variable,
+} from "./adapter";
 
 interface MutableVariable {
   id: string;
@@ -20,6 +30,10 @@ export class FigmaFake implements FigmaAdapter {
   private _editorType: EditorType;
   private readonly variables = new Map<string, MutableVariable>();
   private readonly nodes = new Map<string, RectangleNode>();
+  private readonly paintStyles = new Map<string, PaintStyle>();
+  private readonly textStyles = new Map<string, TextStyle>();
+  private readonly effectStyles = new Map<string, EffectStyle>();
+  private readonly components = new Map<string, Component>();
   private selection: readonly string[] = [];
   private nodeCounter = 0;
 
@@ -61,6 +75,22 @@ export class FigmaFake implements FigmaAdapter {
     return { nodeIds: [...this.selection] };
   }
 
+  async getLocalPaintStylesAsync(): Promise<PaintStyle[]> {
+    return Array.from(this.paintStyles.values());
+  }
+
+  async getLocalTextStylesAsync(): Promise<TextStyle[]> {
+    return Array.from(this.textStyles.values());
+  }
+
+  async getLocalEffectStylesAsync(): Promise<EffectStyle[]> {
+    return Array.from(this.effectStyles.values());
+  }
+
+  async getLocalComponentsAsync(): Promise<Component[]> {
+    return Array.from(this.components.values());
+  }
+
   // ---- Test seeding API ----
 
   __seedVariables(variables: readonly Variable[]): void {
@@ -80,5 +110,21 @@ export class FigmaFake implements FigmaAdapter {
 
   __setEditorType(type: EditorType): void {
     this._editorType = type;
+  }
+
+  __seedPaintStyles(styles: readonly PaintStyle[]): void {
+    for (const s of styles) this.paintStyles.set(s.id, s);
+  }
+
+  __seedTextStyles(styles: readonly TextStyle[]): void {
+    for (const s of styles) this.textStyles.set(s.id, s);
+  }
+
+  __seedEffectStyles(styles: readonly EffectStyle[]): void {
+    for (const s of styles) this.effectStyles.set(s.id, s);
+  }
+
+  __seedComponents(components: readonly Component[]): void {
+    for (const c of components) this.components.set(c.id, c);
   }
 }
