@@ -99,6 +99,20 @@
         "vitest": "4.1.4",
       },
     },
+    "packages/tools-extract": {
+      "name": "@repo/tools-extract",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/transport": {
       "name": "@repo/transport",
       "version": "0.0.0",
@@ -786,6 +800,8 @@
     "@repo/protocol": ["@repo/protocol@workspace:packages/protocol"],
 
     "@repo/storybook": ["@repo/storybook@workspace:apps/storybook"],
+
+    "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
 
     "@repo/transport": ["@repo/transport@workspace:packages/transport"],
 

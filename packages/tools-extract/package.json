@@ -1,0 +1,25 @@
+{
+  "name": "@repo/tools-extract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@repo/figma-adapter": "workspace:*",
+    "@repo/protocol": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.4",
+    "typescript": "^6.0.0",
+    "vitest": "4.1.4"
+  }
+}
