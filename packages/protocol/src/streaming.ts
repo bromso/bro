@@ -63,6 +63,20 @@ export const StreamDoneEnvelope = z.object({
 });
 export type StreamDoneEnvelope = z.infer<typeof StreamDoneEnvelope>;
 
+/**
+ * Server-side binding between an MCP progress token (carried on
+ * `RequestEnvelope.meta.progressToken`) and a streaming session id.
+ *
+ * The daemon stores one of these per active session. When a
+ * `ChunkAckEnvelope` arrives, the daemon looks up the binding by
+ * `sessionId` and emits an MCP `notifications/progress` using the
+ * stored `progressToken` (if any).
+ */
+export interface StreamSessionBinding {
+  readonly sessionId: string;
+  readonly progressToken?: string | number;
+}
+
 export const StreamingEnvelope = z.discriminatedUnion("kind", [
   StreamOpenEnvelope,
   ChunkEnvelope,

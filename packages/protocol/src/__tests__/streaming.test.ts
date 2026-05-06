@@ -6,6 +6,7 @@ import {
   parseStreamingEnvelope,
   StreamDoneEnvelope,
   StreamOpenEnvelope,
+  type StreamSessionBinding,
   tryParseStreamingEnvelope,
 } from "../streaming";
 
@@ -157,5 +158,28 @@ describe("streaming envelope roundtrip", () => {
       summary: { total: 1, applied: 1, failed: 0 },
     });
     expect(r.success).toBe(true);
+  });
+});
+
+describe("StreamSessionBinding", () => {
+  it("permits sessionId-only bindings (no progressToken)", () => {
+    const binding: StreamSessionBinding = { sessionId: "ses_a" };
+    expect(binding.sessionId).toBe("ses_a");
+  });
+
+  it("permits sessionId + numeric progressToken", () => {
+    const binding: StreamSessionBinding = {
+      sessionId: "ses_b",
+      progressToken: 42,
+    };
+    expect(binding.progressToken).toBe(42);
+  });
+
+  it("permits sessionId + string progressToken", () => {
+    const binding: StreamSessionBinding = {
+      sessionId: "ses_c",
+      progressToken: "tok_abc",
+    };
+    expect(binding.progressToken).toBe("tok_abc");
   });
 });
