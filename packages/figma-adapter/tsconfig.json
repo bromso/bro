@@ -9,7 +9,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["@figma/plugin-typings"]
   },
   "include": ["src/**/*.ts"]
 }
