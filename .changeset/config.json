@@ -7,5 +7,5 @@
   "access": "restricted",
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
-  "ignore": ["@repo/storybook", "@repo/design-plugin"]
+  "ignore": ["@repo/storybook"]
 }

@@ -33,10 +33,7 @@ jobs:
         run: bun run types
 
       - name: Test
-        run: bun run --filter @repo/ui test
-
-      - name: Build plugin
-        run: bun run --filter @repo/design-plugin build
+        run: bun run test
 
       - name: Build Storybook
         run: bunx turbo run build-storybook
