@@ -5,4 +5,10 @@
  * - `RealFigmaAdapter` (lands in Phase 4 alongside `apps/bridge-plugin`).
  * - REST API client (lands in Phase 8 with `@repo/tools-rest`).
  */
-export {};
+export type {
+  EditorType,
+  FigmaAdapter,
+  PageSelection,
+  RectangleNode,
+  Variable,
+} from "./adapter";
