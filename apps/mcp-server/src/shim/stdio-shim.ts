@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { Transport as McpTransport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { RequestEnvelope, ToolDefinition } from "@repo/protocol";
+import type { Envelope, RequestEnvelope, ToolDefinition } from "@repo/protocol";
 import { Correlator, UnixSocketClientTransport } from "@repo/transport";
 import { registerToolsWithMcp } from "../mcp-bridge";
 
@@ -27,14 +27,32 @@ export class StdioShim {
     registerToolsWithMcp({
       mcpServer: this.mcpServer,
       tools: options.tools,
-      resolve: (name, args) =>
-        this.correlator.request({
-          kind: "request",
-          id: newId(),
-          sourceClientId: options.sourceClientId,
-          tool: name,
-          args: (args ?? {}) as Record<string, unknown>,
-        } satisfies RequestEnvelope),
+      resolve: (name, args, ctx) => {
+        // Subscribe to chunk-acks for the duration of this call so the
+        // bridge can emit MCP notifications/progress as the daemon
+        // streams chunks to the plugin. Phase 5: best-effort, no
+        // sessionId filter (Daemon broadcasts all envelopes to every
+        // shim, but two concurrent imports from the same shim would
+        // briefly mis-attribute). A proper sessionId→progressToken map
+        // lands in Phase 6/7.
+        const off = this.ipc.onMessage((env: Envelope) => {
+          if (env.kind === "chunk-ack") {
+            ctx.emitProgress({
+              progress: env.seq + 1,
+              message: `${env.applied} applied / ${env.failed} failed`,
+            });
+          }
+        });
+        return this.correlator
+          .request({
+            kind: "request",
+            id: newId(),
+            sourceClientId: options.sourceClientId,
+            tool: name,
+            args: (args ?? {}) as Record<string, unknown>,
+          } satisfies RequestEnvelope)
+          .finally(off);
+      },
     });
   }
 
