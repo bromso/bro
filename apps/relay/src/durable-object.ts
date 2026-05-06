@@ -172,8 +172,49 @@ export class RelayDurableObject {
     // after an error, so state cleanup happens there.
   }
 
-  private async routePluginMessage(_payload: string): Promise<void> {
-    // Forward to the AI side. Implemented in Task 6.8.
+  private async routePluginMessage(payload: string): Promise<void> {
+    let parsed: { id?: string | number; method?: string };
+    try {
+      parsed = JSON.parse(payload);
+    } catch {
+      return; // Drop malformed
+    }
+
+    // Identify the message kind:
+    //   - Response/error: has `id`, no `method`. Route to matching writer + close.
+    //   - Notification:   has `method`, no `id`. Broadcast to all writers, no close.
+    //   - Other:          drop.
+    const id = parsed.id !== undefined ? String(parsed.id) : null;
+    const isNotification = parsed.method !== undefined && id === null;
+    const isResponse = id !== null && parsed.method === undefined;
+
+    const sseFrame = `data: ${payload}\n\n`;
+    const bytes = new TextEncoder().encode(sseFrame);
+
+    if (isResponse) {
+      const writer = this.pendingAiRequests.get(id);
+      if (!writer) return; // Late response with no matching pending — drop.
+      try {
+        await writer.write(bytes);
+        await writer.close();
+      } catch {
+        // AI client may have aborted the stream.
+      }
+      this.pendingAiRequests.delete(id);
+      return;
+    }
+
+    if (isNotification) {
+      // Broadcast to every open AI stream — they're all interested in notifications
+      // for the session.
+      for (const writer of this.pendingAiRequests.values()) {
+        try {
+          await writer.write(bytes);
+        } catch {
+          // Stream aborted; cleanup happens via webSocketClose / timeout.
+        }
+      }
+    }
   }
 
   private async routeAiMessage(_payload: string): Promise<void> {
