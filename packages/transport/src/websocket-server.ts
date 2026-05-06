@@ -1,6 +1,6 @@
 import type { AddressInfo } from "node:net";
 import { type Envelope, parseEnvelope } from "@repo/protocol";
-import { type WebSocket, WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 import type { Transport } from "./transport";
 
 export interface ListenOptions {
@@ -42,9 +42,15 @@ export class WebSocketServerTransport implements Transport {
         port: options.port,
         host: options.host ?? "127.0.0.1",
       });
-      wss.once("error", reject);
+      const onError = (err: Error) => {
+        // Best-effort cleanup so a failed bind doesn't leak listeners on
+        // the underlying http server.
+        wss.close();
+        reject(err);
+      };
+      wss.once("error", onError);
       wss.once("listening", () => {
-        wss.removeListener("error", reject);
+        wss.removeListener("error", onError);
         const address = wss.address() as AddressInfo;
         resolve(new WebSocketServerTransport(wss, address.port));
       });
@@ -52,12 +58,12 @@ export class WebSocketServerTransport implements Transport {
   }
 
   get isConnected(): boolean {
-    return this.socket !== null && this.socket.readyState === 1;
+    return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
   }
 
   async send(envelope: Envelope): Promise<void> {
     if (this.closed) throw new Error("transport closed");
-    if (!this.socket || this.socket.readyState !== 1) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       throw new Error("no client connected");
     }
     this.socket.send(JSON.stringify(envelope));
@@ -115,11 +121,17 @@ export class WebSocketServerTransport implements Transport {
 
     ws.on("close", () => {
       this.socket = null;
-      for (const h of this.disconnectHandlers) h(undefined);
+      if (!this.closed) {
+        for (const h of this.disconnectHandlers) h(undefined);
+      }
     });
 
+    // `ws` always fires `close` after `error`, so the socket reference is
+    // cleared by the close handler — no defensive nulling needed here.
     ws.on("error", (err) => {
-      for (const h of this.disconnectHandlers) h(err);
+      if (!this.closed) {
+        for (const h of this.disconnectHandlers) h(err);
+      }
     });
   }
 }

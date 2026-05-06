@@ -71,7 +71,7 @@ describe("WebSocketServerTransport", () => {
 
     const b = new WebSocket(`ws://127.0.0.1:${port}`);
     const closeReason = await new Promise<number>((r) => b.once("close", (code) => r(code)));
-    expect(closeReason).toBeGreaterThan(0);
+    expect(closeReason).toBe(4000);
 
     a.close();
     await server.close();
