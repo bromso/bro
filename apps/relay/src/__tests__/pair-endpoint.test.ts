@@ -11,9 +11,9 @@ describe("POST /pair", () => {
     expect(body.expiresAt).toBeGreaterThan(Date.now());
   });
 
-  it("returns 405 for GET /pair (no upgrade header)", async () => {
+  it("returns 426 for GET /pair without an Upgrade header", async () => {
     const response = await SELF.fetch("https://relay/pair", { method: "GET" });
-    expect(response.status).toBe(405);
+    expect(response.status).toBe(426);
   });
 
   it("each POST returns a different sessionId", async () => {

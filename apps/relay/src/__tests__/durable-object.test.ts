@@ -37,11 +37,11 @@ describe("RelayDurableObject (routing)", () => {
     expect(body.expiresAt).toBeGreaterThan(Date.now());
   });
 
-  it("routes /connect-plugin to a stub returning 501 (not yet implemented)", async () => {
+  it("routes /connect-plugin and returns 426 when the Upgrade header is missing", async () => {
     const id = env.RELAY.idFromName("test-3");
     const stub = env.RELAY.get(id);
     const response = await stub.fetch("https://relay/connect-plugin");
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(426);
   });
 
   it("routes /mcp POST to a stub returning 501 (not yet implemented)", async () => {
