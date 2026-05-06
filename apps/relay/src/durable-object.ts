@@ -171,8 +171,22 @@ export class RelayDurableObject {
     const tags = this.state.getTags(ws);
     if (tags.includes("plugin")) {
       this.pluginWs = null;
+      // Notify any pending AI SSE streams that the plugin disconnected so the
+      // AI side gets a deterministic error frame instead of waiting for the
+      // RPC timeout (Task 6.11).
+      const bytes = new TextEncoder().encode(
+        `event: error\ndata: ${JSON.stringify({ error: "E_RELAY_PLUGIN_DISCONNECTED" })}\n\n`
+      );
+      for (const writer of this.pendingAiRequests.values()) {
+        try {
+          await writer.write(bytes);
+          await writer.close();
+        } catch {
+          // Stream may already be aborted by the AI client.
+        }
+      }
+      this.pendingAiRequests.clear();
     }
-    // Task 6.11 extends this to notify pending AI requests of plugin disconnect.
   }
 
   async webSocketError(_ws: WebSocket, _error: unknown): Promise<void> {
