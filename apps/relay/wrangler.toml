@@ -7,9 +7,13 @@ compatibility_flags = ["nodejs_compat"]
 name = "RELAY"
 class_name = "RelayDurableObject"
 
+[[durable_objects.bindings]]
+name = "LOOKUP"
+class_name = "LookupDurableObject"
+
 [[migrations]]
 tag = "v1"
-new_classes = ["RelayDurableObject"]
+new_classes = ["RelayDurableObject", "LookupDurableObject"]
 
 [vars]
 PAIRING_CODE_TTL_MS = "300000"
