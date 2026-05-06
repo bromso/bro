@@ -89,6 +89,22 @@
         "vitest": "4.1.4",
       },
     },
+    "packages/transport": {
+      "name": "@repo/transport",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/protocol": "workspace:*",
+        "ws": "^8.18.0",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@types/ws": "^8.5.13",
+        "@vitest/coverage-v8": "4.1.4",
+        "fast-check": "^3.23.0",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/ui": {
       "name": "@repo/ui",
       "version": "1.3.0",
@@ -758,6 +774,8 @@
     "@repo/protocol": ["@repo/protocol@workspace:packages/protocol"],
 
     "@repo/storybook": ["@repo/storybook@workspace:apps/storybook"],
+
+    "@repo/transport": ["@repo/transport@workspace:packages/transport"],
 
     "@repo/ui": ["@repo/ui@workspace:packages/ui"],
 
