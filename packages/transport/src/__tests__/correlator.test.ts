@@ -143,4 +143,45 @@ describe("Correlator", () => {
 
     // No assertion needed — the test passes if no error is thrown.
   });
+
+  it("does not send the envelope when the signal is already aborted", async () => {
+    const [client, server] = createInMemoryTransportPair();
+    const correlator = new Correlator(client);
+    const seenByServer: unknown[] = [];
+    server.onMessage((env) => seenByServer.push(env));
+
+    const ac = new AbortController();
+    ac.abort();
+
+    const promise = correlator.request(baseRequest("req_pre"), { signal: ac.signal });
+    await expect(promise).rejects.toThrow(/abort/i);
+    // Allow the in-memory pair's microtask to flush.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(seenByServer).toEqual([]);
+  });
+
+  it("removes the abort listener once the request settles", async () => {
+    const [client, server] = createInMemoryTransportPair();
+    const correlator = new Correlator(client);
+
+    server.onMessage(async (env) => {
+      if (env.kind !== "request") return;
+      const response: ResponseEnvelope = {
+        kind: "response",
+        id: env.id,
+        ok: true,
+        result: 1,
+      };
+      await server.send(response);
+    });
+
+    const ac = new AbortController();
+    // Spy on removeEventListener to verify cleanup detaches.
+    const removeSpy = vi.spyOn(ac.signal, "removeEventListener");
+
+    await correlator.request(baseRequest("req_settle"), { signal: ac.signal });
+
+    expect(removeSpy).toHaveBeenCalledWith("abort", expect.any(Function));
+  });
 });

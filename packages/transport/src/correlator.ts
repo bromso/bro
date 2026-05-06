@@ -45,6 +45,7 @@ interface PendingEntry {
   reject: (err: Error) => void;
   timer: ReturnType<typeof setTimeout> | null;
   abortHandler: (() => void) | null;
+  signal: AbortSignal | null;
 }
 
 export class Correlator {
@@ -106,13 +107,17 @@ export class Correlator {
         reject,
         timer,
         abortHandler,
+        signal: options.signal ?? null,
       });
+
+      if (options.signal?.aborted) {
+        abortHandler?.();
+        return;
+      }
 
       this.transport.send(envelope).catch((err) => {
         this.settle(id, () => reject(err));
       });
-
-      if (options.signal?.aborted) abortHandler?.();
     });
   }
 
@@ -147,6 +152,9 @@ export class Correlator {
 
   private cleanup(id: string, entry: PendingEntry): void {
     if (entry.timer) clearTimeout(entry.timer);
+    if (entry.signal && entry.abortHandler) {
+      entry.signal.removeEventListener("abort", entry.abortHandler);
+    }
     this.pending.delete(id);
   }
 }
