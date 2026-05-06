@@ -198,3 +198,106 @@ describe("RealFigmaAdapter.getLocalEffectStylesAsync", () => {
     expect(result[0]?.effects).toEqual([{ type: "DROP_SHADOW", visible: true }]);
   });
 });
+
+describe("RealFigmaAdapter.getLocalVariableCollectionsAsync", () => {
+  it("delegates to figma.variables.getLocalVariableCollectionsAsync, mapping mode shape", async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValue([{ id: "c1", name: "Brand", modes: [{ modeId: "m1", name: "Default" }] }]);
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        variables: {
+          getLocalVariableCollectionsAsync: list,
+          getLocalVariablesAsync: vi.fn().mockResolvedValue([]),
+          getVariableByIdAsync: vi.fn().mockResolvedValue(null),
+        } as never,
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().getLocalVariableCollectionsAsync();
+    expect(r[0]).toEqual({
+      id: "c1",
+      name: "Brand",
+      modes: [{ id: "m1", name: "Default" }],
+    });
+  });
+});
+
+describe("RealFigmaAdapter.createVariableCollection", () => {
+  it("delegates and maps mode ids", async () => {
+    const create = vi.fn().mockReturnValue({
+      id: "c1",
+      name: "Brand",
+      modes: [{ modeId: "m1", name: "Default" }],
+    });
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        variables: {
+          createVariableCollection: create,
+          getLocalVariablesAsync: vi.fn().mockResolvedValue([]),
+          getVariableByIdAsync: vi.fn().mockResolvedValue(null),
+        } as never,
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().createVariableCollection({ name: "Brand" });
+    expect(create).toHaveBeenCalledWith("Brand");
+    expect(r.modes[0].id).toBe("m1");
+  });
+});
+
+describe("RealFigmaAdapter.createVariable", () => {
+  it("delegates and summarizes the new variable", async () => {
+    const v = { id: "v1", name: "x", resolvedType: "FLOAT", valuesByMode: {} };
+    const create = vi.fn().mockReturnValue(v);
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        variables: {
+          createVariable: create,
+          getLocalVariablesAsync: vi.fn().mockResolvedValue([]),
+          getVariableByIdAsync: vi.fn().mockResolvedValue(null),
+        } as never,
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().createVariable({
+      name: "x",
+      collectionId: "c1",
+      resolvedType: "FLOAT",
+    });
+    expect(create).toHaveBeenCalledWith("x", "c1", "FLOAT");
+    expect(r.id).toBe("v1");
+  });
+});
+
+describe("RealFigmaAdapter.deleteVariableAsync", () => {
+  it("calls v.remove() when the variable exists", async () => {
+    const remove = vi.fn();
+    const v = { id: "v1", remove };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        variables: {
+          getVariableByIdAsync: vi.fn().mockResolvedValue(v),
+          getLocalVariablesAsync: vi.fn().mockResolvedValue([]),
+        } as never,
+      } as never)
+    );
+    await new RealFigmaAdapter().deleteVariableAsync("v1");
+    expect(remove).toHaveBeenCalled();
+  });
+  it("rejects when the variable is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        variables: {
+          getVariableByIdAsync: vi.fn().mockResolvedValue(null),
+          getLocalVariablesAsync: vi.fn().mockResolvedValue([]),
+        } as never,
+      } as never)
+    );
+    await expect(new RealFigmaAdapter().deleteVariableAsync("missing")).rejects.toThrow(
+      /not found/i
+    );
+  });
+});

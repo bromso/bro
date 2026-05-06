@@ -4,6 +4,7 @@ import { createInMemoryTransportPair } from "@repo/transport/testing";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { BridgePluginRuntime } from "../runtime";
+import { StreamRuntime } from "../streaming/stream-runtime";
 
 const Echo = defineTool({
   name: "echo",
@@ -267,6 +268,49 @@ describe("BridgePluginRuntime", () => {
     });
     const pack: Pack = { name: "empty", tools: [] };
     expect(() => runtime.registerPack(pack)).not.toThrow();
+  });
+
+  it("routes stream-open + chunk envelopes through the StreamRuntime", async () => {
+    const [pluginSide, daemonSide] = createInMemoryTransportPair();
+    const figma = new FigmaFake();
+    figma.__seedCollections([{ id: "vc1", name: "Brand", modes: [{ id: "m1", name: "Default" }] }]);
+    const streamRuntime = new StreamRuntime({ figma });
+    const runtime = new BridgePluginRuntime({
+      transport: pluginSide,
+      version: "0.0.0",
+      figma,
+      streamRuntime,
+    });
+    runtime.start();
+
+    const acks: unknown[] = [];
+    daemonSide.onMessage((env) => {
+      if (env.kind === "chunk-ack") acks.push(env);
+    });
+
+    await daemonSide.send({
+      kind: "stream-open",
+      id: "req_1",
+      sessionId: "ses_a",
+      tool: "import_variables",
+      total: 1,
+      atomic: false,
+    } as never);
+    await daemonSide.send({
+      kind: "chunk",
+      id: "req_1",
+      sessionId: "ses_a",
+      seq: 0,
+      total: 1,
+      items: [
+        { name: "x", collection: "Brand", resolvedType: "FLOAT", valuesByMode: { Default: 1 } },
+      ],
+      idempotencyKey: "ses_a:0",
+    } as never);
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(acks).toHaveLength(1);
+    expect((acks[0] as { applied: number }).applied).toBe(1);
   });
 
   it("uses the provided logger (default noopLogger when omitted)", () => {

@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./src/runtime": "./src/runtime.ts"
+    "./src/runtime": "./src/runtime.ts",
+    "./src/streaming/stream-runtime": "./src/streaming/stream-runtime.ts"
   },
   "scripts": {
     "build": "vite build --config vite.config.plugin.ts && vite build --config vite.config.ui.ts",
@@ -18,6 +19,7 @@
     "@repo/figma-adapter": "workspace:*",
     "@repo/protocol": "workspace:*",
     "@repo/tools-extract": "workspace:*",
+    "@repo/tools-variables": "workspace:*",
     "@repo/transport": "workspace:*",
     "@repo/ui": "workspace:*",
     "react": "^19.2.5",

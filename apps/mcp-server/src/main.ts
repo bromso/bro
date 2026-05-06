@@ -25,10 +25,21 @@ import {
   extractLocalVariablesPluginHandler,
   extractStylesPluginHandler,
 } from "@repo/tools-extract";
+import {
+  createStreamStatusPluginHandler,
+  ExportVariables,
+  exportVariablesPluginHandler,
+  ImportVariables,
+  StreamStatus,
+  UpdateVariablesBatch,
+  updateVariablesBatchPluginHandler,
+} from "@repo/tools-variables";
 import { Daemon } from "./daemon/daemon";
 import { isPidAliveDefault, LockfileManager } from "./daemon/lockfile";
 import { resolveStartup } from "./orchestrator";
 import { createStdioShim } from "./shim/stdio-shim";
+import { createImportVariablesServerHandler } from "./streaming/import-handler";
+import type { ChunkLoopTransport } from "./streaming/session-manager";
 
 const VERSION = "0.0.0";
 const DEFAULT_DIR = join(homedir(), ".figma-mcp");
@@ -65,6 +76,27 @@ async function main(): Promise<void> {
     await mkdir(DEFAULT_DIR, { recursive: true });
     const figma = new FigmaFake();
     const lifecycleStartedAt = Date.now();
+    let daemonRef: Daemon | null = null;
+    const buildImportTransport = (): ChunkLoopTransport => {
+      const correlator = daemonRef?.pluginCorrelator;
+      if (!daemonRef || !correlator) {
+        throw new Error("plugin not connected");
+      }
+      const d = daemonRef;
+      return {
+        async send(env) {
+          await d.wsBroadcast(env);
+        },
+        async request(env) {
+          // Correlator.request is typed for RequestEnvelope but the
+          // runtime only keys on `id` and forwards verbatim — chunk
+          // envelopes have the same `id` shape so this is a typing
+          // gap, not a runtime issue. Phase 6/7 will widen the
+          // Correlator API.
+          return correlator.request(env as never);
+        },
+      };
+    };
     const daemon = await Daemon.start({
       socketPath: startup.socketPath,
       version: VERSION,
@@ -92,8 +124,32 @@ async function main(): Promise<void> {
             );
           },
         },
+        {
+          name: "tools-variables",
+          tools: [ImportVariables, ExportVariables, UpdateVariablesBatch, StreamStatus],
+          registerPlugin: (reg) => {
+            reg.register(ExportVariables, exportVariablesPluginHandler);
+            reg.register(UpdateVariablesBatch, updateVariablesBatchPluginHandler);
+            reg.register(
+              StreamStatus,
+              createStreamStatusPluginHandler({
+                // Phase 5 stream_status returns "unknown session" via the
+                // handler's null-fallback. A real provider lands when the
+                // plugin owns a StreamRuntime in-process (Phase 6/7).
+                getStatus: () => null,
+              })
+            );
+          },
+          registerServer: (reg) => {
+            reg.register(
+              ImportVariables,
+              createImportVariablesServerHandler({ buildTransport: buildImportTransport })
+            );
+          },
+        },
       ],
     });
+    daemonRef = daemon;
     await lockfile.write({
       pid: process.pid,
       version: VERSION,

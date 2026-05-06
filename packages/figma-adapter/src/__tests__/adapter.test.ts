@@ -9,6 +9,7 @@ import type {
   RectangleNode,
   TextStyle,
   Variable,
+  VariableCollection,
 } from "../adapter";
 
 describe("FigmaAdapter (type contract)", () => {
@@ -59,5 +60,28 @@ describe("FigmaAdapter (extended Phase 3 surface)", () => {
     expectTypeOf<FigmaAdapter["getLocalComponentsAsync"]>().returns.resolves.toEqualTypeOf<
       Component[]
     >();
+  });
+});
+
+describe("FigmaAdapter (Phase 5 variable mutation surface)", () => {
+  it("declares getLocalVariableCollectionsAsync", () => {
+    expectTypeOf<FigmaAdapter["getLocalVariableCollectionsAsync"]>().returns.resolves.toEqualTypeOf<
+      VariableCollection[]
+    >();
+  });
+  it("declares createVariableCollection", () => {
+    expectTypeOf<FigmaAdapter["createVariableCollection"]>()
+      .parameter(0)
+      .toEqualTypeOf<{ name: string }>();
+  });
+  it("declares createVariable", () => {
+    expectTypeOf<FigmaAdapter["createVariable"]>().parameter(0).toEqualTypeOf<{
+      name: string;
+      collectionId: string;
+      resolvedType: Variable["resolvedType"];
+    }>();
+  });
+  it("declares deleteVariableAsync", () => {
+    expectTypeOf<FigmaAdapter["deleteVariableAsync"]>().parameter(0).toEqualTypeOf<string>();
   });
 });

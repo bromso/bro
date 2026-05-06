@@ -4,6 +4,20 @@ import type { ToolDefinition } from "@repo/protocol";
 import { ErrorCode, errorCategoryFor } from "@repo/protocol";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+/**
+ * Per-call context passed to the resolver. Phase 5 introduces this so
+ * resolvers can stream `notifications/progress` to the connected MCP
+ * client during long-running streaming tools (e.g. `import_variables`).
+ *
+ * `progressToken` mirrors the value the AI client supplied via
+ * `_meta.progressToken` on the call. When undefined the client did not
+ * opt into progress, and `emitProgress` is a no-op.
+ */
+export interface ResolveContext {
+  readonly progressToken?: string | number;
+  readonly emitProgress: (info: { progress: number; total?: number; message?: string }) => void;
+}
+
 export interface RegisterToolsOptions {
   readonly mcpServer: Server;
   readonly tools: readonly ToolDefinition[];
@@ -12,7 +26,7 @@ export interface RegisterToolsOptions {
    * output schema). Throws to signal a tool-level error; the bridge
    * translates the error into an MCP tool result with `isError: true`.
    */
-  readonly resolve: (name: string, args: unknown) => Promise<unknown>;
+  readonly resolve: (name: string, args: unknown, ctx: ResolveContext) => Promise<unknown>;
 }
 
 const TOOL_LEVEL_CATEGORIES = new Set(["figma", "stream", "protocol"]);
@@ -39,8 +53,21 @@ export function registerToolsWithMcp(options: RegisterToolsOptions): void {
         content: [{ type: "text", text: `unknown tool: ${req.params.name}` }],
       };
     }
+    const progressToken = req.params._meta?.progressToken as string | number | undefined;
+    const emitProgress: ResolveContext["emitProgress"] =
+      progressToken !== undefined
+        ? (info) => {
+            void mcpServer.notification({
+              method: "notifications/progress",
+              params: { progressToken, ...info },
+            });
+          }
+        : () => {};
     try {
-      const result = await resolve(req.params.name, req.params.arguments ?? {});
+      const result = await resolve(req.params.name, req.params.arguments ?? {}, {
+        progressToken,
+        emitProgress,
+      });
       return {
         content: [{ type: "text", text: JSON.stringify(result) }],
       };

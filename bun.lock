@@ -20,6 +20,7 @@
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
         "@repo/tools-extract": "workspace:*",
+        "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "@repo/ui": "workspace:*",
         "react": "^19.2.5",
@@ -75,6 +76,7 @@
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
         "@repo/tools-extract": "workspace:*",
+        "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "zod": "^3.23.8",
         "zod-to-json-schema": "^3.23.0",
@@ -163,6 +165,21 @@
       },
       "devDependencies": {
         "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/tools-variables": {
+      "name": "@repo/tools-variables",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "fast-check": "^3.23.0",
         "typescript": "^6.0.0",
         "vitest": "4.1.4",
       },
@@ -863,6 +880,8 @@
     "@repo/storybook": ["@repo/storybook@workspace:apps/storybook"],
 
     "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
+
+    "@repo/tools-variables": ["@repo/tools-variables@workspace:packages/tools-variables"],
 
     "@repo/transport": ["@repo/transport@workspace:packages/transport"],
 

@@ -18,6 +18,17 @@ export interface Variable {
   readonly valuesByMode: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * Variable collection summary. Modes are exposed by `id` + `name` so
+ * Phase 5's plugin handlers can resolve user-facing mode names back
+ * to plugin ids without leaking the raw `figma` types upstream.
+ */
+export interface VariableCollection {
+  readonly id: string;
+  readonly name: string;
+  readonly modes: readonly { readonly id: string; readonly name: string }[];
+}
+
 export interface RectangleNode {
   readonly id: string;
   readonly type: "RECTANGLE";
@@ -92,4 +103,16 @@ export interface FigmaAdapter {
   getLocalEffectStylesAsync(): Promise<EffectStyle[]>;
 
   getLocalComponentsAsync(): Promise<Component[]>;
+
+  getLocalVariableCollectionsAsync(): Promise<VariableCollection[]>;
+
+  createVariableCollection(args: { name: string }): Promise<VariableCollection>;
+
+  createVariable(args: {
+    name: string;
+    collectionId: string;
+    resolvedType: Variable["resolvedType"];
+  }): Promise<Variable>;
+
+  deleteVariableAsync(id: string): Promise<void>;
 }

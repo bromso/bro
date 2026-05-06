@@ -46,7 +46,7 @@ const noopLogger: Logger = {
 export class Daemon {
   private readonly ipc: UnixSocketServerTransport;
   private readonly ws: WebSocketServerTransport;
-  private readonly serverRegistry = new ServerRegistryImpl();
+  private readonly _serverRegistry = new ServerRegistryImpl();
   private readonly pluginRegistry = new PluginRegistryImpl();
   private readonly figma: FigmaAdapter;
   private readonly version: string;
@@ -55,7 +55,7 @@ export class Daemon {
   private closed = false;
   private pluginConnected = false;
   private _pluginVersion: string | null = null;
-  private pluginCorrelator: Correlator | null = null;
+  private _pluginCorrelator: Correlator | null = null;
 
   static async start(options: DaemonStartOptions): Promise<Daemon> {
     const ipc = await UnixSocketServerTransport.listen({ path: options.socketPath });
@@ -69,7 +69,7 @@ export class Daemon {
       options.logger ?? noopLogger
     );
     for (const pack of options.packs) {
-      pack.registerServer?.(daemon.serverRegistry);
+      pack.registerServer?.(daemon._serverRegistry);
       pack.registerPlugin?.(daemon.pluginRegistry);
     }
     ipc.onMessage((env) => {
@@ -117,6 +117,30 @@ export class Daemon {
     return this._pluginVersion;
   }
 
+  /**
+   * Correlator bound to the connected WS plugin, or null if no plugin
+   * is connected. Phase 5's `import_variables` server handler uses
+   * this to dispatch chunk envelopes and await chunk-acks.
+   */
+  get pluginCorrelator(): Correlator | null {
+    return this._pluginCorrelator;
+  }
+
+  /**
+   * Public handle to the server-side tool registry. Phase 5's
+   * `import_variables` server handler is registered post-construction
+   * (after the daemon is up so the handler can build a transport bound
+   * to `this.pluginCorrelator`).
+   */
+  get serverRegistry(): ServerRegistryImpl {
+    return this._serverRegistry;
+  }
+
+  /** Broadcast an envelope to the WS plugin (used for stream-open / stream-done). */
+  async wsBroadcast(env: Parameters<WebSocketServerTransport["send"]>[0]): Promise<void> {
+    await this.ws.send(env);
+  }
+
   async stop(): Promise<void> {
     this.closed = true;
     await Promise.all([this.ipc.close(), this.ws.close()]);
@@ -147,13 +171,13 @@ export class Daemon {
   }
 
   private async dispatch(req: RequestEnvelope): Promise<unknown> {
-    if (this.serverRegistry.has(req.tool)) {
-      return this.serverRegistry.dispatch(req.tool, req.args, { logger: this.logger });
+    if (this._serverRegistry.has(req.tool)) {
+      return this._serverRegistry.dispatch(req.tool, req.args, { logger: this.logger });
     }
     // Plugin-tool resolution: prefer the connected WS plugin; fall back to in-process.
     const knownByPack = this.pluginRegistry.has(req.tool);
-    if (this.pluginConnected && this.pluginCorrelator) {
-      return this.pluginCorrelator.request({
+    if (this.pluginConnected && this._pluginCorrelator) {
+      return this._pluginCorrelator.request({
         kind: "request",
         id: req.id, // reuse the originating id; correlator keys on this
         sourceClientId: req.sourceClientId,
@@ -234,6 +258,6 @@ export class Daemon {
     this._pluginVersion = response.clientVersion;
     // Attach a Correlator AFTER the handshake listener has unsubscribed so
     // it never sees the handshake response (no id collision risk).
-    this.pluginCorrelator = new Correlator(this.ws);
+    this._pluginCorrelator = new Correlator(this.ws);
   }
 }

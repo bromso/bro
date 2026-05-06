@@ -126,7 +126,19 @@ export class Correlator {
       this.handleResponse(envelope);
     } else if (envelope.kind === "error") {
       this.handleError(envelope);
+    } else if (envelope.kind === "chunk-ack") {
+      // Phase 5 streaming: chunk envelopes are sent via `request` (id-based)
+      // and answered with a chunk-ack carrying the same id. Resolve with the
+      // ack itself so the caller can read applied/failed/failedDetails.
+      this.handleChunkAck(envelope);
     }
+  }
+
+  private handleChunkAck(env: Envelope & { kind: "chunk-ack"; id: string }): void {
+    const entry = this.pending.get(env.id);
+    if (!entry) return;
+    this.cleanup(env.id, entry);
+    entry.resolve(env);
   }
 
   private handleResponse(env: ResponseEnvelope): void {

@@ -14,12 +14,14 @@ import {
   type ToolDefinition,
 } from "@repo/protocol";
 import type { Transport } from "@repo/transport";
+import type { StreamRuntime } from "./streaming/stream-runtime";
 
 export interface BridgePluginRuntimeOptions {
   readonly transport: Transport;
   readonly version: string;
   readonly figma: FigmaAdapter;
   readonly logger?: Logger;
+  readonly streamRuntime?: StreamRuntime;
 }
 
 const noop = (): void => {};
@@ -51,6 +53,7 @@ export class BridgePluginRuntime {
   private readonly version: string;
   private readonly figma: FigmaAdapter;
   private readonly logger: Logger;
+  private readonly streamRuntime: StreamRuntime | null;
   private readonly entries = new Map<string, Entry>();
 
   constructor(options: BridgePluginRuntimeOptions) {
@@ -58,6 +61,7 @@ export class BridgePluginRuntime {
     this.version = options.version;
     this.figma = options.figma;
     this.logger = options.logger ?? noopLogger;
+    this.streamRuntime = options.streamRuntime ?? null;
   }
 
   register<T extends ToolDefinition>(tool: T, handler: PluginHandler<T>): void {
@@ -80,6 +84,38 @@ export class BridgePluginRuntime {
   }
 
   private async handle(env: Envelope): Promise<void> {
+    // Streaming dispatch (Phase 5). These short-circuit before the
+    // handshake/request dispatch so streaming envelopes never fall
+    // through to the request path.
+    if (env.kind === "stream-open" && this.streamRuntime) {
+      this.streamRuntime.openSession({
+        sessionId: env.sessionId,
+        total: env.total,
+        atomic: env.atomic,
+      });
+      return;
+    }
+    if (env.kind === "chunk" && this.streamRuntime) {
+      try {
+        const ack = await this.streamRuntime.applyChunk(env);
+        await this.transport.send(ack);
+      } catch (err) {
+        const errEnv: ErrorEnvelope = {
+          kind: "error",
+          id: env.id,
+          ok: false,
+          code: (err as { code?: ErrorCode }).code ?? ErrorCode.E_STREAM_OUT_OF_ORDER,
+          category: "stream",
+          message: err instanceof Error ? err.message : String(err),
+        };
+        await this.transport.send(errEnv);
+      }
+      return;
+    }
+    if (env.kind === "stream-done" && this.streamRuntime) {
+      this.streamRuntime.closeSession(env.sessionId);
+      return;
+    }
     if ((env as unknown as { kind: string }).kind === "handshake-request") {
       const req = env as unknown as HandshakeRequestEnvelope;
       const response: HandshakeResponseEnvelope = {

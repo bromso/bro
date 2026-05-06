@@ -15,5 +15,6 @@ export type {
   StyleBase,
   TextStyle,
   Variable,
+  VariableCollection,
 } from "./adapter";
 export { RealFigmaAdapter } from "./real-figma-adapter";
