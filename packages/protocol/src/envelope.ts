@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type ErrorCategory, ErrorCode } from "./errors";
+import { ERROR_CATEGORIES, ErrorCode } from "./errors";
 
 export const RequestEnvelope = z.object({
   kind: z.literal("request"),
@@ -28,24 +28,12 @@ export const ErrorEnvelope = z.object({
   id: z.string().min(1),
   ok: z.literal(false),
   code: z.nativeEnum(ErrorCode),
-  category: z.enum(["protocol", "figma", "transport", "stream", "daemon", "relay"] as const),
+  category: z.enum(ERROR_CATEGORIES),
   message: z.string().min(1),
   remediation: z.string().optional(),
   details: z.record(z.unknown()).optional(),
 });
 export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
-
-// Compile-time guard: schema's `category` literal set must equal ErrorCategory exactly.
-// Adding a new category to ErrorCategory without updating the schema fails this check.
-type _CategoryEqualsErrorCategory = [ErrorCategory] extends [
-  z.infer<typeof ErrorEnvelope>["category"],
-]
-  ? [z.infer<typeof ErrorEnvelope>["category"]] extends [ErrorCategory]
-    ? true
-    : never
-  : never;
-const _categoryCheck: _CategoryEqualsErrorCategory = true;
-void _categoryCheck;
 
 export const Envelope = z.discriminatedUnion("kind", [
   RequestEnvelope,

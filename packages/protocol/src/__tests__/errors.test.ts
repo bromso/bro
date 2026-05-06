@@ -22,10 +22,9 @@ describe("ErrorCode enum", () => {
   });
 
   it("throws on an unknown error code prefix", () => {
-    // Cast through unknown to bypass the literal type — exercises the
-    // defensive throw branch in errorCategoryFor.
-    expect(() => errorCategoryFor("E_UNKNOWN_PREFIX_XYZ" as unknown as ErrorCode)).toThrow(
-      /Unknown error code prefix/
-    );
+    expect(() =>
+      // @ts-expect-error intentionally passing a non-ErrorCode string to exercise the throw branch
+      errorCategoryFor("E_UNKNOWN_PREFIX_XYZ")
+    ).toThrow(/Unknown error code prefix/);
   });
 });

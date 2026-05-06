@@ -35,7 +35,16 @@ export const ErrorCode = {
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
-export type ErrorCategory = "protocol" | "figma" | "transport" | "stream" | "daemon" | "relay";
+export const ERROR_CATEGORIES = [
+  "protocol",
+  "figma",
+  "transport",
+  "stream",
+  "daemon",
+  "relay",
+] as const;
+
+export type ErrorCategory = (typeof ERROR_CATEGORIES)[number];
 
 const CATEGORY_PREFIX_MAP: Record<string, ErrorCategory> = {
   E_PROTOCOL: "protocol",
