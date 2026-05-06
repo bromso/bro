@@ -247,4 +247,41 @@ describe("WebSocketClientTransport", () => {
     ).rejects.toThrow(/connect timeout/);
     expect(closeCalls).toBeGreaterThan(0);
   });
+
+  it("buffers messages received before the first onMessage handler attaches", async () => {
+    const server = await WebSocketServerTransport.listen({ port: 0 });
+
+    // Wait for the server to register the client connection so we can send
+    // immediately — simulating the daemon's handshake-on-connect pattern.
+    let resolveConnected!: () => void;
+    const connected = new Promise<void>((r) => {
+      resolveConnected = r;
+    });
+    server.onConnect(() => {
+      resolveConnected();
+    });
+
+    const client = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${server.port}`,
+      WebSocketCtor: WebSocket,
+    });
+
+    await connected;
+    await server.send(sample);
+
+    // Hold off on registering onMessage so the message arrives while no
+    // handler is attached. Without buffering it would be dropped.
+    await new Promise((r) => setTimeout(r, 50));
+
+    const received: unknown[] = [];
+    client.onMessage((env) => received.push(env));
+
+    // Drain happens synchronously inside onMessage; one tick is generous.
+    await new Promise((r) => setTimeout(r, 10));
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual(sample);
+
+    await client.close();
+    await server.close();
+  });
 });
