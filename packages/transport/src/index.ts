@@ -7,4 +7,4 @@
  * - Figma plugin manifest / allowedDomains (Phase 4's apps/bridge-plugin).
  * - Cloudflare relay routing (Phase 6's apps/relay).
  */
-export {};
+export type { Transport } from "./transport";
