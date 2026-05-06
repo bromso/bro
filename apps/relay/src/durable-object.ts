@@ -26,6 +26,14 @@ export class RelayDurableObject {
   ) {
     const ttlMs = Number.parseInt(env.PAIRING_CODE_TTL_MS, 10);
     this.pairing = new PairingCodeStore({ ttlMs });
+
+    // Restore: after a hibernation cycle, the runtime rebuilds the DO instance
+    // with a fresh `this.pluginWs = null`. Look at the accepted WebSockets that
+    // survived hibernation (tags + attachments persist) and reattach.
+    const surviving = this.state.getWebSockets("plugin");
+    if (surviving.length > 0) {
+      this.pluginWs = surviving[0];
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
