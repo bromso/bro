@@ -1,0 +1,16 @@
+name = "figma-mcp-relay"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "RelayDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RelayDurableObject"]
+
+[vars]
+PAIRING_CODE_TTL_MS = "300000"
+RPC_TIMEOUT_MS = "30000"
