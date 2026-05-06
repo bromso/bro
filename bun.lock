@@ -76,13 +76,39 @@
         "vitest": "^4.1.4",
       },
     },
+    "packages/figma-adapter": {
+      "name": "@repo/figma-adapter",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/protocol": {
       "name": "@repo/protocol",
       "version": "0.0.0",
       "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
         "zod": "^3.23.8",
       },
       "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "fast-check": "^3.23.0",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/transport": {
+      "name": "@repo/transport",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/protocol": "workspace:*",
+        "ws": "^8.18.0",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@types/ws": "^8.5.13",
         "@vitest/coverage-v8": "4.1.4",
         "fast-check": "^3.23.0",
         "typescript": "^6.0.0",
@@ -755,9 +781,13 @@
 
     "@repo/docs": ["@repo/docs@workspace:apps/docs"],
 
+    "@repo/figma-adapter": ["@repo/figma-adapter@workspace:packages/figma-adapter"],
+
     "@repo/protocol": ["@repo/protocol@workspace:packages/protocol"],
 
     "@repo/storybook": ["@repo/storybook@workspace:apps/storybook"],
+
+    "@repo/transport": ["@repo/transport@workspace:packages/transport"],
 
     "@repo/ui": ["@repo/ui@workspace:packages/ui"],
 

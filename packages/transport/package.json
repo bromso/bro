@@ -1,14 +1,15 @@
 {
-  "name": "@repo/protocol",
+  "name": "@repo/transport",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./envelope": "./src/envelope.ts",
-    "./errors": "./src/errors.ts",
-    "./streaming": "./src/streaming.ts",
-    "./tools": "./src/tools.ts"
+    "./correlator": "./src/correlator.ts",
+    "./websocket-server": "./src/websocket-server.ts",
+    "./websocket-client": "./src/websocket-client.ts",
+    "./reconnect": "./src/reconnect.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -17,10 +18,12 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "@repo/figma-adapter": "workspace:*",
+    "@repo/protocol": "workspace:*",
+    "ws": "^8.18.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.13",
     "@vitest/coverage-v8": "4.1.4",
     "fast-check": "^3.23.0",
     "typescript": "^6.0.0",
