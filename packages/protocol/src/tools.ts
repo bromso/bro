@@ -1,3 +1,4 @@
+import type { FigmaAdapter } from "@repo/figma-adapter";
 import type { z } from "zod";
 
 export interface Logger {
@@ -42,22 +43,9 @@ export type ServerHandler<T extends ToolDefinition> = (
   ctx: ServerHandlerContext
 ) => Promise<z.infer<T["output"]>>;
 
-/**
- * Placeholder for the FigmaAdapter interface that lands in Phase 2's
- * `@repo/figma-adapter` package. The callable index signature lets
- * plugin handlers compile (`await ctx.figma.someMethod(...)` returns
- * `unknown`) without `as any` casts. When Phase 2 lands, every
- * import-site of this type is replaced with the real `FigmaAdapter`,
- * and the compiler will fail loudly on any method that doesn't exist
- * on the real adapter.
- */
-export interface FigmaAdapterPlaceholder {
-  readonly [method: string]: (...args: readonly unknown[]) => Promise<unknown>;
-}
-
 export type PluginHandlerContext = {
   readonly logger: Logger;
-  readonly figma: FigmaAdapterPlaceholder;
+  readonly figma: FigmaAdapter;
 };
 
 export type PluginHandler<T extends ToolDefinition> = (

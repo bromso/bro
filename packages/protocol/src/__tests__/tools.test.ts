@@ -1,6 +1,7 @@
+import type { FigmaAdapter } from "@repo/figma-adapter";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { defineTool, type Pack, type ToolDefinition } from "../tools";
+import { defineTool, type Pack, type PluginHandlerContext, type ToolDefinition } from "../tools";
 
 describe("defineTool", () => {
   const ExtractStyles = defineTool({
@@ -38,5 +39,11 @@ describe("Pack interface", () => {
       registerPlugin: () => {},
     };
     expect(empty.name).toBe("test-pack");
+  });
+});
+
+describe("PluginHandlerContext", () => {
+  it("figma is a FigmaAdapter", () => {
+    expectTypeOf<PluginHandlerContext["figma"]>().toEqualTypeOf<FigmaAdapter>();
   });
 });

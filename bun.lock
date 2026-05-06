@@ -89,6 +89,7 @@
       "name": "@repo/protocol",
       "version": "0.0.0",
       "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
         "zod": "^3.23.8",
       },
       "devDependencies": {
