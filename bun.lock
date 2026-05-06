@@ -80,6 +80,7 @@
         "zod-to-json-schema": "^3.23.0",
       },
       "devDependencies": {
+        "@repo/bridge-plugin": "workspace:*",
         "@types/node": "^25.0.0",
         "@types/ws": "^8.5.13",
         "@vitest/coverage-v8": "4.1.4",

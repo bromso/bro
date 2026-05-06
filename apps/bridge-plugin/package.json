@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./src/runtime": "./src/runtime.ts"
+  },
   "scripts": {
     "build": "vite build --config vite.config.plugin.ts && vite build --config vite.config.ui.ts",
     "test": "vitest run",
