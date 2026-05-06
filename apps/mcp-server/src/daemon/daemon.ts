@@ -11,7 +11,7 @@ import {
   type RequestEnvelope,
   type ResponseEnvelope,
 } from "@repo/protocol";
-import { UnixSocketServerTransport, WebSocketServerTransport } from "@repo/transport";
+import { Correlator, UnixSocketServerTransport, WebSocketServerTransport } from "@repo/transport";
 import { PluginRegistryImpl } from "../registries/plugin-registry";
 import { RegistryError, ServerRegistryImpl } from "../registries/server-registry";
 
@@ -55,6 +55,7 @@ export class Daemon {
   private closed = false;
   private pluginConnected = false;
   private _pluginVersion: string | null = null;
+  private pluginCorrelator: Correlator | null = null;
 
   static async start(options: DaemonStartOptions): Promise<Daemon> {
     const ipc = await UnixSocketServerTransport.listen({ path: options.socketPath });
@@ -149,7 +150,18 @@ export class Daemon {
     if (this.serverRegistry.has(req.tool)) {
       return this.serverRegistry.dispatch(req.tool, req.args, { logger: this.logger });
     }
-    if (this.pluginRegistry.has(req.tool)) {
+    // Plugin-tool resolution: prefer the connected WS plugin; fall back to in-process.
+    const knownByPack = this.pluginRegistry.has(req.tool);
+    if (this.pluginConnected && this.pluginCorrelator) {
+      return this.pluginCorrelator.request({
+        kind: "request",
+        id: req.id, // reuse the originating id; correlator keys on this
+        sourceClientId: req.sourceClientId,
+        tool: req.tool,
+        args: req.args,
+      });
+    }
+    if (knownByPack) {
       return this.pluginRegistry.dispatch(req.tool, req.args, {
         logger: this.logger,
         figma: this.figma,
@@ -220,5 +232,8 @@ export class Daemon {
     }
     this.pluginConnected = true;
     this._pluginVersion = response.clientVersion;
+    // Attach a Correlator AFTER the handshake listener has unsubscribed so
+    // it never sees the handshake response (no id collision risk).
+    this.pluginCorrelator = new Correlator(this.ws);
   }
 }

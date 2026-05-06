@@ -419,4 +419,76 @@ describe("Daemon plugin handshake", () => {
 
     await daemon.stop();
   });
+
+  it("forwards a plugin-registry tool over WS when a plugin is connected", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-route-ws-"));
+    const PluginPing = defineTool({
+      name: "plugin_ping",
+      description: "ping over the WS plugin",
+      streaming: false,
+      input: z.object({}).strict(),
+      output: z.object({ ok: z.literal(true) }),
+    });
+
+    const daemon = await Daemon.start({
+      socketPath: join(dir, "daemon.sock"),
+      wsPort: 0,
+      figma: new FigmaFake(),
+      version: "0.0.0",
+      packs: [
+        {
+          name: "ping-pack",
+          tools: [PluginPing],
+          registerPlugin: () => {
+            /* intentionally empty — proves WS path is used, not in-process */
+          },
+        },
+      ],
+    });
+
+    const { WebSocketClientTransport } = await import("@repo/transport");
+    const { WebSocket } = await import("ws");
+    const pluginTransport = await WebSocketClientTransport.connect({
+      url: `ws://127.0.0.1:${daemon.wsPort}`,
+      WebSocketCtor: WebSocket as never,
+    });
+
+    // Plugin side: respond to handshake AND to plugin tool requests.
+    pluginTransport.onMessage(async (env) => {
+      if (env.kind === "handshake-request") {
+        await pluginTransport.send({
+          kind: "handshake-response",
+          clientVersion: "0.0.0",
+          protocolVersion: 1,
+          accepted: true,
+        } as never);
+      }
+      if (env.kind === "request" && env.tool === "plugin_ping") {
+        await pluginTransport.send({
+          kind: "response",
+          id: env.id,
+          ok: true,
+          result: { ok: true },
+        } as never);
+      }
+    });
+
+    await waitFor(() => (daemon.isPluginConnected ? true : undefined));
+
+    // IPC client (a stand-in for a stdio shim) issues the request.
+    const ipcClient = await UnixSocketClientTransport.connect({ path: join(dir, "daemon.sock") });
+    const correlator = new Correlator(ipcClient);
+    const result = await correlator.request<{ ok: true }>({
+      kind: "request",
+      id: "shim-r1",
+      sourceClientId: "shim-A",
+      tool: "plugin_ping",
+      args: {},
+    });
+    expect(result).toEqual({ ok: true });
+
+    await ipcClient.close();
+    await pluginTransport.close();
+    await daemon.stop();
+  });
 });
