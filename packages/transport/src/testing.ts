@@ -4,13 +4,19 @@ import type { Transport } from "./transport";
 type Handler<T> = (arg: T) => void;
 
 class InMemoryTransport implements Transport {
-  private peer: InMemoryTransport | null = null;
+  private peer: InMemoryTransport | null;
   private messageHandlers = new Set<Handler<Envelope>>();
   private connectHandlers = new Set<Handler<void>>();
   private disconnectHandlers = new Set<Handler<Error | undefined>>();
   private closed = false;
 
-  setPeer(peer: InMemoryTransport): void {
+  constructor() {
+    this.peer = null;
+  }
+
+  // Internal: factory wires the peer pair after both instances exist.
+  // Not for external use.
+  attachPeer(peer: InMemoryTransport): void {
     this.peer = peer;
   }
 
@@ -23,6 +29,7 @@ class InMemoryTransport implements Transport {
   }
 
   deliver(envelope: Envelope): void {
+    if (this.closed) return;
     for (const h of this.messageHandlers) h(envelope);
   }
 
@@ -58,7 +65,7 @@ class InMemoryTransport implements Transport {
 export function createInMemoryTransportPair(): [Transport, Transport] {
   const a = new InMemoryTransport();
   const b = new InMemoryTransport();
-  a.setPeer(b);
-  b.setPeer(a);
+  a.attachPeer(b);
+  b.attachPeer(a);
   return [a, b];
 }
