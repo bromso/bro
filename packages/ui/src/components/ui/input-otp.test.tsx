@@ -1,8 +1,22 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./input-otp";
 
+// `input-otp` schedules a setTimeout in a focus/sizing handler that is not
+// cleared by React's effect teardown. On slower CI runners the timer fires
+// after happy-dom has torn down, throwing `ReferenceError: window is not
+// defined`. Fake timers let us drop any pending callbacks before the
+// environment goes away. The tests themselves don't depend on the timer
+// firing, so freezing time has no behavioural impact.
 describe("InputOTP interaction tests", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
   it("renders the correct number of slots", () => {
     render(
       <InputOTP maxLength={4}>
