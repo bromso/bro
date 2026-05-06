@@ -164,6 +164,67 @@ describe("Daemon", () => {
     await daemon.stop();
   });
 
+  it("exposes pid and a non-negative uptimeMs", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-"));
+    const socketPath = join(dir, "daemon.sock");
+
+    const daemon = await Daemon.start({
+      socketPath,
+      figma: new FigmaFake(),
+      packs: [],
+    });
+
+    expect(daemon.pid).toBe(process.pid);
+    expect(daemon.uptimeMs).toBeGreaterThanOrEqual(0);
+
+    await daemon.stop();
+  });
+
+  it("wraps non-RegistryError handler throws as E_FIGMA_UNKNOWN", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-"));
+    const socketPath = join(dir, "daemon.sock");
+
+    const Boom = defineTool({
+      name: "boom",
+      description: "throws a plain Error",
+      streaming: false,
+      input: z.object({}).strict(),
+      output: z.object({ ok: z.boolean() }),
+    });
+
+    const daemon = await Daemon.start({
+      socketPath,
+      figma: new FigmaFake(),
+      packs: [
+        {
+          name: "boom-pack",
+          tools: [Boom],
+          // Throw a non-RegistryError to exercise the fallback envelope branch.
+          registerServer: (reg) =>
+            reg.register(Boom, async () => {
+              throw new Error("kaboom");
+            }),
+        },
+      ],
+    });
+
+    const client = await UnixSocketClientTransport.connect({ path: socketPath });
+    const correlator = new Correlator(client);
+
+    await expect(
+      correlator.request({
+        kind: "request",
+        id: "r1",
+        sourceClientId: "shim-A",
+        tool: "boom",
+        args: {},
+      } as RequestEnvelope)
+    ).rejects.toMatchObject({ code: "E_FIGMA_UNKNOWN", message: "kaboom" });
+
+    await client.close();
+    await daemon.stop();
+  });
+
   it("does not propagate broadcast errors when stopped mid-request", async () => {
     const dir = await mkdtemp(join(tmpdir(), "mcp-daemon-"));
     const socketPath = join(dir, "daemon.sock");
