@@ -1,0 +1,22 @@
+{
+  "name": "@repo/relay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "tsc --noEmit",
+    "lint": "biome check .",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.0",
+    "@cloudflare/workers-types": "^4.20260506.1",
+    "@vitest/coverage-istanbul": "4.1.4",
+    "typescript": "^6.0.0",
+    "vitest": "4.1.4",
+    "wrangler": "^4.88.0"
+  }
+}
