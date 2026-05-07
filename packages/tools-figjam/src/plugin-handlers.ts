@@ -6,6 +6,8 @@ import type {
   CreateShapeWithText,
   CreateSticky,
   CreateTable,
+  SetSectionName,
+  SetStickyContent,
 } from "./tools";
 
 const E_MISMATCH = "E_FIGMA_EDITOR_TYPE_MISMATCH";
@@ -105,4 +107,30 @@ export const createTablePluginHandler: PluginHandler<typeof CreateTable> = async
     height: args.height,
   });
   return { nodeId: node.id, type: "TABLE" };
+};
+
+export const setStickyContentPluginHandler: PluginHandler<typeof SetStickyContent> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "figjam") {
+    throw new Error(
+      `${E_MISMATCH}: set_sticky_content requires editorType=figjam (got ${figma.editorType})`
+    );
+  }
+  await figma.setStickyContent({ nodeId: args.nodeId, content: args.content });
+  return { nodeId: args.nodeId, type: "STICKY" };
+};
+
+export const setSectionNamePluginHandler: PluginHandler<typeof SetSectionName> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "figjam") {
+    throw new Error(
+      `${E_MISMATCH}: set_section_name requires editorType=figjam (got ${figma.editorType})`
+    );
+  }
+  await figma.setSectionName({ nodeId: args.nodeId, name: args.name });
+  return { nodeId: args.nodeId, type: "SECTION" };
 };

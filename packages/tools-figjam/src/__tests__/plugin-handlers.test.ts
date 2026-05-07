@@ -7,6 +7,8 @@ import {
   createShapeWithTextPluginHandler,
   createStickyPluginHandler,
   createTablePluginHandler,
+  setSectionNamePluginHandler,
+  setStickyContentPluginHandler,
 } from "../plugin-handlers";
 
 const noopLogger = { debug() {}, info() {}, warn() {}, error() {} };
@@ -164,5 +166,59 @@ describe("createTablePluginHandler", () => {
     await expect(
       createTablePluginHandler({ rows: 1, columns: 1, width: 10, height: 10 }, figmaCtx())
     ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("setStickyContentPluginHandler", () => {
+  it("rewrites a sticky's content", async () => {
+    const ctx = figJamCtx();
+    const stk = await ctx.figma.createSticky({ content: "old" });
+    await setStickyContentPluginHandler({ nodeId: stk.id, content: "new" }, ctx);
+    const node = await ctx.figma.getNodeById({ nodeId: stk.id });
+    expect((node as { content?: string }).content).toBe("new");
+  });
+
+  it("rejects non-sticky nodes", async () => {
+    const ctx = figJamCtx();
+    const sec = await ctx.figma.createSection({
+      name: "X",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    await expect(
+      setStickyContentPluginHandler({ nodeId: sec.id, content: "x" }, ctx)
+    ).rejects.toThrow(/sticky/i);
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      setStickyContentPluginHandler({ nodeId: "stk1", content: "x" }, figmaCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("setSectionNamePluginHandler", () => {
+  it("rewrites a section's name", async () => {
+    const ctx = figJamCtx();
+    const sec = await ctx.figma.createSection({
+      name: "Old",
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+    });
+    await setSectionNamePluginHandler({ nodeId: sec.id, name: "New" }, ctx);
+    const node = await ctx.figma.getNodeById({ nodeId: sec.id });
+    expect((node as { name?: string }).name).toBe("New");
+  });
+
+  it("rejects non-section nodes", async () => {
+    const ctx = figJamCtx();
+    const stk = await ctx.figma.createSticky({ content: "x" });
+    await expect(setSectionNamePluginHandler({ nodeId: stk.id, name: "X" }, ctx)).rejects.toThrow(
+      /section/i
+    );
   });
 });

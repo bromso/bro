@@ -111,3 +111,29 @@ export const CreateTable = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("TABLE") }),
 });
+
+export const SetStickyContent = defineTool({
+  name: "set_sticky_content",
+  description: "FigJam-only. Replace the content of an existing sticky note.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: z.string().min(1),
+      content: z.string().min(1),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("STICKY") }),
+});
+
+export const SetSectionName = defineTool({
+  name: "set_section_name",
+  description: "FigJam-only. Replace the name label of an existing section.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: z.string().min(1),
+      name: z.string().min(1),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("SECTION") }),
+});

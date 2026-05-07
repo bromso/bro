@@ -6,6 +6,8 @@ import {
   CreateShapeWithText,
   CreateSticky,
   CreateTable,
+  SetSectionName,
+  SetStickyContent,
 } from "../tools";
 
 describe("CreateSticky schema", () => {
@@ -192,5 +194,34 @@ describe("CreateTable schema", () => {
         height: 100,
       }).success
     ).toBe(false);
+  });
+});
+
+describe("SetStickyContent schema", () => {
+  it("requires nodeId + content", () => {
+    expect(SetStickyContent.input.safeParse({ nodeId: "stk1", content: "x" }).success).toBe(true);
+    expect(SetStickyContent.input.safeParse({ nodeId: "stk1" }).success).toBe(false);
+    expect(SetStickyContent.input.safeParse({ content: "x" }).success).toBe(false);
+  });
+
+  it("rejects empty content", () => {
+    expect(SetStickyContent.input.safeParse({ nodeId: "stk1", content: "" }).success).toBe(false);
+  });
+
+  it("output returns nodeId + type", () => {
+    expect(SetStickyContent.output.safeParse({ nodeId: "stk1", type: "STICKY" }).success).toBe(
+      true
+    );
+  });
+});
+
+describe("SetSectionName schema", () => {
+  it("requires nodeId + name", () => {
+    expect(SetSectionName.input.safeParse({ nodeId: "sec1", name: "X" }).success).toBe(true);
+    expect(SetSectionName.input.safeParse({ nodeId: "sec1" }).success).toBe(false);
+  });
+
+  it("rejects empty name", () => {
+    expect(SetSectionName.input.safeParse({ nodeId: "sec1", name: "" }).success).toBe(false);
   });
 });
