@@ -9,7 +9,10 @@ import type {
   GetFilePages,
   GetFileStyles,
   GetFileVersions,
+  GetImageFills,
+  GetImageRenders,
   GetNodeById,
+  GetUserMe,
 } from "./tools";
 
 export interface RestDeps {
@@ -188,6 +191,50 @@ export function createGetFileBranchesServerHandler(
           lastModified: b.last_modified,
         })),
       };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetImageRendersServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetImageRenders> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_image_renders");
+    try {
+      const r = await api.getImages(args.fileKey, {
+        ids: args.nodeIds,
+        format: args.format,
+        scale: args.scale,
+      });
+      return { images: r.images };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetImageFillsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetImageFills> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_image_fills");
+    try {
+      const r = await api.getImageFills(args.fileKey);
+      return { images: r.meta.images };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetUserMeServerHandler(deps: RestDeps): ServerHandler<typeof GetUserMe> {
+  return async (_args) => {
+    const api = requireApiKey(deps.figmaApi, "get_user_me");
+    try {
+      const me = await api.getMe();
+      return { id: me.id, email: me.email, handle: me.handle, imgUrl: me.img_url };
     } catch (err) {
       mapRestError(err);
     }

@@ -8,7 +8,10 @@ import {
   createGetFilePagesServerHandler,
   createGetFileStylesServerHandler,
   createGetFileVersionsServerHandler,
+  createGetImageFillsServerHandler,
+  createGetImageRendersServerHandler,
   createGetNodeByIdServerHandler,
+  createGetUserMeServerHandler,
 } from "../server-handlers";
 
 const noopLogger = {
@@ -221,5 +224,43 @@ describe("get_file_branches server handler", () => {
     const r = await handler({ fileKey: "ABC" }, ctx);
     expect(r.mainFileKey).toBe("ABC");
     expect(r.branches).toEqual([{ key: "B1", name: "feat", lastModified: "x" }]);
+  });
+});
+
+describe("get_image_renders server handler", () => {
+  it("returns the seeded image map", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedImages("ABC", {
+      err: null,
+      images: { "1:2": "http://cdn/asset.png", "1:3": null },
+    });
+    const handler = createGetImageRendersServerHandler({ figmaApi });
+    const r = await handler({ fileKey: "ABC", nodeIds: ["1:2", "1:3"], format: "png" }, ctx);
+    expect(r.images["1:2"]).toBe("http://cdn/asset.png");
+    expect(r.images["1:3"]).toBeNull();
+  });
+});
+
+describe("get_image_fills server handler", () => {
+  it("returns the seeded fills", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedImageFills("ABC", {
+      meta: { images: { hash1: "http://cdn/h1" } },
+      error: false,
+      status: 200,
+    });
+    const handler = createGetImageFillsServerHandler({ figmaApi });
+    const r = await handler({ fileKey: "ABC" }, ctx);
+    expect(r.images.hash1).toBe("http://cdn/h1");
+  });
+});
+
+describe("get_user_me server handler", () => {
+  it("returns the seeded user", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedMe({ id: "u1", email: "x@y", handle: "Jonas", img_url: "http://i" });
+    const handler = createGetUserMeServerHandler({ figmaApi });
+    const r = await handler({}, ctx);
+    expect(r).toEqual({ id: "u1", email: "x@y", handle: "Jonas", imgUrl: "http://i" });
   });
 });

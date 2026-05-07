@@ -7,7 +7,10 @@ import {
   GetFilePages,
   GetFileStyles,
   GetFileVersions,
+  GetImageFills,
+  GetImageRenders,
   GetNodeById,
+  GetUserMe,
 } from "../tools";
 
 describe("GetFileMetadata schema", () => {
@@ -114,6 +117,53 @@ describe("GetFileBranches schema", () => {
         mainFileKey: "ABC",
         branches: [],
       }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetImageRenders schema", () => {
+  it("requires fileKey + non-empty nodeIds", () => {
+    expect(GetImageRenders.input.safeParse({ fileKey: "ABC", nodeIds: ["1:2"] }).success).toBe(
+      true
+    );
+    expect(GetImageRenders.input.safeParse({ fileKey: "ABC", nodeIds: [] }).success).toBe(false);
+  });
+
+  it("accepts known formats", () => {
+    for (const format of ["png", "svg", "pdf", "jpg"]) {
+      expect(
+        GetImageRenders.input.safeParse({ fileKey: "ABC", nodeIds: ["1:2"], format }).success
+      ).toBe(true);
+    }
+  });
+
+  it("rejects unknown formats", () => {
+    expect(
+      GetImageRenders.input.safeParse({ fileKey: "ABC", nodeIds: ["1:2"], format: "tiff" }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-positive scale", () => {
+    expect(
+      GetImageRenders.input.safeParse({ fileKey: "ABC", nodeIds: ["1:2"], scale: 0 }).success
+    ).toBe(false);
+  });
+});
+
+describe("GetImageFills schema", () => {
+  it("requires fileKey", () => {
+    expect(GetImageFills.input.safeParse({ fileKey: "ABC" }).success).toBe(true);
+  });
+});
+
+describe("GetUserMe schema", () => {
+  it("input is empty", () => {
+    expect(GetUserMe.input.safeParse({}).success).toBe(true);
+  });
+
+  it("output is { id, email, handle, imgUrl }", () => {
+    expect(
+      GetUserMe.output.safeParse({ id: "u", email: "x@y", handle: "j", imgUrl: "" }).success
     ).toBe(true);
   });
 });

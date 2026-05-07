@@ -131,3 +131,41 @@ export const GetFileBranches = defineTool({
     ),
   }),
 });
+
+export const GetImageRenders = defineTool({
+  name: "get_image_renders",
+  description: "REST. Render specified nodes as PNG/SVG/PDF/JPG and return presigned URLs.",
+  streaming: false,
+  input: z
+    .object({
+      fileKey: FileKey,
+      nodeIds: z.array(NodeId).min(1),
+      format: z.enum(["png", "svg", "pdf", "jpg"]).optional(),
+      scale: z.number().positive().optional(),
+    })
+    .strict(),
+  output: z.object({
+    images: z.record(z.string().nullable()),
+  }),
+});
+
+export const GetImageFills = defineTool({
+  name: "get_image_fills",
+  description: "REST. Return the file's image fill asset URLs (by hash).",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({ images: z.record(z.string()) }),
+});
+
+export const GetUserMe = defineTool({
+  name: "get_user_me",
+  description: "REST. Return the authenticated user's profile.",
+  streaming: false,
+  input: z.object({}).strict(),
+  output: z.object({
+    id: z.string(),
+    email: z.string(),
+    handle: z.string(),
+    imgUrl: z.string(),
+  }),
+});
