@@ -84,4 +84,18 @@ describe("ConsoleStore.getSinceCursor", () => {
     const second = store.getSinceCursor({ cursor: first.nextCursor });
     expect(second.entries.map((e) => e.message)).toEqual(["c"]);
   });
+
+  it("returns nextCursor='-1' for an empty buffer with null cursor", () => {
+    const store = new ConsoleStore();
+    const result = store.getSinceCursor({ cursor: null });
+    expect(result.entries).toEqual([]);
+    expect(result.nextCursor).toBe("-1");
+  });
+
+  it("preserves the supplied cursor when buffer is empty", () => {
+    const store = new ConsoleStore();
+    const result = store.getSinceCursor({ cursor: "42" });
+    expect(result.entries).toEqual([]);
+    expect(result.nextCursor).toBe("42");
+  });
 });

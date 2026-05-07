@@ -1,5 +1,5 @@
 import { FigmaFake } from "@repo/figma-adapter/testing";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { installConsoleCapture } from "../console-patch";
 import {
   clearConsolePluginHandler,
@@ -122,5 +122,15 @@ describe("consoleStatusPluginHandler", () => {
     expect(out.byLevel.warn).toBe(1);
     expect(out.byLevel.error).toBe(1);
     expect(out.droppedCount).toBe(2);
+  });
+});
+
+describe("requireStore guard", () => {
+  it("throws E_CONSOLE_STORE_UNINSTALLED when no store is active", async () => {
+    vi.resetModules();
+    const fresh = await import("../plugin-handlers");
+    await expect(fresh.getConsoleLogsPluginHandler({}, ctx())).rejects.toThrow(
+      "E_CONSOLE_STORE_UNINSTALLED"
+    );
   });
 });

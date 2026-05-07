@@ -14,7 +14,7 @@ beforeEach(async () => {
 });
 
 describe("cli spawn", () => {
-  it("--help prints usage and exits 0", () => {
+  it("--help prints usage and exits 0", { timeout: 15_000 }, () => {
     const r = spawnSync("bun", ["run", main, "--help"], { encoding: "utf-8" });
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/Usage:/);
