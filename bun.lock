@@ -162,6 +162,15 @@
         "vitest": "4.1.4",
       },
     },
+    "packages/figma-api-client": {
+      "name": "@repo/figma-api-client",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/protocol": {
       "name": "@repo/protocol",
       "version": "0.1.0",
@@ -965,6 +974,8 @@
     "@repo/docs": ["@repo/docs@workspace:apps/docs"],
 
     "@repo/figma-adapter": ["@repo/figma-adapter@workspace:packages/figma-adapter"],
+
+    "@repo/figma-api-client": ["@repo/figma-api-client@workspace:packages/figma-api-client"],
 
     "@repo/protocol": ["@repo/protocol@workspace:packages/protocol"],
 

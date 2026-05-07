@@ -1,0 +1,154 @@
+import { describe, expect, it } from "vitest";
+import { FigmaApiFake } from "../fake";
+
+describe("FigmaApiFake.getMe", () => {
+  it("returns the seeded user", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedMe({ id: "u1", email: "x@y", handle: "Jonas", img_url: "" });
+    const r = await fake.getMe();
+    expect(r.id).toBe("u1");
+  });
+
+  it("throws E_FIGMA_REST_AUTH if no user is seeded", async () => {
+    const fake = new FigmaApiFake();
+    await expect(fake.getMe()).rejects.toMatchObject({ code: "E_FIGMA_REST_AUTH" });
+  });
+});
+
+describe("FigmaApiFake.getFile + getFilePages", () => {
+  it("getFile returns the seeded file", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    expect((await fake.getFile("ABC")).name).toBe("F");
+  });
+
+  it("getFile throws E_FIGMA_REST_404 for unseeded keys", async () => {
+    const fake = new FigmaApiFake();
+    await expect(fake.getFile("MISSING")).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+
+  it("getFilePages narrows the seeded file's CANVAS children", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: {
+        id: "0:0",
+        type: "DOCUMENT",
+        children: [
+          { id: "1:0", type: "CANVAS", name: "Page 1" },
+          { id: "9:0", type: "FRAME", name: "stray" },
+          { id: "2:0", type: "CANVAS", name: "Page 2" },
+        ],
+      },
+    });
+    expect(await fake.getFilePages("ABC")).toEqual([
+      { id: "1:0", name: "Page 1" },
+      { id: "2:0", name: "Page 2" },
+    ]);
+  });
+});
+
+describe("FigmaApiFake.postFileComment + deleteFileComment", () => {
+  it("posts a comment + returns the seeded shape", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    const c = await fake.postFileComment("ABC", { message: "hi" });
+    expect(c.message).toBe("hi");
+    expect(c.file_key).toBe("ABC");
+    expect(c.id).toMatch(/^c/);
+  });
+
+  it("deleteFileComment removes a previously posted comment", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    const c = await fake.postFileComment("ABC", { message: "hi" });
+    await fake.deleteFileComment("ABC", c.id);
+    const r = await fake.getFileComments("ABC");
+    expect(r.comments).toEqual([]);
+  });
+
+  it("deleteFileComment throws 404 for unknown id", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    await expect(fake.deleteFileComment("ABC", "missing")).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+});
+
+describe("FigmaApiFake.getTeamProjects + getProjectFiles", () => {
+  it("returns seeded projects", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedTeamProjects("T1", {
+      name: "Team",
+      projects: [{ id: "P1", name: "Web" }],
+    });
+    const r = await fake.getTeamProjects("T1");
+    expect(r.projects).toEqual([{ id: "P1", name: "Web" }]);
+  });
+
+  it("throws 404 for unknown team", async () => {
+    const fake = new FigmaApiFake();
+    await expect(fake.getTeamProjects("T9")).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+
+  it("getProjectFiles returns seeded files", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedProjectFiles("P1", {
+      name: "Web",
+      files: [{ key: "ABC", name: "Home", thumbnail_url: "", last_modified: "" }],
+    });
+    expect((await fake.getProjectFiles("P1")).files).toHaveLength(1);
+  });
+});
+
+describe("FigmaApiFake.getTeamComponents — pagination", () => {
+  it("returns the seeded page", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedTeamComponents("T1", {
+      meta: {
+        components: [{ key: "C1", name: "n", description: "" }],
+        cursor: { after: 100 },
+      },
+    });
+    const r = await fake.getTeamComponents("T1");
+    expect(r.meta.components).toHaveLength(1);
+    expect(r.meta.cursor?.after).toBe(100);
+  });
+});
