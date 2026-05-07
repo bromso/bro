@@ -210,3 +210,54 @@ export const DeleteFileComment = defineTool({
   input: z.object({ fileKey: FileKey, commentId: z.string().min(1) }).strict(),
   output: z.object({ ok: z.literal(true) }),
 });
+
+export const GetTeamProjects = defineTool({
+  name: "get_team_projects",
+  description: "REST. Return all projects in a team.",
+  streaming: false,
+  input: z.object({ teamId: z.string().min(1) }).strict(),
+  output: z.object({
+    name: z.string(),
+    projects: z.array(z.object({ id: z.string(), name: z.string() })),
+  }),
+});
+
+export const GetProjectFiles = defineTool({
+  name: "get_project_files",
+  description: "REST. Return all files in a project.",
+  streaming: false,
+  input: z
+    .object({
+      projectId: z.string().min(1),
+      branchData: z.boolean().optional(),
+    })
+    .strict(),
+  output: z.object({
+    name: z.string(),
+    files: z.array(
+      z.object({
+        key: z.string(),
+        name: z.string(),
+        lastModified: z.string(),
+      })
+    ),
+  }),
+});
+
+export const GetTeamComponents = defineTool({
+  name: "get_team_components",
+  description:
+    "REST. Return team components (cursor-paginated). Pass nextCursor as cursor to fetch the next page.",
+  streaming: false,
+  input: z
+    .object({
+      teamId: z.string().min(1),
+      pageSize: z.number().int().positive().optional(),
+      cursor: z.string().optional(),
+    })
+    .strict(),
+  output: z.object({
+    components: z.array(ComponentSummary),
+    nextCursor: z.string().optional(),
+  }),
+});

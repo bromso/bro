@@ -12,6 +12,9 @@ import {
   GetImageFills,
   GetImageRenders,
   GetNodeById,
+  GetProjectFiles,
+  GetTeamComponents,
+  GetTeamProjects,
   GetUserMe,
   PostFileComment,
 } from "../tools";
@@ -207,5 +210,53 @@ describe("DeleteFileComment schema", () => {
 
   it("output is { ok: true }", () => {
     expect(DeleteFileComment.output.safeParse({ ok: true }).success).toBe(true);
+  });
+});
+
+describe("GetTeamProjects schema", () => {
+  it("requires teamId", () => {
+    expect(GetTeamProjects.input.safeParse({ teamId: "T1" }).success).toBe(true);
+  });
+
+  it("output { name, projects: [...] }", () => {
+    expect(
+      GetTeamProjects.output.safeParse({
+        name: "Team",
+        projects: [{ id: "P1", name: "Web" }],
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetProjectFiles schema", () => {
+  it("requires projectId", () => {
+    expect(GetProjectFiles.input.safeParse({ projectId: "P1" }).success).toBe(true);
+  });
+
+  it("output { name, files: [...] }", () => {
+    expect(
+      GetProjectFiles.output.safeParse({
+        name: "Web",
+        files: [{ key: "ABC", name: "Home", lastModified: "x" }],
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetTeamComponents schema", () => {
+  it("accepts optional pageSize + cursor", () => {
+    expect(
+      GetTeamComponents.input.safeParse({ teamId: "T1", pageSize: 30, cursor: "c1" }).success
+    ).toBe(true);
+  });
+
+  it("output { components, nextCursor? }", () => {
+    expect(
+      GetTeamComponents.output.safeParse({
+        components: [{ key: "k", name: "n", description: "" }],
+        nextCursor: "after:100",
+      }).success
+    ).toBe(true);
+    expect(GetTeamComponents.output.safeParse({ components: [] }).success).toBe(true);
   });
 });

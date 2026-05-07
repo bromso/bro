@@ -13,6 +13,9 @@ import {
   createGetImageFillsServerHandler,
   createGetImageRendersServerHandler,
   createGetNodeByIdServerHandler,
+  createGetProjectFilesServerHandler,
+  createGetTeamComponentsServerHandler,
+  createGetTeamProjectsServerHandler,
   createGetUserMeServerHandler,
   createPostFileCommentServerHandler,
 } from "../server-handlers";
@@ -362,5 +365,59 @@ describe("delete_file_comment server handler", () => {
     await expect(handler({ fileKey: "ABC", commentId: "missing" }, ctx)).rejects.toThrow(
       /E_FIGMA_REST_404/
     );
+  });
+});
+
+describe("get_team_projects server handler", () => {
+  it("returns the seeded projects", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedTeamProjects("T1", {
+      name: "Team",
+      projects: [{ id: "P1", name: "Web" }],
+    });
+    const handler = createGetTeamProjectsServerHandler({ figmaApi });
+    expect(await handler({ teamId: "T1" }, ctx)).toEqual({
+      name: "Team",
+      projects: [{ id: "P1", name: "Web" }],
+    });
+  });
+});
+
+describe("get_project_files server handler", () => {
+  it("narrows the file list", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedProjectFiles("P1", {
+      name: "Web",
+      files: [{ key: "ABC", name: "Home", thumbnail_url: "", last_modified: "y" }],
+    });
+    const handler = createGetProjectFilesServerHandler({ figmaApi });
+    const r = await handler({ projectId: "P1" }, ctx);
+    expect(r.files).toEqual([{ key: "ABC", name: "Home", lastModified: "y" }]);
+  });
+});
+
+describe("get_team_components server handler", () => {
+  it("forwards cursor + pageSize and surfaces nextCursor", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedTeamComponents("T1", {
+      meta: {
+        components: [{ key: "k1", name: "n", description: "" }],
+        cursor: { after: 100 },
+      },
+    });
+    const handler = createGetTeamComponentsServerHandler({ figmaApi });
+    const r = await handler({ teamId: "T1", pageSize: 50 }, ctx);
+    expect(r.components).toHaveLength(1);
+    expect(r.nextCursor).toBe("100");
+  });
+
+  it("omits nextCursor when none is returned", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedTeamComponents("T1", {
+      meta: { components: [], cursor: undefined },
+    });
+    const handler = createGetTeamComponentsServerHandler({ figmaApi });
+    const r = await handler({ teamId: "T1" }, ctx);
+    expect(r.nextCursor).toBeUndefined();
   });
 });

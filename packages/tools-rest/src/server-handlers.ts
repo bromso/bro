@@ -14,6 +14,9 @@ import type {
   GetImageFills,
   GetImageRenders,
   GetNodeById,
+  GetProjectFiles,
+  GetTeamComponents,
+  GetTeamProjects,
   GetUserMe,
   PostFileComment,
 } from "./tools";
@@ -308,6 +311,72 @@ export function createDeleteFileCommentServerHandler(
     try {
       await api.deleteFileComment(args.fileKey, args.commentId);
       return { ok: true as const };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetTeamProjectsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetTeamProjects> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_team_projects");
+    try {
+      const r = await api.getTeamProjects(args.teamId);
+      return {
+        name: r.name,
+        projects: r.projects.map((p) => ({ id: p.id, name: p.name })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetProjectFilesServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetProjectFiles> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_project_files");
+    try {
+      const r = await api.getProjectFiles(args.projectId, {
+        branch_data: args.branchData,
+      });
+      return {
+        name: r.name,
+        files: r.files.map((f) => ({
+          key: f.key,
+          name: f.name,
+          lastModified: f.last_modified,
+        })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetTeamComponentsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetTeamComponents> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_team_components");
+    try {
+      const r = await api.getTeamComponents(args.teamId, {
+        pageSize: args.pageSize,
+        cursor: args.cursor,
+      });
+      const next = r.meta.cursor?.after;
+      return {
+        components: r.meta.components.map((c) => ({
+          key: c.key,
+          name: c.name,
+          description: c.description,
+          nodeId: c.node_id,
+        })),
+        ...(next !== undefined ? { nextCursor: String(next) } : {}),
+      };
     } catch (err) {
       mapRestError(err);
     }
