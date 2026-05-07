@@ -85,6 +85,38 @@ import {
   setSectionNamePluginHandler,
   setStickyContentPluginHandler,
 } from "@repo/tools-figjam";
+import {
+  CreateSlide,
+  CreateSlideRow,
+  createSlidePluginHandler,
+  createSlideRowPluginHandler,
+  DeleteSlide,
+  DuplicateSlide,
+  deleteSlidePluginHandler,
+  duplicateSlidePluginHandler,
+  GetSlide,
+  GetSlideGrid,
+  getSlideGridPluginHandler,
+  getSlidePluginHandler,
+  ListSlideRows,
+  ListSlides,
+  listSlideRowsPluginHandler,
+  listSlidesPluginHandler,
+  MoveSlide,
+  moveSlidePluginHandler,
+  SetActiveSlide,
+  SetSlideBackground,
+  SetSlideName,
+  SetSlideSkipped,
+  SetSlidesView,
+  SetSlideTransition,
+  setActiveSlidePluginHandler,
+  setSlideBackgroundPluginHandler,
+  setSlideNamePluginHandler,
+  setSlideSkippedPluginHandler,
+  setSlidesViewPluginHandler,
+  setSlideTransitionPluginHandler,
+} from "@repo/tools-slides";
 import { WebSocketClientTransport } from "@repo/transport";
 import { BridgePluginRuntime } from "./runtime";
 
@@ -146,6 +178,22 @@ export async function start(): Promise<void> {
     runtime.register(SetSectionName, setSectionNamePluginHandler);
     runtime.register(MoveIntoSection, moveIntoSectionPluginHandler);
     runtime.register(ListSectionChildren, listSectionChildrenPluginHandler);
+
+    runtime.register(CreateSlide, createSlidePluginHandler);
+    runtime.register(CreateSlideRow, createSlideRowPluginHandler);
+    runtime.register(SetSlideName, setSlideNamePluginHandler);
+    runtime.register(SetSlideSkipped, setSlideSkippedPluginHandler);
+    runtime.register(SetSlideTransition, setSlideTransitionPluginHandler);
+    runtime.register(SetSlideBackground, setSlideBackgroundPluginHandler);
+    runtime.register(MoveSlide, moveSlidePluginHandler);
+    runtime.register(DuplicateSlide, duplicateSlidePluginHandler);
+    runtime.register(DeleteSlide, deleteSlidePluginHandler);
+    runtime.register(ListSlides, listSlidesPluginHandler);
+    runtime.register(ListSlideRows, listSlideRowsPluginHandler);
+    runtime.register(SetActiveSlide, setActiveSlidePluginHandler);
+    runtime.register(GetSlide, getSlidePluginHandler);
+    runtime.register(SetSlidesView, setSlidesViewPluginHandler);
+    runtime.register(GetSlideGrid, getSlideGridPluginHandler);
 
     runtime.start();
     post("connected");

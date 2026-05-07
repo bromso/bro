@@ -136,6 +136,38 @@ import {
   PostFileComment,
 } from "@repo/tools-rest";
 import {
+  CreateSlide,
+  CreateSlideRow,
+  createSlidePluginHandler,
+  createSlideRowPluginHandler,
+  DeleteSlide,
+  DuplicateSlide,
+  deleteSlidePluginHandler,
+  duplicateSlidePluginHandler,
+  GetSlide,
+  GetSlideGrid,
+  getSlideGridPluginHandler,
+  getSlidePluginHandler,
+  ListSlideRows,
+  ListSlides,
+  listSlideRowsPluginHandler,
+  listSlidesPluginHandler,
+  MoveSlide,
+  moveSlidePluginHandler,
+  SetActiveSlide,
+  SetSlideBackground,
+  SetSlideName,
+  SetSlideSkipped,
+  SetSlidesView,
+  SetSlideTransition,
+  setActiveSlidePluginHandler,
+  setSlideBackgroundPluginHandler,
+  setSlideNamePluginHandler,
+  setSlideSkippedPluginHandler,
+  setSlidesViewPluginHandler,
+  setSlideTransitionPluginHandler,
+} from "@repo/tools-slides";
+import {
   createStreamStatusPluginHandler,
   ExportVariables,
   exportVariablesPluginHandler,
@@ -508,6 +540,43 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
           },
         },
         {
+          name: "tools-slides",
+          tools: [
+            CreateSlide,
+            CreateSlideRow,
+            SetSlideName,
+            SetSlideSkipped,
+            SetSlideTransition,
+            SetSlideBackground,
+            MoveSlide,
+            DuplicateSlide,
+            DeleteSlide,
+            ListSlides,
+            ListSlideRows,
+            SetActiveSlide,
+            GetSlide,
+            SetSlidesView,
+            GetSlideGrid,
+          ],
+          registerPlugin: (reg) => {
+            reg.register(CreateSlide, createSlidePluginHandler);
+            reg.register(CreateSlideRow, createSlideRowPluginHandler);
+            reg.register(SetSlideName, setSlideNamePluginHandler);
+            reg.register(SetSlideSkipped, setSlideSkippedPluginHandler);
+            reg.register(SetSlideTransition, setSlideTransitionPluginHandler);
+            reg.register(SetSlideBackground, setSlideBackgroundPluginHandler);
+            reg.register(MoveSlide, moveSlidePluginHandler);
+            reg.register(DuplicateSlide, duplicateSlidePluginHandler);
+            reg.register(DeleteSlide, deleteSlidePluginHandler);
+            reg.register(ListSlides, listSlidesPluginHandler);
+            reg.register(ListSlideRows, listSlideRowsPluginHandler);
+            reg.register(SetActiveSlide, setActiveSlidePluginHandler);
+            reg.register(GetSlide, getSlidePluginHandler);
+            reg.register(SetSlidesView, setSlidesViewPluginHandler);
+            reg.register(GetSlideGrid, getSlideGridPluginHandler);
+          },
+        },
+        {
           name: "tools-rest",
           tools: [
             GetFileMetadata,
@@ -627,6 +696,21 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
       SetSectionName,
       MoveIntoSection,
       ListSectionChildren,
+      CreateSlide,
+      CreateSlideRow,
+      SetSlideName,
+      SetSlideSkipped,
+      SetSlideTransition,
+      SetSlideBackground,
+      MoveSlide,
+      DuplicateSlide,
+      DeleteSlide,
+      ListSlides,
+      ListSlideRows,
+      SetActiveSlide,
+      GetSlide,
+      SetSlidesView,
+      GetSlideGrid,
       GetFileMetadata,
       GetFilePages,
       GetNodeById,
