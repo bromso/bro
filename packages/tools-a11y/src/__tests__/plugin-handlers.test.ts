@@ -270,3 +270,45 @@ describe("getAriaLabelPluginHandler", () => {
     expect(out.label).toBeNull();
   });
 });
+
+import { getLandmarkRolePluginHandler, setLandmarkRolePluginHandler } from "../plugin-handlers";
+
+describe("setLandmarkRolePluginHandler", () => {
+  it("writes the role to pluginData", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await setLandmarkRolePluginHandler({ nodeId: frame.id, role: "main" }, ctx);
+    const meta = await ctx.figma.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta.landmarkRole).toBe("main");
+  });
+
+  it("overwrites a prior role", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await setLandmarkRolePluginHandler({ nodeId: frame.id, role: "banner" }, ctx);
+    await setLandmarkRolePluginHandler({ nodeId: frame.id, role: "main" }, ctx);
+    const meta = await ctx.figma.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta.landmarkRole).toBe("main");
+  });
+});
+
+describe("getLandmarkRolePluginHandler", () => {
+  it("returns the stored role", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "landmarkRole",
+      value: "navigation",
+    });
+    const out = await getLandmarkRolePluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.role).toBe("navigation");
+  });
+
+  it("returns null when not set", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await getLandmarkRolePluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.role).toBeNull();
+  });
+});

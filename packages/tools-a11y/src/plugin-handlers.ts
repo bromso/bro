@@ -1,11 +1,14 @@
+import type { A11yMetaKey } from "@repo/figma-adapter";
 import type { PluginHandler } from "@repo/protocol";
 import type {
   AuditContrast,
   AuditTargetSize,
   GetAltText,
   GetAriaLabel,
+  GetLandmarkRole,
   SetAltText,
   SetAriaLabel,
+  SetLandmarkRole,
   SimulateColorBlindness,
 } from "./tools";
 import {
@@ -168,4 +171,41 @@ export const getAriaLabelPluginHandler: PluginHandler<typeof GetAriaLabel> = asy
     nodeId: args.nodeId,
     label: meta.ariaLabel ?? null,
   };
+};
+
+export const setLandmarkRolePluginHandler: PluginHandler<typeof SetLandmarkRole> = async (
+  args,
+  { figma }
+) => {
+  await figma.setNodeA11yMeta({
+    nodeId: args.nodeId,
+    key: "landmarkRole" satisfies A11yMetaKey,
+    value: args.role,
+  });
+  return { nodeId: args.nodeId, role: args.role };
+};
+
+export const getLandmarkRolePluginHandler: PluginHandler<typeof GetLandmarkRole> = async (
+  args,
+  { figma }
+) => {
+  const meta = await figma.getNodeA11yMeta({ nodeId: args.nodeId });
+  // Validate the stored value against the enum — pluginData is freeform,
+  // so a previous tool version (or a different plugin) might have written
+  // a different string. Treat unrecognized values as null.
+  const role = meta.landmarkRole;
+  const allowed = [
+    "banner",
+    "navigation",
+    "main",
+    "complementary",
+    "contentinfo",
+    "search",
+    "form",
+    "region",
+  ] as const;
+  const normalized = (allowed as readonly string[]).includes(role ?? "")
+    ? (role as (typeof allowed)[number])
+    : null;
+  return { nodeId: args.nodeId, role: normalized };
 };

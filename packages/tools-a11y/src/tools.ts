@@ -114,3 +114,42 @@ export const GetAriaLabel = defineTool({
     label: z.string().nullable(),
   }),
 });
+
+const LandmarkRole = z.enum([
+  "banner",
+  "navigation",
+  "main",
+  "complementary",
+  "contentinfo",
+  "search",
+  "form",
+  "region",
+]);
+
+export const SetLandmarkRole = defineTool({
+  name: "set_landmark_role",
+  description:
+    "Tag a node with a WAI-ARIA landmark role. Writes pluginData under `a11y/landmarkRole`. Use to mark headers (`banner`), nav menus (`navigation`), main content regions (`main`), sidebars (`complementary`), footers (`contentinfo`), search forms (`search`), generic forms (`form`), or generic regions (`region`).",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: NodeId,
+      role: LandmarkRole,
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    role: LandmarkRole,
+  }),
+});
+
+export const GetLandmarkRole = defineTool({
+  name: "get_landmark_role",
+  description: "Read the WAI-ARIA landmark role tag for a node. Returns null if not set.",
+  streaming: false,
+  input: z.object({ nodeId: NodeId }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    role: LandmarkRole.nullable(),
+  }),
+});

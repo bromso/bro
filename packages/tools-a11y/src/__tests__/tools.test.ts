@@ -160,3 +160,38 @@ describe("GetAriaLabel schema", () => {
     expect(GetAriaLabel.output.safeParse({ nodeId: "n1", label: null }).success).toBe(true);
   });
 });
+
+import { GetLandmarkRole, SetLandmarkRole } from "../tools";
+
+describe("SetLandmarkRole schema", () => {
+  it("accepts every WAI-ARIA landmark role", () => {
+    for (const role of [
+      "banner",
+      "navigation",
+      "main",
+      "complementary",
+      "contentinfo",
+      "search",
+      "form",
+      "region",
+    ]) {
+      expect(SetLandmarkRole.input.safeParse({ nodeId: "n1", role }).success).toBe(true);
+    }
+  });
+
+  it("rejects unknown role", () => {
+    expect(SetLandmarkRole.input.safeParse({ nodeId: "n1", role: "header" }).success).toBe(false);
+  });
+
+  it("requires nodeId + role", () => {
+    expect(SetLandmarkRole.input.safeParse({ nodeId: "n1" }).success).toBe(false);
+    expect(SetLandmarkRole.input.safeParse({ role: "main" }).success).toBe(false);
+  });
+});
+
+describe("GetLandmarkRole schema", () => {
+  it("output allows null role", () => {
+    expect(GetLandmarkRole.output.safeParse({ nodeId: "n1", role: null }).success).toBe(true);
+    expect(GetLandmarkRole.output.safeParse({ nodeId: "n1", role: "main" }).success).toBe(true);
+  });
+});
