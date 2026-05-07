@@ -2,6 +2,30 @@
   "name": "@repo/mcp-server",
   "version": "0.0.0",
   "private": true,
+  "description": "Bridge between AI MCP clients and Figma. Stdio shim + daemon + bundled bridge plugin.",
+  "homepage": "https://bromso.github.io/bro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bromso/bro.git",
+    "directory": "apps/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/bromso/bro/issues"
+  },
+  "license": "MIT",
+  "author": "bromso",
+  "keywords": [
+    "figma",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "claude",
+    "cursor",
+    "windsurf"
+  ],
+  "engines": {
+    "node": ">=20.10.0"
+  },
   "type": "module",
   "scripts": {
     "test": "vitest run",
@@ -30,5 +54,8 @@
     "typescript": "^6.0.0",
     "vitest": "4.1.4",
     "ws": "^8.18.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
