@@ -1,6 +1,80 @@
 ---
-title: rest
-description: rest pack overview — content lands in Task 8.
+title: rest pack
+description: Cloud-mode-without-plugin reads — 20 tools backed by the Figma REST API. Three are write-gated.
 ---
 
-(Content lands in Task 8 — see implementation plan.)
+The `rest` pack is architecturally different from every other pack: tools call the Figma REST API directly via `FIGMA_API_KEY` in the daemon's environment. They work whenever the env var is set — even if the bridge plugin is not paired and Figma Desktop is not running. This is the entire point of "cloud mode without plugin."
+
+## When to use
+
+- You want to audit a Figma file from CI / a remote workflow.
+- You don't have Figma Desktop running but you have a token.
+- A bulk read across many files (the REST API is rate-limited but scales better than plugin invocations).
+
+## Editor
+
+Universal — REST endpoints don't care about editor type.
+
+## Auth
+
+Requires `FIGMA_API_KEY` in the daemon's env. With the env unset, every REST tool returns `E_FIGMA_API_KEY_MISSING` per call. The doctor's `figma-api-key` check warns when the env is missing — see [troubleshooting](/docs/reference/troubleshooting).
+
+## Write tools are gated
+
+Three tools mutate files (`post_file_comment`, `delete_file_comment`, `post_dev_resources`). They're gated behind a `--enable-write-tools` daemon flag (default off). With the flag off, they return `E_WRITE_TOOLS_DISABLED` immediately. Default-off prevents prompt-driven mass commenting / spam dev resources.
+
+## Tools
+
+### File metadata
+
+| Tool | What it returns |
+| ---- | --------------- |
+| [get_file_metadata](/docs/tools-reference/rest/get_file_metadata) | Name, lastModified, version, role, editorType. |
+| [get_file_pages](/docs/tools-reference/rest/get_file_pages) | Top-level pages (CANVAS children). |
+| [get_node_by_id](/docs/tools-reference/rest/get_node_by_id) | Type/name of a specific node. |
+| [get_file_versions](/docs/tools-reference/rest/get_file_versions) | Version history. |
+
+### File catalog
+
+| Tool | What it returns |
+| ---- | --------------- |
+| [get_file_styles](/docs/tools-reference/rest/get_file_styles) | Local styles bucketed by type. |
+| [get_file_components](/docs/tools-reference/rest/get_file_components) | Published components. |
+| [get_file_component_sets](/docs/tools-reference/rest/get_file_component_sets) | Published component sets (variants). |
+| [get_file_branches](/docs/tools-reference/rest/get_file_branches) | Branches. |
+
+### Assets + identity
+
+| Tool | What it returns |
+| ---- | --------------- |
+| [get_image_renders](/docs/tools-reference/rest/get_image_renders) | Rendered PNG/SVG/PDF/JPG of node ids — presigned URLs. |
+| [get_image_fills](/docs/tools-reference/rest/get_image_fills) | Image fill asset URLs. |
+| [get_user_me](/docs/tools-reference/rest/get_user_me) | Authenticated user's profile. |
+
+### Comments (2 write-gated)
+
+| Tool | What it does |
+| ---- | ------------ |
+| [get_file_comments](/docs/tools-reference/rest/get_file_comments) | Read all comments. |
+| [post_file_comment](/docs/tools-reference/rest/post_file_comment) | **Write-gated** — post a new comment. |
+| [delete_file_comment](/docs/tools-reference/rest/delete_file_comment) | **Write-gated** — delete a comment. |
+
+### Team / project
+
+| Tool | What it returns |
+| ---- | --------------- |
+| [get_team_projects](/docs/tools-reference/rest/get_team_projects) | All projects in a team. |
+| [get_project_files](/docs/tools-reference/rest/get_project_files) | All files in a project. |
+| [get_team_components](/docs/tools-reference/rest/get_team_components) | Cursor-paginated team components. |
+
+### Team catalog + dev resources (1 write-gated)
+
+| Tool | What it does |
+| ---- | ------------ |
+| [get_team_styles](/docs/tools-reference/rest/get_team_styles) | Cursor-paginated team styles. |
+| [get_dev_resources](/docs/tools-reference/rest/get_dev_resources) | Read Dev Mode resources. |
+| [post_dev_resources](/docs/tools-reference/rest/post_dev_resources) | **Write-gated** — add Dev Mode resources. |
+
+## Recipes using this pack
+
+- [Audit a Figma file via cloud mode](/docs/recipes/audit-via-cloud)

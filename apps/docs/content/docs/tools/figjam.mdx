@@ -1,6 +1,35 @@
 ---
-title: figjam
-description: figjam pack overview — content lands in Task 8.
+title: figjam pack
+description: FigJam-specific tools — sticky notes, sections, connectors, code blocks, tables.
 ---
 
-(Content lands in Task 8 — see implementation plan.)
+The `figjam` pack covers the whiteboarding surface: sticky notes, labeled sections, connectors between nodes, code blocks, shape-with-text, and tables. Every tool requires `editorType === "figjam"`; the `requireFigJam(figma, toolName)` guard runs first and returns `E_FIGMA_EDITOR_TYPE_MISMATCH` if the editor is wrong.
+
+## When to use
+
+- The AI is filling a brainstorming board with stickies.
+- You want to organize an existing FigJam file (move things into sections).
+- A diagram tool generates connectors programmatically.
+
+## Editor
+
+FigJam only.
+
+## Tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| [create_sticky](/docs/tools-reference/figjam/create_sticky) | Create a sticky note. |
+| [create_section](/docs/tools-reference/figjam/create_section) | Create a labeled section. |
+| [create_connector](/docs/tools-reference/figjam/create_connector) | Connect two existing nodes. |
+| [create_code_block](/docs/tools-reference/figjam/create_code_block) | Embed a code block with a language label. |
+| [create_shape_with_text](/docs/tools-reference/figjam/create_shape_with_text) | Shape (square/ellipse/diamond/...) with inline text. |
+| [create_table](/docs/tools-reference/figjam/create_table) | Create a table grid. |
+| [set_sticky_content](/docs/tools-reference/figjam/set_sticky_content) | Replace a sticky's content. |
+| [set_section_name](/docs/tools-reference/figjam/set_section_name) | Rename a section. |
+| [move_into_section](/docs/tools-reference/figjam/move_into_section) | Add nodes to a section. |
+| [list_section_children](/docs/tools-reference/figjam/list_section_children) | Enumerate node ids in a section. |
+
+## Recipes using this pack
+
+(No specific recipes for figjam in v1; see [Build a UI from a description](/docs/recipes/ui-from-description) for a similar pattern.)

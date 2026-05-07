@@ -1,6 +1,49 @@
 ---
-title: a11y
-description: a11y pack overview — content lands in Task 8.
+title: a11y pack
+description: Accessibility audits and annotations — WCAG 2.2 contrast and target-size, color-blindness simulation, alt-text and ARIA labels.
 ---
 
-(Content lands in Task 8 — see implementation plan.)
+The `a11y` pack runs accessibility audits and writes a11y metadata into the file. Unlike figjam/slides packs, a11y is **not editor-type-gated** — accessibility concerns apply to Figma Design AND FigJam files. Tools work on either editor.
+
+## When to use
+
+- A pre-handoff QA prompt: "audit this frame for a11y issues."
+- The AI is generating components and should annotate them with alt-text + ARIA labels.
+- A designer wants to validate a brand color against color-vision deficiencies.
+
+## Editor
+
+Universal (Figma Design + FigJam).
+
+## Tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| [audit_contrast](/docs/tools-reference/a11y/audit_contrast) | WCAG 2.x contrast ratio for a node's text fill against its resolved background. |
+| [audit_target_size](/docs/tools-reference/a11y/audit_target_size) | WCAG 2.5.5 target-size check (24×24 minimum, 44×44 preferred). |
+| [audit_a11y_summary](/docs/tools-reference/a11y/audit_a11y_summary) | Composite recursive audit; aggregates contrast/target-size/alt-text/aria-label. |
+| [simulate_color_blindness](/docs/tools-reference/a11y/simulate_color_blindness) | Pure utility: simulate how a hex appears under protanopia/deuteranopia/tritanopia/achromatopsia. |
+| [set_alt_text](/docs/tools-reference/a11y/set_alt_text) | Write alt text (pluginData + annotation). |
+| [get_alt_text](/docs/tools-reference/a11y/get_alt_text) | Read alt text. |
+| [set_aria_label](/docs/tools-reference/a11y/set_aria_label) | Write an ARIA label (pluginData only). |
+| [get_aria_label](/docs/tools-reference/a11y/get_aria_label) | Read the ARIA label. |
+| [set_landmark_role](/docs/tools-reference/a11y/set_landmark_role) | Tag a node with a WAI-ARIA landmark role. |
+| [get_landmark_role](/docs/tools-reference/a11y/get_landmark_role) | Read the landmark role tag. |
+| [list_annotations](/docs/tools-reference/a11y/list_annotations) | List a node's annotations. |
+| [add_annotation](/docs/tools-reference/a11y/add_annotation) | Append an annotation. |
+| [remove_annotation](/docs/tools-reference/a11y/remove_annotation) | Remove an annotation by index. |
+
+## WCAG version
+
+Phase 13 ships against WCAG 2.2:
+
+- AA contrast: 4.5:1 normal text, 3:1 large text.
+- AAA contrast: 7:1 normal text, 4.5:1 large text.
+- Target size: 24×24 CSS px minimum, 44×44 preferred (SC 2.5.5).
+
+APCA / WCAG 3.0 are not yet in scope.
+
+## Recipes using this pack
+
+- [Audit a frame's accessibility](/docs/recipes/audit-accessibility)
+- [Document components](/docs/recipes/document-components)
