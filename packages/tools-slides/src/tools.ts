@@ -184,3 +184,85 @@ export const DeleteSlide = defineTool({
     deleted: z.literal(true),
   }),
 });
+
+const SlideTransitionSummary = z.object({
+  style: SlideTransitionStyleEnum,
+  durationSec: NonNegativeNumber,
+  curve: SlideTransitionCurveEnum,
+});
+
+export const ListSlides = defineTool({
+  name: "list_slides",
+  description:
+    "Slides-only. Enumerate slide ids. With no rowIndex, returns every slide; with a rowIndex, returns just that row's slides.",
+  streaming: false,
+  input: z
+    .object({
+      rowIndex: NonNegativeInt.optional(),
+    })
+    .strict(),
+  output: z.object({
+    nodeIds: z.array(z.string()),
+    count: NonNegativeInt,
+  }),
+});
+
+export const ListSlideRows = defineTool({
+  name: "list_slide_rows",
+  description: "Slides-only. Enumerate slide row ids in grid order.",
+  streaming: false,
+  input: z.object({}).strict(),
+  output: z.object({
+    rowIds: z.array(z.string()),
+    count: NonNegativeInt,
+  }),
+});
+
+export const SetActiveSlide = defineTool({
+  name: "set_active_slide",
+  description:
+    "Slides-only. Focus a slide (writes figma.currentPage.focusedSlide). Note: the plugin API has no scrollAndZoomIntoSlide; assigning focusedSlide is the only way to programmatically focus a slide.",
+  streaming: false,
+  input: z.object({ slideId: z.string().min(1) }).strict(),
+  output: z.object({ slideId: z.string() }),
+});
+
+export const GetSlide = defineTool({
+  name: "get_slide",
+  description:
+    "Slides-only. Return a structured summary of a slide: name, isSkipped, transition, isFirst.",
+  streaming: false,
+  input: z.object({ slideId: z.string().min(1) }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    type: z.literal("SLIDE"),
+    name: z.string(),
+    isSkipped: z.boolean(),
+    isFirst: z.boolean(),
+    transition: SlideTransitionSummary,
+  }),
+});
+
+export const SetSlidesView = defineTool({
+  name: "set_slides_view",
+  description:
+    "Slides-only. Toggle the editor viewport mode. 'grid' shows the whole grid; 'single-slide' zooms in on the focused slide.",
+  streaming: false,
+  input: z
+    .object({
+      view: z.enum(["grid", "single-slide"]),
+    })
+    .strict(),
+  output: z.object({ view: z.enum(["grid", "single-slide"]) }),
+});
+
+export const GetSlideGrid = defineTool({
+  name: "get_slide_grid",
+  description:
+    "Slides-only. Return the full slide grid as a 2D array of slide ids (outer index = row).",
+  streaming: false,
+  input: z.object({}).strict(),
+  output: z.object({
+    grid: z.array(z.array(z.string())),
+  }),
+});

@@ -4,10 +4,16 @@ import {
   CreateSlideRow,
   DeleteSlide,
   DuplicateSlide,
+  GetSlide,
+  GetSlideGrid,
+  ListSlideRows,
+  ListSlides,
   MoveSlide,
+  SetActiveSlide,
   SetSlideBackground,
   SetSlideName,
   SetSlideSkipped,
+  SetSlidesView,
   SetSlideTransition,
 } from "../tools";
 
@@ -262,5 +268,83 @@ describe("DeleteSlide schema", () => {
 
   it("output is {deleted: true}", () => {
     expect(DeleteSlide.output.safeParse({ slideId: "sld1", deleted: true }).success).toBe(true);
+  });
+});
+
+describe("ListSlides schema", () => {
+  it("accepts an empty object (lists everything)", () => {
+    expect(ListSlides.input.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts a rowIndex (lists a single row)", () => {
+    expect(ListSlides.input.safeParse({ rowIndex: 0 }).success).toBe(true);
+  });
+
+  it("rejects negative rowIndex", () => {
+    expect(ListSlides.input.safeParse({ rowIndex: -1 }).success).toBe(false);
+  });
+
+  it("output returns nodeIds + count", () => {
+    expect(ListSlides.output.safeParse({ nodeIds: ["sld1"], count: 1 }).success).toBe(true);
+  });
+});
+
+describe("ListSlideRows schema", () => {
+  it("accepts an empty object", () => {
+    expect(ListSlideRows.input.safeParse({}).success).toBe(true);
+  });
+
+  it("output returns rowIds + count", () => {
+    expect(ListSlideRows.output.safeParse({ rowIds: ["slr1"], count: 1 }).success).toBe(true);
+  });
+});
+
+describe("SetActiveSlide schema", () => {
+  it("requires slideId", () => {
+    expect(SetActiveSlide.input.safeParse({ slideId: "sld1" }).success).toBe(true);
+    expect(SetActiveSlide.input.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("GetSlide schema", () => {
+  it("requires slideId", () => {
+    expect(GetSlide.input.safeParse({ slideId: "sld1" }).success).toBe(true);
+  });
+
+  it("output captures name, isSkipped, transition, isFirst", () => {
+    expect(
+      GetSlide.output.safeParse({
+        nodeId: "sld1",
+        type: "SLIDE",
+        name: "Intro",
+        isSkipped: false,
+        isFirst: true,
+        transition: { style: "NONE", durationSec: 0.3, curve: "EASE_IN_AND_OUT" },
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("SetSlidesView schema", () => {
+  it("accepts 'grid' and 'single-slide'", () => {
+    expect(SetSlidesView.input.safeParse({ view: "grid" }).success).toBe(true);
+    expect(SetSlidesView.input.safeParse({ view: "single-slide" }).success).toBe(true);
+  });
+
+  it("rejects other values", () => {
+    expect(SetSlidesView.input.safeParse({ view: "thumbnail" }).success).toBe(false);
+  });
+});
+
+describe("GetSlideGrid schema", () => {
+  it("accepts an empty object", () => {
+    expect(GetSlideGrid.input.safeParse({}).success).toBe(true);
+  });
+
+  it("output is grid: string[][]", () => {
+    expect(GetSlideGrid.output.safeParse({ grid: [["sld1", "sld2"], ["sld3"]] }).success).toBe(
+      true
+    );
+    expect(GetSlideGrid.output.safeParse({ grid: [] }).success).toBe(true);
   });
 });

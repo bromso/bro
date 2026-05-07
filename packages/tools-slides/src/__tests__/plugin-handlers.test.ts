@@ -5,10 +5,16 @@ import {
   createSlideRowPluginHandler,
   deleteSlidePluginHandler,
   duplicateSlidePluginHandler,
+  getSlideGridPluginHandler,
+  getSlidePluginHandler,
+  listSlideRowsPluginHandler,
+  listSlidesPluginHandler,
   moveSlidePluginHandler,
+  setActiveSlidePluginHandler,
   setSlideBackgroundPluginHandler,
   setSlideNamePluginHandler,
   setSlideSkippedPluginHandler,
+  setSlidesViewPluginHandler,
   setSlideTransitionPluginHandler,
 } from "../plugin-handlers";
 
@@ -238,5 +244,115 @@ describe("deleteSlidePluginHandler", () => {
     await expect(deleteSlidePluginHandler({ slideId: "missing" }, ctx)).rejects.toThrow(
       /not found/i
     );
+  });
+});
+
+describe("listSlidesPluginHandler", () => {
+  it("returns every slide id when rowIndex is omitted", async () => {
+    const ctx = slidesCtx();
+    const a = await ctx.figma.createSlide({});
+    const b = await ctx.figma.createSlide({});
+    const out = await listSlidesPluginHandler({}, ctx);
+    expect(out.nodeIds).toEqual(expect.arrayContaining([a.id, b.id]));
+    expect(out.count).toBeGreaterThanOrEqual(2);
+  });
+
+  it("returns slides in a single row when rowIndex is supplied", async () => {
+    const ctx = slidesCtx();
+    await ctx.figma.createSlideRow({});
+    const a = await ctx.figma.createSlide({ rowIndex: 0 });
+    const out = await listSlidesPluginHandler({ rowIndex: 0 }, ctx);
+    expect(out.nodeIds).toContain(a.id);
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(listSlidesPluginHandler({}, figmaCtx())).rejects.toThrow(
+      /E_FIGMA_EDITOR_TYPE_MISMATCH/
+    );
+  });
+});
+
+describe("listSlideRowsPluginHandler", () => {
+  it("returns row ids in order", async () => {
+    const ctx = slidesCtx();
+    const r0 = await ctx.figma.createSlideRow({});
+    const r1 = await ctx.figma.createSlideRow({});
+    const out = await listSlideRowsPluginHandler({}, ctx);
+    expect(out.rowIds).toEqual(expect.arrayContaining([r0.id, r1.id]));
+  });
+});
+
+describe("setActiveSlidePluginHandler", () => {
+  it("focuses a slide", async () => {
+    const ctx = slidesCtx();
+    const a = await ctx.figma.createSlide({});
+    const out = await setActiveSlidePluginHandler({ slideId: a.id }, ctx);
+    expect(out).toEqual({ slideId: a.id });
+    expect(await ctx.figma.getActiveSlideId()).toBe(a.id);
+  });
+
+  it("rejects unknown slideId", async () => {
+    const ctx = slidesCtx();
+    await expect(setActiveSlidePluginHandler({ slideId: "missing" }, ctx)).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("getSlidePluginHandler", () => {
+  it("returns structured summary for the slide", async () => {
+    const ctx = slidesCtx();
+    const a = await ctx.figma.createSlide({ name: "Intro" });
+    await ctx.figma.setSlideTransition({
+      slideId: a.id,
+      style: "DISSOLVE",
+      durationSec: 0.5,
+    });
+    const out = await getSlidePluginHandler({ slideId: a.id }, ctx);
+    expect(out.nodeId).toBe(a.id);
+    expect(out.name).toBe("Intro");
+    expect(out.isSkipped).toBe(false);
+    expect(out.transition.style).toBe("DISSOLVE");
+    expect(out.transition.durationSec).toBe(0.5);
+    expect(out.isFirst).toBe(true);
+  });
+
+  it("flags isFirst correctly when the slide is not the first", async () => {
+    const ctx = slidesCtx();
+    await ctx.figma.createSlide({});
+    const b = await ctx.figma.createSlide({});
+    const out = await getSlidePluginHandler({ slideId: b.id }, ctx);
+    expect(out.isFirst).toBe(false);
+  });
+
+  it("rejects unknown slideId", async () => {
+    const ctx = slidesCtx();
+    await expect(getSlidePluginHandler({ slideId: "missing" }, ctx)).rejects.toThrow(
+      /expected slide node|not found/i
+    );
+  });
+});
+
+describe("setSlidesViewPluginHandler", () => {
+  it("sets the viewport mode", async () => {
+    const ctx = slidesCtx();
+    await setSlidesViewPluginHandler({ view: "single-slide" }, ctx);
+    expect(await ctx.figma.getSlidesView()).toBe("single-slide");
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(setSlidesViewPluginHandler({ view: "grid" }, figmaCtx())).rejects.toThrow(
+      /E_FIGMA_EDITOR_TYPE_MISMATCH/
+    );
+  });
+});
+
+describe("getSlideGridPluginHandler", () => {
+  it("returns the 2D grid of slide ids", async () => {
+    const ctx = slidesCtx();
+    await ctx.figma.createSlideRow({});
+    const a = await ctx.figma.createSlide({ rowIndex: 0 });
+    const out = await getSlideGridPluginHandler({}, ctx);
+    expect(out.grid.flat()).toContain(a.id);
   });
 });
