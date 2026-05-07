@@ -4,7 +4,9 @@ import {
   createCodeBlockPluginHandler,
   createConnectorPluginHandler,
   createSectionPluginHandler,
+  createShapeWithTextPluginHandler,
   createStickyPluginHandler,
+  createTablePluginHandler,
 } from "../plugin-handlers";
 
 const noopLogger = { debug() {}, info() {}, warn() {}, error() {} };
@@ -116,6 +118,51 @@ describe("createCodeBlockPluginHandler", () => {
   it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
     await expect(
       createCodeBlockPluginHandler({ code: "x", language: "plaintext" }, figmaCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("createShapeWithTextPluginHandler", () => {
+  it("creates a SHAPE_WITH_TEXT with the given variant + content", async () => {
+    const ctx = figJamCtx();
+    const out = await createShapeWithTextPluginHandler(
+      { shape: "diamond", content: "Decide", width: 100, height: 80 },
+      ctx
+    );
+    expect(out.type).toBe("SHAPE_WITH_TEXT");
+    expect(out.nodeId).toMatch(/^swt/);
+    const node = await ctx.figma.getNodeById({ nodeId: out.nodeId });
+    expect((node as { shape?: string }).shape).toBe("diamond");
+    expect((node as { content?: string }).content).toBe("Decide");
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      createShapeWithTextPluginHandler(
+        { shape: "square", content: "X", width: 10, height: 10 },
+        figmaCtx()
+      )
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("createTablePluginHandler", () => {
+  it("creates a TABLE with the given grid", async () => {
+    const ctx = figJamCtx();
+    const out = await createTablePluginHandler(
+      { rows: 3, columns: 4, width: 400, height: 300 },
+      ctx
+    );
+    expect(out.type).toBe("TABLE");
+    expect(out.nodeId).toMatch(/^tbl/);
+    const node = await ctx.figma.getNodeById({ nodeId: out.nodeId });
+    expect((node as { rows?: number }).rows).toBe(3);
+    expect((node as { columns?: number }).columns).toBe(4);
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      createTablePluginHandler({ rows: 1, columns: 1, width: 10, height: 10 }, figmaCtx())
     ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
   });
 });

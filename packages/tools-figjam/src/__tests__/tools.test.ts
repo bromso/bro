@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CreateCodeBlock, CreateConnector, CreateSection, CreateSticky } from "../tools";
+import {
+  CreateCodeBlock,
+  CreateConnector,
+  CreateSection,
+  CreateShapeWithText,
+  CreateSticky,
+  CreateTable,
+} from "../tools";
 
 describe("CreateSticky schema", () => {
   it("accepts content with optional authorName + placement", () => {
@@ -95,5 +102,95 @@ describe("CreateCodeBlock schema", () => {
   it("language defaults to 'plaintext'", () => {
     const r = CreateCodeBlock.input.parse({ code: "x" });
     expect(r.language).toBe("plaintext");
+  });
+});
+
+describe("CreateShapeWithText schema", () => {
+  it("accepts each known shape variant", () => {
+    const variants = [
+      "square",
+      "ellipse",
+      "rounded_rectangle",
+      "diamond",
+      "triangle_up",
+      "triangle_down",
+      "parallelogram_right",
+      "parallelogram_left",
+    ];
+    for (const shape of variants) {
+      expect(
+        CreateShapeWithText.input.safeParse({
+          shape,
+          content: "X",
+          width: 100,
+          height: 100,
+        }).success
+      ).toBe(true);
+    }
+  });
+
+  it("rejects unknown shape values", () => {
+    expect(
+      CreateShapeWithText.input.safeParse({
+        shape: "hexagon",
+        content: "X",
+        width: 100,
+        height: 100,
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects empty content", () => {
+    expect(
+      CreateShapeWithText.input.safeParse({
+        shape: "square",
+        content: "",
+        width: 100,
+        height: 100,
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("CreateTable schema", () => {
+  it("requires positive integer rows + columns", () => {
+    expect(
+      CreateTable.input.safeParse({
+        rows: 3,
+        columns: 4,
+        width: 400,
+        height: 300,
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects zero or negative rows/columns", () => {
+    expect(
+      CreateTable.input.safeParse({
+        rows: 0,
+        columns: 4,
+        width: 100,
+        height: 100,
+      }).success
+    ).toBe(false);
+    expect(
+      CreateTable.input.safeParse({
+        rows: 3,
+        columns: -1,
+        width: 100,
+        height: 100,
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-integer rows/columns", () => {
+    expect(
+      CreateTable.input.safeParse({
+        rows: 1.5,
+        columns: 4,
+        width: 100,
+        height: 100,
+      }).success
+    ).toBe(false);
   });
 });

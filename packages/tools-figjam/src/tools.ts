@@ -65,3 +65,49 @@ export const CreateCodeBlock = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("CODE_BLOCK") }),
 });
+
+const ShapeWithTextShape = z.enum([
+  "square",
+  "ellipse",
+  "rounded_rectangle",
+  "diamond",
+  "triangle_up",
+  "triangle_down",
+  "parallelogram_right",
+  "parallelogram_left",
+]);
+
+export const CreateShapeWithText = defineTool({
+  name: "create_shape_with_text",
+  description:
+    "FigJam-only. Create a labeled shape (sticky-note-like surface with a fixed silhouette).",
+  streaming: false,
+  input: z
+    .object({
+      shape: ShapeWithTextShape,
+      content: z.string().min(1),
+      x: z.number().optional(),
+      y: z.number().optional(),
+      width: PositiveDimension,
+      height: PositiveDimension,
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("SHAPE_WITH_TEXT") }),
+});
+
+export const CreateTable = defineTool({
+  name: "create_table",
+  description: "FigJam-only. Create a table with the given row + column count.",
+  streaming: false,
+  input: z
+    .object({
+      rows: z.number().int().positive(),
+      columns: z.number().int().positive(),
+      x: z.number().optional(),
+      y: z.number().optional(),
+      width: PositiveDimension,
+      height: PositiveDimension,
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("TABLE") }),
+});

@@ -1,5 +1,12 @@
 import type { PluginHandler } from "@repo/protocol";
-import type { CreateCodeBlock, CreateConnector, CreateSection, CreateSticky } from "./tools";
+import type {
+  CreateCodeBlock,
+  CreateConnector,
+  CreateSection,
+  CreateShapeWithText,
+  CreateSticky,
+  CreateTable,
+} from "./tools";
 
 const E_MISMATCH = "E_FIGMA_EDITOR_TYPE_MISMATCH";
 
@@ -58,4 +65,44 @@ export const createCodeBlockPluginHandler: PluginHandler<typeof CreateCodeBlock>
     y: args.y,
   });
   return { nodeId: node.id, type: "CODE_BLOCK" };
+};
+
+export const createShapeWithTextPluginHandler: PluginHandler<typeof CreateShapeWithText> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "figjam") {
+    throw new Error(
+      `${E_MISMATCH}: create_shape_with_text requires editorType=figjam (got ${figma.editorType})`
+    );
+  }
+  const node = await figma.createShapeWithText({
+    shape: args.shape,
+    content: args.content,
+    x: args.x,
+    y: args.y,
+    width: args.width,
+    height: args.height,
+  });
+  return { nodeId: node.id, type: "SHAPE_WITH_TEXT" };
+};
+
+export const createTablePluginHandler: PluginHandler<typeof CreateTable> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "figjam") {
+    throw new Error(
+      `${E_MISMATCH}: create_table requires editorType=figjam (got ${figma.editorType})`
+    );
+  }
+  const node = await figma.createTable({
+    rows: args.rows,
+    columns: args.columns,
+    x: args.x,
+    y: args.y,
+    width: args.width,
+    height: args.height,
+  });
+  return { nodeId: node.id, type: "TABLE" };
 };
