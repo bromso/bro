@@ -3,9 +3,11 @@ title: Troubleshooting
 description: Common failure modes, what they mean, and how to fix them. Mirrors `figma-mcp doctor` check IDs.
 ---
 
+For a flat reference of every E_* code, see [Error codes](/docs/reference/error-codes).
+
 ## Doctor checks
 
-`figma-mcp doctor` runs five parallel health checks. Each entry below maps to one check ID; clicking through from doctor's output lands here.
+`figma-mcp doctor` runs six parallel health checks. Each entry below maps to one check ID; clicking through from doctor's output lands here.
 
 ### `daemon-liveness` (stale lockfile / dead daemon)
 
@@ -30,6 +32,21 @@ description: Common failure modes, what they mean, and how to fix them. Mirrors 
 **Symptom.** Doctor reports `recent-errors: error — 3 errors in the last 60s`.
 **Cause.** The daemon is hitting an unhandled error path — usually a transport disconnect, occasionally a tool-handler crash.
 **Fix.** Inspect `~/.figma-mcp/daemon.log` (the last 60s window). If the error is `ECONNRESET`, the bridge plugin disconnected — restart it. Otherwise, file an issue with the log excerpt.
+
+### `figma-api-key` (REST tools won't work)
+
+**Symptom.** Doctor reports `figma-api-key: warn — FIGMA_API_KEY not set`.
+
+**Cause.** The daemon was started without `FIGMA_API_KEY` in its environment. The 20 tools in the [rest pack](/docs/tools/rest) won't function — they return `E_FIGMA_API_KEY_MISSING` per call.
+
+**Fix.** Set the env var before starting the daemon:
+
+```bash
+export FIGMA_API_KEY=figd_…
+figma-mcp doctor   # re-check
+```
+
+The check is a `warn`, not an `error` — the daemon boots fine without the key; only the REST pack is gated.
 
 ### `socket-conflict` (port/socket already taken)
 
