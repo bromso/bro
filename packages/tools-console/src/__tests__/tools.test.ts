@@ -52,6 +52,11 @@ describe("QueryConsole schema", () => {
   it("rejects empty pattern", () => {
     expect(QueryConsole.input.safeParse({ pattern: "" }).success).toBe(false);
   });
+
+  it("rejects pattern longer than 200 characters (Phase 14 DoS guard)", () => {
+    expect(QueryConsole.input.safeParse({ pattern: "a".repeat(200) }).success).toBe(true);
+    expect(QueryConsole.input.safeParse({ pattern: "a".repeat(201) }).success).toBe(false);
+  });
 });
 
 describe("ConsoleStatus schema", () => {

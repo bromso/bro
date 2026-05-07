@@ -44,6 +44,14 @@ export const getConsoleWarningsPluginHandler: PluginHandler<typeof GetConsoleWar
     .map((e) => ({ level: e.level, message: e.message, timestamp: e.timestamp })),
 });
 
+// Phase 14 hardening (Phase 8 reviewer flag): cap each message at this
+// length before running the regex. The pattern itself is bounded to 200
+// chars by the Zod schema; combined with this input cap, even pathological
+// "catastrophic backtracking" patterns finish in ms-scale time. The full
+// message is still returned in the output — only the matching surface is
+// truncated.
+const QUERY_CONSOLE_MESSAGE_TEST_CAP = 1000;
+
 export const queryConsolePluginHandler: PluginHandler<typeof QueryConsole> = async (args) => {
   let regex: RegExp;
   try {
@@ -52,7 +60,7 @@ export const queryConsolePluginHandler: PluginHandler<typeof QueryConsole> = asy
     throw new Error(`invalid regex: ${(err as Error).message}`);
   }
   const all = requireStore().getRecent({});
-  const matched = all.filter((e) => regex.test(e.message));
+  const matched = all.filter((e) => regex.test(e.message.slice(0, QUERY_CONSOLE_MESSAGE_TEST_CAP)));
   const limit = args.limit ?? matched.length;
   return {
     entries: matched
