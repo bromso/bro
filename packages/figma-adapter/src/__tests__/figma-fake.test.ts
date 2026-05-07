@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { SolidPaint } from "../adapter";
 import { FigmaFake } from "../figma-fake";
 
 describe("FigmaFake.getLocalVariablesAsync", () => {
@@ -765,5 +766,443 @@ describe("FigmaFake.listSectionChildren", () => {
     await expect(fake.listSectionChildren({ sectionId: "missing" })).rejects.toThrow(
       /section.*not found/i
     );
+  });
+});
+
+// ---- Phase 12: Slides ----
+
+describe("FigmaFake.createSlide", () => {
+  it("creates a SLIDE node with a sld-prefixed id and appends to the last row", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    const b = await fake.createSlide({});
+    expect(a.type).toBe("SLIDE");
+    expect(a.id).toMatch(/^sld/);
+    expect(a.id).not.toBe(b.id);
+    const grid = await fake.getSlideGrid();
+    expect(grid.length).toBeGreaterThan(0);
+    expect(grid[grid.length - 1]).toContain(a.id);
+  });
+
+  it("respects optional name", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({ name: "Intro" });
+    expect(slide.name).toBe("Intro");
+  });
+
+  it("places at (rowIndex, columnIndex) when supplied", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await fake.createSlideRow({}); // ensure row 0 + row 1 exist
+    await fake.createSlideRow({});
+    const slide = await fake.createSlide({ rowIndex: 1, columnIndex: 0 });
+    const grid = await fake.getSlideGrid();
+    expect(grid[1][0]).toBe(slide.id);
+  });
+
+  it("auto-extends the grid when rowIndex exceeds existing rows", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({ rowIndex: 5 });
+    const grid = await fake.getSlideGrid();
+    expect(grid.length).toBeGreaterThanOrEqual(6);
+    expect(grid[5]).toContain(slide.id);
+  });
+
+  it("rejects an out-of-range columnIndex", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.createSlide({ columnIndex: 99 })).rejects.toThrow(
+      /columnIndex out of range/i
+    );
+  });
+});
+
+describe("FigmaFake.createSlideRow", () => {
+  it("creates a SLIDE_ROW node with a slr-prefixed id, appended at the end", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const r = await fake.createSlideRow({});
+    expect(r.type).toBe("SLIDE_ROW");
+    expect(r.id).toMatch(/^slr/);
+    const rows = await fake.listSlideRows();
+    expect(rows[rows.length - 1]).toBe(r.id);
+  });
+
+  it("inserts at a given rowIndex when supplied", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await fake.createSlideRow({});
+    await fake.createSlideRow({});
+    const r = await fake.createSlideRow({ rowIndex: 0 });
+    const rows = await fake.listSlideRows();
+    expect(rows[0]).toBe(r.id);
+  });
+
+  it("rejects a rowIndex out of range", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.createSlideRow({ rowIndex: 99 })).rejects.toThrow(/rowIndex out of range/i);
+  });
+});
+
+describe("FigmaFake.setSlideName", () => {
+  it("rewrites the name of an existing slide", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({ name: "Old" });
+    await fake.setSlideName({ slideId: slide.id, name: "New" });
+    const node = await fake.getNodeById({ nodeId: slide.id });
+    expect((node as { name?: string }).name).toBe("New");
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.setSlideName({ slideId: row.id, name: "X" })).rejects.toThrow(/SLIDE/i);
+  });
+
+  it("rejects unknown slideId", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.setSlideName({ slideId: "missing", name: "X" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("FigmaFake.setSlideSkipped", () => {
+  it("toggles isSkippedSlide", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({});
+    await fake.setSlideSkipped({ slideId: slide.id, skipped: true });
+    const node = await fake.getNodeById({ nodeId: slide.id });
+    expect((node as { isSkipped?: boolean }).isSkipped).toBe(true);
+    await fake.setSlideSkipped({ slideId: slide.id, skipped: false });
+    const node2 = await fake.getNodeById({ nodeId: slide.id });
+    expect((node2 as { isSkipped?: boolean }).isSkipped).toBe(false);
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.setSlideSkipped({ slideId: row.id, skipped: true })).rejects.toThrow(
+      /SLIDE/i
+    );
+  });
+
+  it("rejects unknown slideId", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.setSlideSkipped({ slideId: "missing", skipped: true })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("FigmaFake.setSlideTransition", () => {
+  it("stores the transition object on the slide", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({});
+    await fake.setSlideTransition({
+      slideId: slide.id,
+      style: "DISSOLVE",
+      durationSec: 0.4,
+      curve: "EASE_IN_AND_OUT",
+      timingType: "ON_CLICK",
+    });
+    const t = await fake.getSlideTransition({ slideId: slide.id });
+    expect(t.style).toBe("DISSOLVE");
+    expect(t.duration).toBe(0.4);
+    expect(t.curve).toBe("EASE_IN_AND_OUT");
+    expect(t.timing.type).toBe("ON_CLICK");
+  });
+
+  it("falls back to defaults when optional args are omitted", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({});
+    await fake.setSlideTransition({ slideId: slide.id, style: "NONE" });
+    const t = await fake.getSlideTransition({ slideId: slide.id });
+    expect(t.style).toBe("NONE");
+    expect(t.duration).toBeGreaterThan(0);
+    expect(t.curve).toBeDefined();
+    expect(t.timing.type).toBe("ON_CLICK");
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.setSlideTransition({ slideId: row.id, style: "NONE" })).rejects.toThrow(
+      /SLIDE/i
+    );
+  });
+
+  it("rejects unknown slideId", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.setSlideTransition({ slideId: "missing", style: "NONE" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("FigmaFake.getSlideTransition", () => {
+  it("returns the default transition for a fresh slide", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({});
+    const t = await fake.getSlideTransition({ slideId: slide.id });
+    expect(t.style).toBe("NONE");
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.getSlideTransition({ slideId: row.id })).rejects.toThrow(/SLIDE/i);
+  });
+
+  it("rejects unknown slideId", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.getSlideTransition({ slideId: "missing" })).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("FigmaFake.setSlideBackground", () => {
+  it("writes a SOLID paint to the slide's fills", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const slide = await fake.createSlide({});
+    await fake.setSlideBackground({
+      slideId: slide.id,
+      paint: { type: "SOLID", color: { r: 0, g: 0.5, b: 1 } },
+    });
+    const node = await fake.getNodeById({ nodeId: slide.id });
+    const fills = (node as { fills?: ReadonlyArray<SolidPaint> }).fills;
+    expect(fills?.[0]).toMatchObject({
+      type: "SOLID",
+      color: { r: 0, g: 0.5, b: 1 },
+    });
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(
+      fake.setSlideBackground({
+        slideId: row.id,
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      })
+    ).rejects.toThrow(/SLIDE/i);
+  });
+
+  it("rejects unknown slideId", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(
+      fake.setSlideBackground({
+        slideId: "missing",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("FigmaFake.moveSlide", () => {
+  it("repositions a slide within the grid", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await fake.createSlideRow({}); // row 0
+    await fake.createSlideRow({}); // row 1
+    const a = await fake.createSlide({ rowIndex: 0, columnIndex: 0 });
+    await fake.createSlide({ rowIndex: 1, columnIndex: 0 });
+    await fake.moveSlide({ slideId: a.id, rowIndex: 1, columnIndex: 1 });
+    const grid = await fake.getSlideGrid();
+    expect(grid[0]).not.toContain(a.id);
+    expect(grid[1][1]).toBe(a.id);
+  });
+
+  it("rejects unknown slide ids", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(
+      fake.moveSlide({ slideId: "missing", rowIndex: 0, columnIndex: 0 })
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.moveSlide({ slideId: row.id, rowIndex: 0, columnIndex: 0 })).rejects.toThrow(
+      /SLIDE/i
+    );
+  });
+
+  it("rejects an out-of-range rowIndex", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    await expect(fake.moveSlide({ slideId: a.id, rowIndex: 99, columnIndex: 0 })).rejects.toThrow(
+      /rowIndex out of range/i
+    );
+  });
+
+  it("rejects an out-of-range columnIndex", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    await expect(fake.moveSlide({ slideId: a.id, rowIndex: 0, columnIndex: 99 })).rejects.toThrow(
+      /columnIndex out of range/i
+    );
+  });
+});
+
+describe("FigmaFake.duplicateSlide", () => {
+  it("creates a new SLIDE with a fresh id, appended after the source", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({ name: "Intro" });
+    const dup = await fake.duplicateSlide({ slideId: a.id });
+    expect(dup.id).not.toBe(a.id);
+    expect(dup.id).toMatch(/^sld/);
+    expect(dup.type).toBe("SLIDE");
+    expect(dup.name).toBe("Intro");
+  });
+
+  it("places the duplicate immediately after the source in the same row", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    const b = await fake.createSlide({});
+    const dup = await fake.duplicateSlide({ slideId: a.id });
+    const grid = await fake.getSlideGrid();
+    const row = grid[0];
+    expect(row.indexOf(dup.id)).toBe(row.indexOf(a.id) + 1);
+    expect(row).toContain(b.id);
+  });
+
+  it("rejects unknown slide ids", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.duplicateSlide({ slideId: "missing" })).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.duplicateSlide({ slideId: row.id })).rejects.toThrow(/SLIDE/i);
+  });
+});
+
+describe("FigmaFake.deleteSlide", () => {
+  it("removes the slide from the grid + node map", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    await fake.deleteSlide({ slideId: a.id });
+    expect(await fake.getNodeById({ nodeId: a.id })).toBeNull();
+    const grid = await fake.getSlideGrid();
+    for (const row of grid) expect(row).not.toContain(a.id);
+  });
+
+  it("clears the focused slide if it was the deleted one", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    await fake.setActiveSlide({ slideId: a.id });
+    await fake.deleteSlide({ slideId: a.id });
+    expect(await fake.getActiveSlideId()).toBeNull();
+  });
+
+  it("rejects unknown slide ids", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.deleteSlide({ slideId: "missing" })).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.deleteSlide({ slideId: row.id })).rejects.toThrow(/SLIDE/i);
+  });
+});
+
+describe("FigmaFake.listSlides", () => {
+  it("returns every slide id when rowIndex is omitted", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    const b = await fake.createSlide({});
+    expect(await fake.listSlides({})).toEqual(expect.arrayContaining([a.id, b.id]));
+  });
+
+  it("returns the slides in a single row when rowIndex is supplied", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await fake.createSlideRow({});
+    const a = await fake.createSlide({ rowIndex: 0, columnIndex: 0 });
+    const b = await fake.createSlide({ rowIndex: 0, columnIndex: 1 });
+    const c = await fake.createSlide({ rowIndex: 1, columnIndex: 0 });
+    expect(await fake.listSlides({ rowIndex: 0 })).toEqual([a.id, b.id]);
+    expect(await fake.listSlides({ rowIndex: 1 })).toEqual([c.id]);
+  });
+
+  it("rejects an out-of-range rowIndex", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.listSlides({ rowIndex: 99 })).rejects.toThrow(/row.*not found/i);
+  });
+});
+
+describe("FigmaFake.listSlideRows", () => {
+  it("returns row ids in grid order", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const r0 = await fake.createSlideRow({});
+    const r1 = await fake.createSlideRow({});
+    const rows = await fake.listSlideRows();
+    expect(rows).toEqual(expect.arrayContaining([r0.id, r1.id]));
+    expect(rows.indexOf(r0.id)).toBeLessThan(rows.indexOf(r1.id));
+  });
+
+  it("returns an empty list on a fresh instance", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    expect(await fake.listSlideRows()).toEqual([]);
+  });
+});
+
+describe("FigmaFake.setActiveSlide", () => {
+  it("records the focused slide id", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    await fake.setActiveSlide({ slideId: a.id });
+    expect(await fake.getActiveSlideId()).toBe(a.id);
+  });
+
+  it("rejects unknown ids", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await expect(fake.setActiveSlide({ slideId: "missing" })).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects non-slide nodes", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const row = await fake.createSlideRow({});
+    await expect(fake.setActiveSlide({ slideId: row.id })).rejects.toThrow(/SLIDE/i);
+  });
+});
+
+describe("FigmaFake.getActiveSlideId", () => {
+  it("returns null on a fresh instance", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    expect(await fake.getActiveSlideId()).toBeNull();
+  });
+});
+
+describe("FigmaFake.setSlidesView", () => {
+  it("toggles between grid and single-slide", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    await fake.setSlidesView({ view: "single-slide" });
+    expect(await fake.getSlidesView()).toBe("single-slide");
+    await fake.setSlidesView({ view: "grid" });
+    expect(await fake.getSlidesView()).toBe("grid");
+  });
+});
+
+describe("FigmaFake.getSlidesView", () => {
+  it("defaults to grid", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    expect(await fake.getSlidesView()).toBe("grid");
+  });
+});
+
+describe("FigmaFake.getSlideGrid", () => {
+  it("returns a 2D array of slide ids", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    const grid = await fake.getSlideGrid();
+    expect(Array.isArray(grid)).toBe(true);
+    expect(Array.isArray(grid[0])).toBe(true);
+    expect(grid.flat()).toContain(a.id);
+  });
+
+  it("returns a defensive copy (mutating the result does not change adapter state)", async () => {
+    const fake = new FigmaFake({ editorType: "slides" });
+    const a = await fake.createSlide({});
+    const grid = await fake.getSlideGrid();
+    (grid as string[][])[0].length = 0;
+    const fresh = await fake.getSlideGrid();
+    expect(fresh.flat()).toContain(a.id);
   });
 });

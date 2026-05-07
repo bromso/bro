@@ -15,6 +15,13 @@ import type {
   SectionNode,
   ShapeWithTextNode,
   ShapeWithTextShape,
+  SlideNode,
+  SlideRowNode,
+  SlidesView,
+  SlideTransition,
+  SlideTransitionCurve,
+  SlideTransitionStyle,
+  SlideTransitionTimingType,
   SolidPaint,
   StickyNode,
   TableNode,
@@ -145,6 +152,23 @@ interface MutableTableNode {
   height: number;
 }
 
+interface MutableSlideNode {
+  id: string;
+  type: "SLIDE";
+  name: string;
+  isSkipped: boolean;
+  fills: SolidPaint[];
+  width: number;
+  height: number;
+  transition: SlideTransition;
+}
+
+interface MutableSlideRowNode {
+  id: string;
+  type: "SLIDE_ROW";
+  name: string;
+}
+
 type AnyMutableNode =
   | MutableRectangleNode
   | MutableFrameNode
@@ -156,9 +180,19 @@ type AnyMutableNode =
   | MutableConnectorNode
   | MutableCodeBlockNode
   | MutableShapeWithTextNode
-  | MutableTableNode;
+  | MutableTableNode
+  | MutableSlideNode
+  | MutableSlideRowNode;
 
 const DEFAULT_STICKY_SIZE = 200;
+const DEFAULT_SLIDE_WIDTH = 1920;
+const DEFAULT_SLIDE_HEIGHT = 1080;
+const DEFAULT_TRANSITION: SlideTransition = {
+  style: "NONE",
+  duration: 0.3,
+  curve: "EASE_IN_AND_OUT",
+  timing: { type: "ON_CLICK" },
+};
 
 export interface FigmaFakeOptions {
   readonly editorType?: EditorType;
@@ -193,6 +227,14 @@ export class FigmaFake implements FigmaAdapter {
   private codeBlockCounter = 0;
   private shapeWithTextCounter = 0;
   private tableCounter = 0;
+  private slideCounter = 0;
+  private slideRowCounter = 0;
+  /** 2D array of slide ids; outer index is row, inner is column. */
+  private readonly slideGrid: string[][] = [];
+  /** Ordered list of row node ids matching slideGrid's outer index. */
+  private readonly slideRowIds: string[] = [];
+  private focusedSlideId: string | null = null;
+  private slidesView: SlidesView = "grid";
 
   constructor(options: FigmaFakeOptions = {}) {
     this._editorType = options.editorType ?? "figma";
@@ -457,7 +499,7 @@ export class FigmaFake implements FigmaAdapter {
     if (node.type === "LINE" || node.type === "TEXT" || node.type === "CONNECTOR") {
       throw new Error(`node is not resizable via width/height: ${args.nodeId}`);
     }
-    if (node.type === "CODE_BLOCK") {
+    if (node.type === "CODE_BLOCK" || node.type === "SLIDE_ROW") {
       throw new Error(`node is not resizable via width/height: ${args.nodeId}`);
     }
     node.width = args.width;
@@ -681,6 +723,263 @@ export class FigmaFake implements FigmaAdapter {
     return [...section.children];
   }
 
+  // ---- Phase 12: Slides node creation, mutation, and grid management ----
+
+  async createSlide(args: {
+    name?: string;
+    rowIndex?: number;
+    columnIndex?: number;
+  }): Promise<SlideNode> {
+    const id = `sld${++this.slideCounter}`;
+    const mutable: MutableSlideNode = {
+      id,
+      type: "SLIDE",
+      name: args.name ?? `Slide ${this.slideCounter}`,
+      isSkipped: false,
+      fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+      width: DEFAULT_SLIDE_WIDTH,
+      height: DEFAULT_SLIDE_HEIGHT,
+      transition: DEFAULT_TRANSITION,
+    };
+    this.allNodes.set(id, mutable);
+
+    // Ensure at least one row exists.
+    if (this.slideRowIds.length === 0) {
+      this.appendInternalSlideRow();
+    }
+
+    const row = args.rowIndex ?? this.slideGrid.length - 1;
+    // Auto-extend if rowIndex points past the end.
+    while (this.slideGrid.length <= row) {
+      this.appendInternalSlideRow();
+    }
+
+    const col = args.columnIndex ?? this.slideGrid[row].length;
+    if (col < 0 || col > this.slideGrid[row].length) {
+      throw new Error(`columnIndex out of range: ${col}`);
+    }
+    this.slideGrid[row].splice(col, 0, id);
+
+    return this.snapshotSlide(mutable);
+  }
+
+  async createSlideRow(args: { rowIndex?: number }): Promise<SlideRowNode> {
+    const id = `slr${++this.slideRowCounter}`;
+    const mutable: MutableSlideRowNode = {
+      id,
+      type: "SLIDE_ROW",
+      name: `Row ${this.slideRowCounter}`,
+    };
+    this.allNodes.set(id, mutable);
+
+    const insertAt = args.rowIndex ?? this.slideRowIds.length;
+    if (insertAt < 0 || insertAt > this.slideRowIds.length) {
+      throw new Error(`rowIndex out of range: ${insertAt}`);
+    }
+    this.slideRowIds.splice(insertAt, 0, id);
+    this.slideGrid.splice(insertAt, 0, []);
+
+    return { id, type: "SLIDE_ROW", name: mutable.name };
+  }
+
+  async setSlideName(args: { slideId: string; name: string }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    node.name = args.name;
+  }
+
+  async setSlideSkipped(args: { slideId: string; skipped: boolean }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    node.isSkipped = args.skipped;
+  }
+
+  async setSlideTransition(args: {
+    slideId: string;
+    style: SlideTransitionStyle;
+    durationSec?: number;
+    curve?: SlideTransitionCurve;
+    timingType?: SlideTransitionTimingType;
+    timingDelaySec?: number;
+  }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    node.transition = {
+      style: args.style,
+      duration: args.durationSec ?? DEFAULT_TRANSITION.duration,
+      curve: args.curve ?? DEFAULT_TRANSITION.curve,
+      timing: {
+        type: args.timingType ?? "ON_CLICK",
+        delay: args.timingDelaySec,
+      },
+    };
+  }
+
+  async getSlideTransition(args: { slideId: string }): Promise<SlideTransition> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    return {
+      style: node.transition.style,
+      duration: node.transition.duration,
+      curve: node.transition.curve,
+      timing: { ...node.transition.timing },
+    };
+  }
+
+  async setSlideBackground(args: { slideId: string; paint: SolidPaint }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    node.fills = [args.paint];
+  }
+
+  async moveSlide(args: { slideId: string; rowIndex: number; columnIndex: number }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    // Validate target before mutating.
+    if (args.rowIndex < 0 || args.rowIndex >= this.slideGrid.length) {
+      throw new Error(`rowIndex out of range: ${args.rowIndex}`);
+    }
+    // Compute target's current capacity excluding the node being moved
+    // (so a move within the same row can still land at the original
+    // tail position).
+    const targetRow = this.slideGrid[args.rowIndex];
+    const targetSizeAfterRemoval =
+      targetRow.indexOf(args.slideId) >= 0 ? targetRow.length - 1 : targetRow.length;
+    if (args.columnIndex < 0 || args.columnIndex > targetSizeAfterRemoval) {
+      throw new Error(`columnIndex out of range: ${args.columnIndex}`);
+    }
+    // Remove from current location.
+    for (const row of this.slideGrid) {
+      const idx = row.indexOf(args.slideId);
+      if (idx >= 0) row.splice(idx, 1);
+    }
+    targetRow.splice(args.columnIndex, 0, args.slideId);
+  }
+
+  async duplicateSlide(args: { slideId: string }): Promise<SlideNode> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    const id = `sld${++this.slideCounter}`;
+    const dup: MutableSlideNode = {
+      id,
+      type: "SLIDE",
+      name: node.name,
+      isSkipped: node.isSkipped,
+      fills: [...node.fills],
+      width: node.width,
+      height: node.height,
+      transition: { ...node.transition, timing: { ...node.transition.timing } },
+    };
+    this.allNodes.set(id, dup);
+    // Append after source.
+    for (const row of this.slideGrid) {
+      const idx = row.indexOf(args.slideId);
+      if (idx >= 0) {
+        row.splice(idx + 1, 0, id);
+        break;
+      }
+    }
+    return this.snapshotSlide(dup);
+  }
+
+  async deleteSlide(args: { slideId: string }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    for (const row of this.slideGrid) {
+      const idx = row.indexOf(args.slideId);
+      if (idx >= 0) row.splice(idx, 1);
+    }
+    this.allNodes.delete(args.slideId);
+    if (this.focusedSlideId === args.slideId) this.focusedSlideId = null;
+  }
+
+  async listSlides(args: { rowIndex?: number }): Promise<readonly string[]> {
+    if (args.rowIndex === undefined) {
+      return this.slideGrid.flat();
+    }
+    if (args.rowIndex < 0 || args.rowIndex >= this.slideGrid.length) {
+      throw new Error(`row not found: ${args.rowIndex}`);
+    }
+    return [...this.slideGrid[args.rowIndex]];
+  }
+
+  async listSlideRows(): Promise<readonly string[]> {
+    return [...this.slideRowIds];
+  }
+
+  async setActiveSlide(args: { slideId: string }): Promise<void> {
+    const node = this.allNodes.get(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    this.focusedSlideId = args.slideId;
+  }
+
+  async getActiveSlideId(): Promise<string | null> {
+    return this.focusedSlideId;
+  }
+
+  async setSlidesView(args: { view: SlidesView }): Promise<void> {
+    this.slidesView = args.view;
+  }
+
+  async getSlidesView(): Promise<SlidesView> {
+    return this.slidesView;
+  }
+
+  async getSlideGrid(): Promise<readonly (readonly string[])[]> {
+    return this.slideGrid.map((r) => [...r]);
+  }
+
+  private appendInternalSlideRow(): string {
+    const rowId = `slr${++this.slideRowCounter}`;
+    this.allNodes.set(rowId, {
+      id: rowId,
+      type: "SLIDE_ROW",
+      name: `Row ${this.slideRowCounter}`,
+    });
+    this.slideRowIds.push(rowId);
+    this.slideGrid.push([]);
+    return rowId;
+  }
+
+  private snapshotSlide(node: MutableSlideNode): SlideNode {
+    return {
+      id: node.id,
+      type: node.type,
+      name: node.name,
+      isSkipped: node.isSkipped,
+      fills: [...node.fills],
+      width: node.width,
+      height: node.height,
+    };
+  }
+
   // ---- Test seeding API ----
 
   __seedVariables(variables: readonly Variable[]): void {
@@ -827,6 +1126,24 @@ export class FigmaFake implements FigmaAdapter {
         columns: node.columns,
       };
     }
+    if (node.type === "SLIDE") {
+      return {
+        id: node.id,
+        type: node.type,
+        width: node.width,
+        height: node.height,
+        name: node.name,
+        fills: [...node.fills],
+        isSkipped: node.isSkipped,
+      };
+    }
+    if (node.type === "SLIDE_ROW") {
+      return {
+        id: node.id,
+        type: node.type,
+        name: node.name,
+      };
+    }
     const base: NodeSnapshot = {
       id: node.id,
       type: node.type,
@@ -888,6 +1205,19 @@ export class FigmaFake implements FigmaAdapter {
       }
       case "TABLE": {
         const id = `tbl${++this.tableCounter}`;
+        return { ...node, id };
+      }
+      case "SLIDE": {
+        const id = `sld${++this.slideCounter}`;
+        return {
+          ...node,
+          id,
+          fills: [...node.fills],
+          transition: { ...node.transition, timing: { ...node.transition.timing } },
+        };
+      }
+      case "SLIDE_ROW": {
+        const id = `slr${++this.slideRowCounter}`;
         return { ...node, id };
       }
     }

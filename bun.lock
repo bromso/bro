@@ -23,6 +23,7 @@
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-figjam": "workspace:*",
+        "@repo/tools-slides": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "@repo/ui": "workspace:*",
@@ -87,6 +88,7 @@
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-figjam": "workspace:*",
         "@repo/tools-rest": "workspace:*",
+        "@repo/tools-slides": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "zod": "^3.23.8",
@@ -249,6 +251,20 @@
       "version": "0.0.0",
       "dependencies": {
         "@repo/figma-api-client": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/tools-slides": {
+      "name": "@repo/tools-slides",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
         "zod": "^3.23.8",
       },
@@ -1009,6 +1025,8 @@
     "@repo/tools-figjam": ["@repo/tools-figjam@workspace:packages/tools-figjam"],
 
     "@repo/tools-rest": ["@repo/tools-rest@workspace:packages/tools-rest"],
+
+    "@repo/tools-slides": ["@repo/tools-slides@workspace:packages/tools-slides"],
 
     "@repo/tools-variables": ["@repo/tools-variables@workspace:packages/tools-variables"],
 
