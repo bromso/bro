@@ -7,6 +7,8 @@ import {
   createShapeWithTextPluginHandler,
   createStickyPluginHandler,
   createTablePluginHandler,
+  listSectionChildrenPluginHandler,
+  moveIntoSectionPluginHandler,
   setSectionNamePluginHandler,
   setStickyContentPluginHandler,
 } from "../plugin-handlers";
@@ -220,5 +222,76 @@ describe("setSectionNamePluginHandler", () => {
     await expect(setSectionNamePluginHandler({ nodeId: stk.id, name: "X" }, ctx)).rejects.toThrow(
       /section/i
     );
+  });
+});
+
+describe("moveIntoSectionPluginHandler", () => {
+  it("appends node ids to a section's children", async () => {
+    const ctx = figJamCtx();
+    const sec = await ctx.figma.createSection({
+      name: "G",
+      x: 0,
+      y: 0,
+      width: 1000,
+      height: 1000,
+    });
+    const a = await ctx.figma.createSticky({ content: "a" });
+    const b = await ctx.figma.createSticky({ content: "b" });
+    const out = await moveIntoSectionPluginHandler(
+      { sectionId: sec.id, nodeIds: [a.id, b.id] },
+      ctx
+    );
+    expect(out).toEqual({ sectionId: sec.id, moved: 2 });
+    const ids = await ctx.figma.listSectionChildren({ sectionId: sec.id });
+    expect([...ids]).toEqual([a.id, b.id]);
+  });
+
+  it("rejects unknown section", async () => {
+    const ctx = figJamCtx();
+    await expect(
+      moveIntoSectionPluginHandler({ sectionId: "missing", nodeIds: [] }, ctx)
+    ).rejects.toThrow(/section.*not found/i);
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      moveIntoSectionPluginHandler({ sectionId: "sec1", nodeIds: [] }, figmaCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("listSectionChildrenPluginHandler", () => {
+  it("returns the current child node ids and their count", async () => {
+    const ctx = figJamCtx();
+    const sec = await ctx.figma.createSection({
+      name: "G",
+      x: 0,
+      y: 0,
+      width: 1000,
+      height: 1000,
+    });
+    const a = await ctx.figma.createSticky({ content: "a" });
+    await ctx.figma.moveIntoSection({ sectionId: sec.id, nodeIds: [a.id] });
+    const out = await listSectionChildrenPluginHandler({ sectionId: sec.id }, ctx);
+    expect(out).toEqual({ nodeIds: [a.id], count: 1 });
+  });
+
+  it("returns empty list for an unsourced section", async () => {
+    const ctx = figJamCtx();
+    const sec = await ctx.figma.createSection({
+      name: "Empty",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    const out = await listSectionChildrenPluginHandler({ sectionId: sec.id }, ctx);
+    expect(out).toEqual({ nodeIds: [], count: 0 });
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      listSectionChildrenPluginHandler({ sectionId: "sec1" }, figmaCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
   });
 });

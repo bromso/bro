@@ -137,3 +137,30 @@ export const SetSectionName = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("SECTION") }),
 });
+
+export const MoveIntoSection = defineTool({
+  name: "move_into_section",
+  description: "FigJam-only. Add node ids to a section's children list.",
+  streaming: false,
+  input: z
+    .object({
+      sectionId: z.string().min(1),
+      nodeIds: z.array(z.string().min(1)),
+    })
+    .strict(),
+  output: z.object({
+    sectionId: z.string(),
+    moved: z.number().int().nonnegative(),
+  }),
+});
+
+export const ListSectionChildren = defineTool({
+  name: "list_section_children",
+  description: "FigJam-only. Return the node ids currently inside a section.",
+  streaming: false,
+  input: z.object({ sectionId: z.string().min(1) }).strict(),
+  output: z.object({
+    nodeIds: z.array(z.string()),
+    count: z.number().int().nonnegative(),
+  }),
+});

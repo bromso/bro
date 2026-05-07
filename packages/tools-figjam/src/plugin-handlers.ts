@@ -6,6 +6,8 @@ import type {
   CreateShapeWithText,
   CreateSticky,
   CreateTable,
+  ListSectionChildren,
+  MoveIntoSection,
   SetSectionName,
   SetStickyContent,
 } from "./tools";
@@ -133,4 +135,33 @@ export const setSectionNamePluginHandler: PluginHandler<typeof SetSectionName> =
   }
   await figma.setSectionName({ nodeId: args.nodeId, name: args.name });
   return { nodeId: args.nodeId, type: "SECTION" };
+};
+
+export const moveIntoSectionPluginHandler: PluginHandler<typeof MoveIntoSection> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "figjam") {
+    throw new Error(
+      `${E_MISMATCH}: move_into_section requires editorType=figjam (got ${figma.editorType})`
+    );
+  }
+  await figma.moveIntoSection({
+    sectionId: args.sectionId,
+    nodeIds: args.nodeIds,
+  });
+  return { sectionId: args.sectionId, moved: args.nodeIds.length };
+};
+
+export const listSectionChildrenPluginHandler: PluginHandler<typeof ListSectionChildren> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "figjam") {
+    throw new Error(
+      `${E_MISMATCH}: list_section_children requires editorType=figjam (got ${figma.editorType})`
+    );
+  }
+  const nodeIds = await figma.listSectionChildren({ sectionId: args.sectionId });
+  return { nodeIds: [...nodeIds], count: nodeIds.length };
 };

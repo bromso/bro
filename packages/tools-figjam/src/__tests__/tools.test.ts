@@ -6,6 +6,8 @@ import {
   CreateShapeWithText,
   CreateSticky,
   CreateTable,
+  ListSectionChildren,
+  MoveIntoSection,
   SetSectionName,
   SetStickyContent,
 } from "../tools";
@@ -223,5 +225,39 @@ describe("SetSectionName schema", () => {
 
   it("rejects empty name", () => {
     expect(SetSectionName.input.safeParse({ nodeId: "sec1", name: "" }).success).toBe(false);
+  });
+});
+
+describe("MoveIntoSection schema", () => {
+  it("requires sectionId + nodeIds", () => {
+    expect(MoveIntoSection.input.safeParse({ sectionId: "sec1", nodeIds: ["a"] }).success).toBe(
+      true
+    );
+  });
+
+  it("accepts an empty nodeIds array (no-op)", () => {
+    expect(MoveIntoSection.input.safeParse({ sectionId: "sec1", nodeIds: [] }).success).toBe(true);
+  });
+
+  it("rejects empty sectionId", () => {
+    expect(MoveIntoSection.input.safeParse({ sectionId: "", nodeIds: ["a"] }).success).toBe(false);
+  });
+
+  it("output reports moved count", () => {
+    expect(MoveIntoSection.output.safeParse({ sectionId: "sec1", moved: 2 }).success).toBe(true);
+  });
+});
+
+describe("ListSectionChildren schema", () => {
+  it("requires sectionId", () => {
+    expect(ListSectionChildren.input.safeParse({ sectionId: "sec1" }).success).toBe(true);
+    expect(ListSectionChildren.input.safeParse({}).success).toBe(false);
+  });
+
+  it("output returns nodeIds + count", () => {
+    expect(ListSectionChildren.output.safeParse({ nodeIds: [], count: 0 }).success).toBe(true);
+    expect(ListSectionChildren.output.safeParse({ nodeIds: ["a", "b"], count: 2 }).success).toBe(
+      true
+    );
   });
 });
