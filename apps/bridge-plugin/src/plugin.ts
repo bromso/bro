@@ -13,6 +13,7 @@
  * tests import this module without spinning up a real WS connection.
  */
 import { RealFigmaAdapter } from "@repo/figma-adapter";
+import { ConsoleStore, installConsoleCapture } from "@repo/tools-console";
 import {
   ExtractComponents,
   ExtractLocalVariables,
@@ -29,6 +30,9 @@ const VERSION = "0.0.0";
 type ConnectionState = "disconnected" | "connecting" | "connected" | "version-mismatch";
 
 export async function start(): Promise<void> {
+  const consoleStore = new ConsoleStore();
+  installConsoleCapture({ store: consoleStore });
+
   figma.showUI(__html__, { width: 320, height: 200 });
 
   const post = (state: ConnectionState) =>

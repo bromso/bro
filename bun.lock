@@ -19,6 +19,7 @@
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
+        "@repo/tools-console": "workspace:*",
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",

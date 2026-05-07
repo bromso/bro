@@ -4,5 +4,17 @@
  * definitions and handlers; Task 8.3 wires the buffer into the bridge
  * plugin.
  */
+
+export type { InstallConsoleCaptureOptions } from "./console-patch";
+export { getActiveStore, installConsoleCapture } from "./console-patch";
 export * from "./plugin-handlers";
+export type {
+  ConsoleEntry,
+  ConsoleLevel,
+  ConsoleStatus,
+  ConsoleStoreOptions,
+  GetRecentOptions,
+  SinceCursorResult,
+} from "./store";
+export { ConsoleStore } from "./store";
 export * from "./tools";
