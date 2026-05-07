@@ -1,5 +1,13 @@
 # @repo/tools-variables
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [[`38b52a2`](https://github.com/bromso/bro/commit/38b52a2a907c387f9fa6f6f8b1f20b3ee9f1d66f)]:
+  - @repo/figma-adapter@0.2.0
+  - @repo/protocol@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
