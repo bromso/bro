@@ -43,7 +43,8 @@
     "lint": "biome check .",
     "start": "bun src/main.ts",
     "build": "bun build src/main.ts --target=node --outdir=dist --external:* && bun run build:plugin",
-    "build:plugin": "cd ../bridge-plugin && bun run build && cp -r dist/. ../mcp-server/dist/plugin/"
+    "build:plugin": "cd ../bridge-plugin && bun run build && cp -r dist/. ../mcp-server/dist/plugin/",
+    "prepublishOnly": "cp ../../README.md ./README.md && cp ../../LICENSE ./LICENSE"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

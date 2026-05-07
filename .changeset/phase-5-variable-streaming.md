@@ -1,7 +1,6 @@
 ---
 "@repo/tools-variables": minor
 "@bromso/figma-mcp": minor
-"@repo/bridge-plugin": minor
 "@repo/figma-adapter": minor
 "@repo/protocol": minor
 "@repo/transport": minor

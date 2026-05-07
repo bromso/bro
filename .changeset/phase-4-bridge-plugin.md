@@ -1,5 +1,4 @@
 ---
-"@repo/bridge-plugin": minor
 "@bromso/figma-mcp": minor
 "@repo/protocol": minor
 "@repo/figma-adapter": minor

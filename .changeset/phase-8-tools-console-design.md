@@ -3,7 +3,6 @@
 "@repo/tools-design": minor
 "@repo/figma-adapter": minor
 "@bromso/figma-mcp": minor
-"@repo/bridge-plugin": minor
 ---
 
 Phase 8: Feature pack expansion (console + design).
