@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateSection, CreateSticky } from "../tools";
+import { CreateCodeBlock, CreateConnector, CreateSection, CreateSticky } from "../tools";
 
 describe("CreateSticky schema", () => {
   it("accepts content with optional authorName + placement", () => {
@@ -61,5 +61,39 @@ describe("CreateSection schema", () => {
         height: 100,
       }).success
     ).toBe(false);
+  });
+});
+
+describe("CreateConnector schema", () => {
+  it("requires both endpoints", () => {
+    expect(CreateConnector.input.safeParse({ startNodeId: "a", endNodeId: "b" }).success).toBe(
+      true
+    );
+    expect(CreateConnector.input.safeParse({ startNodeId: "a" }).success).toBe(false);
+    expect(CreateConnector.input.safeParse({ endNodeId: "b" }).success).toBe(false);
+  });
+
+  it("rejects empty endpoints", () => {
+    expect(CreateConnector.input.safeParse({ startNodeId: "", endNodeId: "b" }).success).toBe(
+      false
+    );
+  });
+
+  it("output returns nodeId + type CONNECTOR", () => {
+    expect(CreateConnector.output.safeParse({ nodeId: "cn1", type: "CONNECTOR" }).success).toBe(
+      true
+    );
+  });
+});
+
+describe("CreateCodeBlock schema", () => {
+  it("requires code", () => {
+    expect(CreateCodeBlock.input.safeParse({}).success).toBe(false);
+    expect(CreateCodeBlock.input.safeParse({ code: "x" }).success).toBe(true);
+  });
+
+  it("language defaults to 'plaintext'", () => {
+    const r = CreateCodeBlock.input.parse({ code: "x" });
+    expect(r.language).toBe("plaintext");
   });
 });

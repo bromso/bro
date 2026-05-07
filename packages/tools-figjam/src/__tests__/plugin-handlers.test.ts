@@ -1,6 +1,11 @@
 import { FigmaFake } from "@repo/figma-adapter/testing";
 import { describe, expect, it } from "vitest";
-import { createSectionPluginHandler, createStickyPluginHandler } from "../plugin-handlers";
+import {
+  createCodeBlockPluginHandler,
+  createConnectorPluginHandler,
+  createSectionPluginHandler,
+  createStickyPluginHandler,
+} from "../plugin-handlers";
 
 const noopLogger = { debug() {}, info() {}, warn() {}, error() {} };
 const figJamCtx = () => ({
@@ -53,6 +58,64 @@ describe("createSectionPluginHandler", () => {
   it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
     await expect(
       createSectionPluginHandler({ name: "Goals", x: 0, y: 0, width: 400, height: 300 }, figmaCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("createConnectorPluginHandler", () => {
+  it("creates a connector between two existing nodes", async () => {
+    const figma = new FigmaFake({ editorType: "figjam" });
+    const a = await figma.createSticky({ content: "a" });
+    const b = await figma.createSticky({ content: "b" });
+    const out = await createConnectorPluginHandler(
+      { startNodeId: a.id, endNodeId: b.id },
+      { logger: noopLogger, figma }
+    );
+    expect(out.type).toBe("CONNECTOR");
+    expect(out.nodeId).toMatch(/^cn/);
+  });
+
+  it("rejects when startNodeId is unknown", async () => {
+    const figma = new FigmaFake({ editorType: "figjam" });
+    const b = await figma.createSticky({ content: "b" });
+    await expect(
+      createConnectorPluginHandler(
+        { startNodeId: "missing", endNodeId: b.id },
+        { logger: noopLogger, figma }
+      )
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      createConnectorPluginHandler({ startNodeId: "a", endNodeId: "b" }, figmaCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("createCodeBlockPluginHandler", () => {
+  it("creates a code block with default language", async () => {
+    const ctx = figJamCtx();
+    const out = await createCodeBlockPluginHandler({ code: "raw", language: "plaintext" }, ctx);
+    expect(out.type).toBe("CODE_BLOCK");
+    expect(out.nodeId).toMatch(/^cb/);
+    const node = await ctx.figma.getNodeById({ nodeId: out.nodeId });
+    expect((node as { language?: string }).language).toBe("plaintext");
+  });
+
+  it("uses an explicit language", async () => {
+    const ctx = figJamCtx();
+    const out = await createCodeBlockPluginHandler(
+      { code: "const x = 1;", language: "typescript" },
+      ctx
+    );
+    const node = await ctx.figma.getNodeById({ nodeId: out.nodeId });
+    expect((node as { language?: string }).language).toBe("typescript");
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a Figma editor", async () => {
+    await expect(
+      createCodeBlockPluginHandler({ code: "x", language: "plaintext" }, figmaCtx())
     ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
   });
 });
