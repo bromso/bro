@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   createSlidePluginHandler,
   createSlideRowPluginHandler,
+  deleteSlidePluginHandler,
+  duplicateSlidePluginHandler,
+  moveSlidePluginHandler,
   setSlideBackgroundPluginHandler,
   setSlideNamePluginHandler,
   setSlideSkippedPluginHandler,
@@ -172,5 +175,68 @@ describe("setSlideBackgroundPluginHandler", () => {
         figmaCtx()
       )
     ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("moveSlidePluginHandler", () => {
+  it("repositions a slide within the grid", async () => {
+    const ctx = slidesCtx();
+    await ctx.figma.createSlideRow({}); // row 0
+    await ctx.figma.createSlideRow({}); // row 1
+    const a = await ctx.figma.createSlide({ rowIndex: 0, columnIndex: 0 });
+    await ctx.figma.createSlide({ rowIndex: 1, columnIndex: 0 });
+    const out = await moveSlidePluginHandler({ slideId: a.id, rowIndex: 1, columnIndex: 1 }, ctx);
+    expect(out).toEqual({ nodeId: a.id, rowIndex: 1, columnIndex: 1 });
+    const grid = await ctx.figma.getSlideGrid();
+    expect(grid[1][1]).toBe(a.id);
+  });
+
+  it("rejects unknown slideId", async () => {
+    const ctx = slidesCtx();
+    await expect(
+      moveSlidePluginHandler({ slideId: "missing", rowIndex: 0, columnIndex: 0 }, ctx)
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("throws E_FIGMA_EDITOR_TYPE_MISMATCH on a FigJam editor", async () => {
+    await expect(
+      moveSlidePluginHandler({ slideId: "sld1", rowIndex: 0, columnIndex: 0 }, figJamCtx())
+    ).rejects.toThrow(/E_FIGMA_EDITOR_TYPE_MISMATCH/);
+  });
+});
+
+describe("duplicateSlidePluginHandler", () => {
+  it("clones a slide and returns the new id", async () => {
+    const ctx = slidesCtx();
+    const a = await ctx.figma.createSlide({ name: "Intro" });
+    const out = await duplicateSlidePluginHandler({ slideId: a.id }, ctx);
+    expect(out.type).toBe("SLIDE");
+    expect(out.nodeId).not.toBe(a.id);
+    const node = await ctx.figma.getNodeById({ nodeId: out.nodeId });
+    expect((node as { name?: string }).name).toBe("Intro");
+  });
+
+  it("rejects unknown slideId", async () => {
+    const ctx = slidesCtx();
+    await expect(duplicateSlidePluginHandler({ slideId: "missing" }, ctx)).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("deleteSlidePluginHandler", () => {
+  it("deletes a slide and returns deleted: true", async () => {
+    const ctx = slidesCtx();
+    const a = await ctx.figma.createSlide({});
+    const out = await deleteSlidePluginHandler({ slideId: a.id }, ctx);
+    expect(out).toEqual({ slideId: a.id, deleted: true });
+    expect(await ctx.figma.getNodeById({ nodeId: a.id })).toBeNull();
+  });
+
+  it("rejects unknown slideId", async () => {
+    const ctx = slidesCtx();
+    await expect(deleteSlidePluginHandler({ slideId: "missing" }, ctx)).rejects.toThrow(
+      /not found/i
+    );
   });
 });

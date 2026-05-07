@@ -2,6 +2,9 @@ import type { PluginHandler } from "@repo/protocol";
 import type {
   CreateSlide,
   CreateSlideRow,
+  DeleteSlide,
+  DuplicateSlide,
+  MoveSlide,
   SetSlideBackground,
   SetSlideName,
   SetSlideSkipped,
@@ -93,4 +96,48 @@ export const setSlideBackgroundPluginHandler: PluginHandler<typeof SetSlideBackg
   }
   await figma.setSlideBackground({ slideId: args.slideId, paint: args.paint });
   return { nodeId: args.slideId, type: "SLIDE" };
+};
+
+export const moveSlidePluginHandler: PluginHandler<typeof MoveSlide> = async (args, { figma }) => {
+  if (figma.editorType !== "slides") {
+    throw new Error(
+      `${E_MISMATCH}: move_slide requires editorType=slides (got ${figma.editorType})`
+    );
+  }
+  await figma.moveSlide({
+    slideId: args.slideId,
+    rowIndex: args.rowIndex,
+    columnIndex: args.columnIndex,
+  });
+  return {
+    nodeId: args.slideId,
+    rowIndex: args.rowIndex,
+    columnIndex: args.columnIndex,
+  };
+};
+
+export const duplicateSlidePluginHandler: PluginHandler<typeof DuplicateSlide> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "slides") {
+    throw new Error(
+      `${E_MISMATCH}: duplicate_slide requires editorType=slides (got ${figma.editorType})`
+    );
+  }
+  const node = await figma.duplicateSlide({ slideId: args.slideId });
+  return { nodeId: node.id, type: "SLIDE" };
+};
+
+export const deleteSlidePluginHandler: PluginHandler<typeof DeleteSlide> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "slides") {
+    throw new Error(
+      `${E_MISMATCH}: delete_slide requires editorType=slides (got ${figma.editorType})`
+    );
+  }
+  await figma.deleteSlide({ slideId: args.slideId });
+  return { slideId: args.slideId, deleted: true as const };
 };

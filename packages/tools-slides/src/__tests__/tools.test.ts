@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   CreateSlide,
   CreateSlideRow,
+  DeleteSlide,
+  DuplicateSlide,
+  MoveSlide,
   SetSlideBackground,
   SetSlideName,
   SetSlideSkipped,
@@ -204,5 +207,60 @@ describe("SetSlideBackground schema", () => {
         paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 1.5 },
       }).success
     ).toBe(false);
+  });
+});
+
+describe("MoveSlide schema", () => {
+  it("requires slideId + rowIndex + columnIndex", () => {
+    expect(
+      MoveSlide.input.safeParse({
+        slideId: "sld1",
+        rowIndex: 0,
+        columnIndex: 0,
+      }).success
+    ).toBe(true);
+    expect(MoveSlide.input.safeParse({ slideId: "sld1", rowIndex: 0 }).success).toBe(false);
+  });
+
+  it("rejects negative indices", () => {
+    expect(
+      MoveSlide.input.safeParse({
+        slideId: "sld1",
+        rowIndex: -1,
+        columnIndex: 0,
+      }).success
+    ).toBe(false);
+  });
+
+  it("output reports the slideId + new position", () => {
+    expect(
+      MoveSlide.output.safeParse({
+        nodeId: "sld1",
+        rowIndex: 0,
+        columnIndex: 0,
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("DuplicateSlide schema", () => {
+  it("requires slideId", () => {
+    expect(DuplicateSlide.input.safeParse({ slideId: "sld1" }).success).toBe(true);
+    expect(DuplicateSlide.input.safeParse({}).success).toBe(false);
+  });
+
+  it("output returns nodeId + type", () => {
+    expect(DuplicateSlide.output.safeParse({ nodeId: "sld2", type: "SLIDE" }).success).toBe(true);
+  });
+});
+
+describe("DeleteSlide schema", () => {
+  it("requires slideId", () => {
+    expect(DeleteSlide.input.safeParse({ slideId: "sld1" }).success).toBe(true);
+    expect(DeleteSlide.input.safeParse({}).success).toBe(false);
+  });
+
+  it("output is {deleted: true}", () => {
+    expect(DeleteSlide.output.safeParse({ slideId: "sld1", deleted: true }).success).toBe(true);
   });
 });

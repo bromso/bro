@@ -145,3 +145,42 @@ export const SetSlideBackground = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("SLIDE") }),
 });
+
+export const MoveSlide = defineTool({
+  name: "move_slide",
+  description:
+    "Slides-only. Move a slide to (rowIndex, columnIndex). Internally calls figma.setSlideGrid with the mutated grid.",
+  streaming: false,
+  input: z
+    .object({
+      slideId: z.string().min(1),
+      rowIndex: NonNegativeInt,
+      columnIndex: NonNegativeInt,
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    rowIndex: NonNegativeInt,
+    columnIndex: NonNegativeInt,
+  }),
+});
+
+export const DuplicateSlide = defineTool({
+  name: "duplicate_slide",
+  description:
+    "Slides-only. Clone a slide. The duplicate is appended after the source in the same row.",
+  streaming: false,
+  input: z.object({ slideId: z.string().min(1) }).strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("SLIDE") }),
+});
+
+export const DeleteSlide = defineTool({
+  name: "delete_slide",
+  description: "Slides-only. Remove a slide from the deck.",
+  streaming: false,
+  input: z.object({ slideId: z.string().min(1) }).strict(),
+  output: z.object({
+    slideId: z.string(),
+    deleted: z.literal(true),
+  }),
+});
