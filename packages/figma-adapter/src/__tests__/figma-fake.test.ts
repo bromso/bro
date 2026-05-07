@@ -501,3 +501,269 @@ describe("FigmaFake edge cases", () => {
     expect(f.name).toBe("");
   });
 });
+
+// ---- Phase 10: FigJam adapter extensions ----
+
+describe("FigmaFake.createSticky", () => {
+  it("creates a STICKY node with the given content and a stk-prefixed id", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const a = await fake.createSticky({ content: "first", x: 0, y: 0 });
+    const b = await fake.createSticky({ content: "second" });
+    expect(a.type).toBe("STICKY");
+    expect(a.content).toBe("first");
+    expect(a.id).toMatch(/^stk/);
+    expect(a.id).not.toBe(b.id);
+  });
+
+  it("respects optional authorName", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const a = await fake.createSticky({ content: "x", authorName: "Jonas" });
+    expect(a.authorName).toBe("Jonas");
+  });
+
+  it("defaults x/y/width/height when unspecified", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const a = await fake.createSticky({ content: "x" });
+    expect(a.x).toBe(0);
+    expect(a.y).toBe(0);
+    expect(a.width).toBeGreaterThan(0);
+    expect(a.height).toBeGreaterThan(0);
+  });
+});
+
+describe("FigmaFake.createSection", () => {
+  it("creates a SECTION node with a name and sec-prefixed id", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "Goals",
+      x: 100,
+      y: 100,
+      width: 400,
+      height: 300,
+    });
+    expect(sec.type).toBe("SECTION");
+    expect(sec.name).toBe("Goals");
+    expect(sec.id).toMatch(/^sec/);
+  });
+});
+
+describe("FigmaFake.createConnector", () => {
+  it("creates a CONNECTOR linking two known nodes", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const a = await fake.createSticky({ content: "a" });
+    const b = await fake.createSticky({ content: "b" });
+    const cn = await fake.createConnector({ startNodeId: a.id, endNodeId: b.id });
+    expect(cn.type).toBe("CONNECTOR");
+    expect(cn.startNodeId).toBe(a.id);
+    expect(cn.endNodeId).toBe(b.id);
+    expect(cn.id).toMatch(/^cn/);
+  });
+
+  it("throws when startNodeId is unknown", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const b = await fake.createSticky({ content: "b" });
+    await expect(fake.createConnector({ startNodeId: "missing", endNodeId: b.id })).rejects.toThrow(
+      /not found/i
+    );
+  });
+
+  it("throws when endNodeId is unknown", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const a = await fake.createSticky({ content: "a" });
+    await expect(fake.createConnector({ startNodeId: a.id, endNodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("FigmaFake.createCodeBlock", () => {
+  it("creates a CODE_BLOCK with code, language, x, y", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const cb = await fake.createCodeBlock({
+      code: "const x = 1;",
+      language: "typescript",
+      x: 10,
+      y: 20,
+    });
+    expect(cb.type).toBe("CODE_BLOCK");
+    expect(cb.code).toBe("const x = 1;");
+    expect(cb.language).toBe("typescript");
+    expect(cb.id).toMatch(/^cb/);
+  });
+
+  it("defaults language to 'plaintext'", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const cb = await fake.createCodeBlock({ code: "raw" });
+    expect(cb.language).toBe("plaintext");
+  });
+});
+
+describe("FigmaFake.createShapeWithText", () => {
+  it("creates a SHAPE_WITH_TEXT with a known shape variant", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const swt = await fake.createShapeWithText({
+      shape: "diamond",
+      content: "Decide",
+      width: 120,
+      height: 100,
+    });
+    expect(swt.type).toBe("SHAPE_WITH_TEXT");
+    expect(swt.shape).toBe("diamond");
+    expect(swt.content).toBe("Decide");
+    expect(swt.id).toMatch(/^swt/);
+  });
+});
+
+describe("FigmaFake.createTable", () => {
+  it("creates a TABLE with rows and columns", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const tbl = await fake.createTable({
+      rows: 3,
+      columns: 4,
+      width: 400,
+      height: 300,
+    });
+    expect(tbl.type).toBe("TABLE");
+    expect(tbl.rows).toBe(3);
+    expect(tbl.columns).toBe(4);
+    expect(tbl.id).toMatch(/^tbl/);
+  });
+});
+
+describe("FigmaFake.setStickyContent", () => {
+  it("rewrites the content of an existing sticky", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const stk = await fake.createSticky({ content: "old" });
+    await fake.setStickyContent({ nodeId: stk.id, content: "new" });
+    const node = await fake.getNodeById({ nodeId: stk.id });
+    expect((node as { content?: string }).content).toBe("new");
+  });
+
+  it("rejects non-sticky nodes", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "X",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    await expect(fake.setStickyContent({ nodeId: sec.id, content: "x" })).rejects.toThrow(
+      /sticky/i
+    );
+  });
+
+  it("rejects when nodeId is unknown", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    await expect(fake.setStickyContent({ nodeId: "missing", content: "x" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("FigmaFake.setSectionName", () => {
+  it("rewrites the name of an existing section", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "Old",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    await fake.setSectionName({ nodeId: sec.id, name: "New" });
+    const node = await fake.getNodeById({ nodeId: sec.id });
+    expect((node as { name?: string }).name).toBe("New");
+  });
+
+  it("rejects non-section nodes", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const stk = await fake.createSticky({ content: "x" });
+    await expect(fake.setSectionName({ nodeId: stk.id, name: "X" })).rejects.toThrow(/section/i);
+  });
+});
+
+describe("FigmaFake.moveIntoSection", () => {
+  it("adds nodes to a section's children list", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "Group",
+      x: 0,
+      y: 0,
+      width: 1000,
+      height: 1000,
+    });
+    const a = await fake.createSticky({ content: "a" });
+    const b = await fake.createSticky({ content: "b" });
+    await fake.moveIntoSection({ sectionId: sec.id, nodeIds: [a.id, b.id] });
+    const ids = await fake.listSectionChildren({ sectionId: sec.id });
+    expect([...ids]).toEqual([a.id, b.id]);
+  });
+
+  it("dedupes already-present nodes (idempotent)", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "G",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    const a = await fake.createSticky({ content: "a" });
+    await fake.moveIntoSection({ sectionId: sec.id, nodeIds: [a.id] });
+    await fake.moveIntoSection({ sectionId: sec.id, nodeIds: [a.id] });
+    const ids = await fake.listSectionChildren({ sectionId: sec.id });
+    expect([...ids]).toEqual([a.id]);
+  });
+
+  it("throws when sectionId is unknown", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const a = await fake.createSticky({ content: "a" });
+    await expect(fake.moveIntoSection({ sectionId: "missing", nodeIds: [a.id] })).rejects.toThrow(
+      /section.*not found/i
+    );
+  });
+
+  it("throws when sectionId points to a non-section node", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const stk = await fake.createSticky({ content: "x" });
+    await expect(fake.moveIntoSection({ sectionId: stk.id, nodeIds: [] })).rejects.toThrow(
+      /section/i
+    );
+  });
+
+  it("throws when any nodeId is unknown", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "G",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    await expect(fake.moveIntoSection({ sectionId: sec.id, nodeIds: ["nope"] })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("FigmaFake.listSectionChildren", () => {
+  it("returns an empty list for a fresh section", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    const sec = await fake.createSection({
+      name: "Empty",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    });
+    expect(await fake.listSectionChildren({ sectionId: sec.id })).toEqual([]);
+  });
+
+  it("throws when the section does not exist", async () => {
+    const fake = new FigmaFake({ editorType: "figjam" });
+    await expect(fake.listSectionChildren({ sectionId: "missing" })).rejects.toThrow(
+      /section.*not found/i
+    );
+  });
+});

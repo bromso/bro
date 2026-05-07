@@ -1,12 +1,18 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type {
+  CodeBlockNode,
   Component,
+  ConnectorNode,
   EditorType,
   EffectStyle,
   FigmaAdapter,
   PageSelection,
   PaintStyle,
   RectangleNode,
+  SectionNode,
+  ShapeWithTextNode,
+  StickyNode,
+  TableNode,
   TextStyle,
   Variable,
   VariableCollection,
@@ -59,6 +65,39 @@ describe("FigmaAdapter (extended Phase 3 surface)", () => {
   it("declares getLocalComponentsAsync", () => {
     expectTypeOf<FigmaAdapter["getLocalComponentsAsync"]>().returns.resolves.toEqualTypeOf<
       Component[]
+    >();
+  });
+});
+
+describe("FigmaAdapter (Phase 10 FigJam surface)", () => {
+  it("declares createSticky returning StickyNode", () => {
+    expectTypeOf<FigmaAdapter["createSticky"]>().returns.resolves.toEqualTypeOf<StickyNode>();
+  });
+  it("declares createSection returning SectionNode", () => {
+    expectTypeOf<FigmaAdapter["createSection"]>().returns.resolves.toEqualTypeOf<SectionNode>();
+  });
+  it("declares createConnector returning ConnectorNode", () => {
+    expectTypeOf<FigmaAdapter["createConnector"]>().returns.resolves.toEqualTypeOf<ConnectorNode>();
+  });
+  it("declares createCodeBlock returning CodeBlockNode", () => {
+    expectTypeOf<FigmaAdapter["createCodeBlock"]>().returns.resolves.toEqualTypeOf<CodeBlockNode>();
+  });
+  it("declares createShapeWithText returning ShapeWithTextNode", () => {
+    expectTypeOf<
+      FigmaAdapter["createShapeWithText"]
+    >().returns.resolves.toEqualTypeOf<ShapeWithTextNode>();
+  });
+  it("declares createTable returning TableNode", () => {
+    expectTypeOf<FigmaAdapter["createTable"]>().returns.resolves.toEqualTypeOf<TableNode>();
+  });
+  it("declares setStickyContent and setSectionName as void-returning", () => {
+    expectTypeOf<FigmaAdapter["setStickyContent"]>().returns.resolves.toEqualTypeOf<void>();
+    expectTypeOf<FigmaAdapter["setSectionName"]>().returns.resolves.toEqualTypeOf<void>();
+  });
+  it("declares moveIntoSection and listSectionChildren", () => {
+    expectTypeOf<FigmaAdapter["moveIntoSection"]>().returns.resolves.toEqualTypeOf<void>();
+    expectTypeOf<FigmaAdapter["listSectionChildren"]>().returns.resolves.toEqualTypeOf<
+      readonly string[]
     >();
   });
 });

@@ -73,6 +73,75 @@ export interface LineNode {
   readonly y2: number;
 }
 
+export interface StickyNode {
+  readonly id: string;
+  readonly type: "STICKY";
+  readonly content: string;
+  readonly authorName?: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface SectionNode {
+  readonly id: string;
+  readonly type: "SECTION";
+  readonly name: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface ConnectorNode {
+  readonly id: string;
+  readonly type: "CONNECTOR";
+  readonly startNodeId: string;
+  readonly endNodeId: string;
+}
+
+export interface CodeBlockNode {
+  readonly id: string;
+  readonly type: "CODE_BLOCK";
+  readonly code: string;
+  readonly language: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+export type ShapeWithTextShape =
+  | "square"
+  | "ellipse"
+  | "rounded_rectangle"
+  | "diamond"
+  | "triangle_up"
+  | "triangle_down"
+  | "parallelogram_right"
+  | "parallelogram_left";
+
+export interface ShapeWithTextNode {
+  readonly id: string;
+  readonly type: "SHAPE_WITH_TEXT";
+  readonly shape: ShapeWithTextShape;
+  readonly content: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface TableNode {
+  readonly id: string;
+  readonly type: "TABLE";
+  readonly rows: number;
+  readonly columns: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export type SolidPaint = {
   readonly type: "SOLID";
   readonly color: { readonly r: number; readonly g: number; readonly b: number };
@@ -91,6 +160,17 @@ export interface NodeSnapshot {
   readonly fills?: readonly SolidPaint[];
   readonly strokes?: readonly SolidPaint[];
   readonly strokeWeight?: number;
+  // FigJam-specific (Phase 10):
+  readonly content?: string;
+  readonly authorName?: string;
+  readonly name?: string;
+  readonly startNodeId?: string;
+  readonly endNodeId?: string;
+  readonly code?: string;
+  readonly language?: string;
+  readonly shape?: ShapeWithTextShape;
+  readonly rows?: number;
+  readonly columns?: number;
 }
 
 export interface PageSelection {
@@ -212,4 +292,58 @@ export interface FigmaAdapter {
   createComponent(args: { nodeId: string }): Promise<Component>;
 
   getNodeById(args: { nodeId: string }): Promise<NodeSnapshot | null>;
+
+  // ---- Phase 10: FigJam-specific node creation and mutation ----
+
+  createSticky(args: {
+    content: string;
+    authorName?: string;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+  }): Promise<StickyNode>;
+
+  createSection(args: {
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Promise<SectionNode>;
+
+  createConnector(args: { startNodeId: string; endNodeId: string }): Promise<ConnectorNode>;
+
+  createCodeBlock(args: {
+    code: string;
+    language?: string;
+    x?: number;
+    y?: number;
+  }): Promise<CodeBlockNode>;
+
+  createShapeWithText(args: {
+    shape: ShapeWithTextShape;
+    content: string;
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+  }): Promise<ShapeWithTextNode>;
+
+  createTable(args: {
+    rows: number;
+    columns: number;
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+  }): Promise<TableNode>;
+
+  setStickyContent(args: { nodeId: string; content: string }): Promise<void>;
+
+  setSectionName(args: { nodeId: string; name: string }): Promise<void>;
+
+  moveIntoSection(args: { sectionId: string; nodeIds: readonly string[] }): Promise<void>;
+
+  listSectionChildren(args: { sectionId: string }): Promise<readonly string[]>;
 }
