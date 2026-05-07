@@ -10,5 +10,13 @@
  * Phase 11.4 adds the requireApiKey + write-tool gate guards. Phase
  * 11.5-11.10 add the 20 tool definitions and server-handlers.
  */
+
+export {
+  E_FIGMA_API_KEY_MISSING,
+  E_WRITE_TOOLS_DISABLED,
+  mapRestError,
+  requireApiKey,
+  requireWriteEnabled,
+} from "./guards";
 export * from "./server-handlers";
 export * from "./tools";
