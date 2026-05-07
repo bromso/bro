@@ -257,6 +257,7 @@ export class FigmaFake implements FigmaAdapter {
   private readonly a11yMeta = new Map<string, Map<A11yMetaKey, string>>();
   private readonly nodeAnnotations = new Map<string, Annotation[]>();
   private readonly parentByChild = new Map<string, string>();
+  private readonly nodeChildren = new Map<string, string[]>();
   private readonly bboxlessNodes = new Set<string>();
 
   constructor(options: FigmaFakeOptions = {}) {
@@ -1106,6 +1107,22 @@ export class FigmaFake implements FigmaAdapter {
     return { x, y, width: w, height: h };
   }
 
+  async listNodeChildren(args: { nodeId: string }): Promise<readonly string[]> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    return this.nodeChildren.get(args.nodeId)?.slice() ?? [];
+  }
+
+  private appendChild(parentId: string, childId: string): void {
+    let arr = this.nodeChildren.get(parentId);
+    if (!arr) {
+      arr = [];
+      this.nodeChildren.set(parentId, arr);
+    }
+    arr.push(childId);
+    this.parentByChild.set(childId, parentId);
+  }
+
   /**
    * Test-only convenience: create a TEXT node and parent it under
    * `parentId`. The created child's `parentId` link enables
@@ -1127,7 +1144,34 @@ export class FigmaFake implements FigmaAdapter {
       x: args.x,
       y: args.y,
     });
-    this.parentByChild.set(child.id, args.parentId);
+    this.appendChild(args.parentId, child.id);
+    return child;
+  }
+
+  /**
+   * Test-only convenience: create a FRAME node parented under another
+   * frame. Mirrors `createTextInFrame` for the recursive a11y audit
+   * walk (which needs a way to seed nested frames in tests).
+   */
+  async createFrameInFrame(args: {
+    parentId: string;
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+    name?: string;
+  }): Promise<FrameNode> {
+    if (!this.allNodes.has(args.parentId)) {
+      throw new Error(`parent not found: ${args.parentId}`);
+    }
+    const child = await this.createFrame({
+      width: args.width,
+      height: args.height,
+      x: args.x,
+      y: args.y,
+      name: args.name,
+    });
+    this.appendChild(args.parentId, child.id);
     return child;
   }
 

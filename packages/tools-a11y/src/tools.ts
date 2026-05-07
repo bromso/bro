@@ -210,3 +210,29 @@ export const RemoveAnnotation = defineTool({
     count: NonNegativeInt,
   }),
 });
+
+const A11yCheckStatus = z.enum(["ok", "warn", "error"]);
+
+const A11yCheck = z.object({
+  name: z.enum(["contrast", "target_size", "alt_text", "aria_label", "landmark_role"]),
+  status: A11yCheckStatus,
+  detail: z.string(),
+});
+
+export const AuditA11ySummary = defineTool({
+  name: "audit_a11y_summary",
+  description:
+    "Walk a node (optionally recursively) and aggregate accessibility checks: contrast, target size, alt text, ARIA label, landmark role. Each check is graded `ok` / `warn` / `error` with a human-readable detail string. The most useful tool when an LLM wants to grade a frame's overall a11y posture in a single call.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: NodeId,
+      recursive: z.boolean().optional().default(false),
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    checks: z.array(A11yCheck),
+    nodesScanned: NonNegativeInt,
+  }),
+});

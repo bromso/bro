@@ -987,6 +987,14 @@ export class RealFigmaAdapter implements FigmaAdapter {
     return null;
   }
 
+  async listNodeChildren(args: { nodeId: string }): Promise<readonly string[]> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const children = (node as { children?: ReadonlyArray<{ id: string }> }).children;
+    if (!children) return [];
+    return children.map((c) => c.id);
+  }
+
   async getNodeBoundingBox(args: { nodeId: string }): Promise<NodeBoundingBox | null> {
     const node = await figma.getNodeByIdAsync(args.nodeId);
     if (!node) throw new Error(`node not found: ${args.nodeId}`);

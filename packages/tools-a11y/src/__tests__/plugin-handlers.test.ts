@@ -419,3 +419,122 @@ describe("removeAnnotationPluginHandler", () => {
     ).rejects.toThrow(/index/i);
   });
 });
+
+import { auditA11ySummaryPluginHandler } from "../plugin-handlers";
+
+describe("auditA11ySummaryPluginHandler", () => {
+  it("returns ok status when contrast/target-size pass and metadata is set", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 200, height: 100 });
+    await ctx.figma.setNodeFill({
+      nodeId: frame.id,
+      paint: { type: "SOLID", color: { r: 1, g: 1, b: 1 }, opacity: 1 },
+    });
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "altText",
+      value: "Hero",
+    });
+
+    const text = await ctx.figma.createTextInFrame({
+      parentId: frame.id,
+      content: "Hello",
+    });
+    await ctx.figma.setNodeFill({
+      nodeId: text.id,
+      paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 1 },
+    });
+
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: true }, ctx);
+    expect(out.checks.find((c) => c.name === "contrast")?.status).toBe("ok");
+    expect(out.checks.find((c) => c.name === "target_size")?.status).toBe("ok");
+    expect(out.nodesScanned).toBeGreaterThanOrEqual(2);
+  });
+
+  it("returns error status when contrast fails AA", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 200, height: 100 });
+    await ctx.figma.setNodeFill({
+      nodeId: frame.id,
+      paint: { type: "SOLID", color: { r: 1, g: 1, b: 1 }, opacity: 1 },
+    });
+    const text = await ctx.figma.createTextInFrame({
+      parentId: frame.id,
+      content: "low-contrast",
+    });
+    await ctx.figma.setNodeFill({
+      nodeId: text.id,
+      // light grey on white — fails AA
+      paint: { type: "SOLID", color: { r: 0.85, g: 0.85, b: 0.85 }, opacity: 1 },
+    });
+
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: true }, ctx);
+    expect(out.checks.find((c) => c.name === "contrast")?.status).toBe("error");
+  });
+
+  it("flags target_size as warn when minimum passes but enhanced fails", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 30, height: 30 });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.checks.find((c) => c.name === "target_size")?.status).toBe("warn");
+  });
+
+  it("flags target_size as error when below minimum", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 20, height: 20 });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.checks.find((c) => c.name === "target_size")?.status).toBe("error");
+  });
+
+  it("flags alt_text as warn when not set on the root frame", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    const altCheck = out.checks.find((c) => c.name === "alt_text");
+    expect(altCheck?.status).toBe("warn");
+    expect(altCheck?.detail).toMatch(/alt/i);
+  });
+
+  it("flags landmark_role as info when not set", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.checks.find((c) => c.name === "landmark_role")?.status).toMatch(/^(ok|warn)$/);
+  });
+
+  it("recursive: true walks the descendant tree", async () => {
+    const ctx = designCtx();
+    const root = await ctx.figma.createFrame({ width: 200, height: 200 });
+    const child1 = await ctx.figma.createFrameInFrame({
+      parentId: root.id,
+      width: 50,
+      height: 50,
+    });
+    await ctx.figma.createFrameInFrame({
+      parentId: child1.id,
+      width: 30,
+      height: 30,
+    });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: root.id, recursive: true }, ctx);
+    expect(out.nodesScanned).toBeGreaterThanOrEqual(3);
+  });
+
+  it("recursive: false scans only the root", async () => {
+    const ctx = designCtx();
+    const root = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.createFrameInFrame({
+      parentId: root.id,
+      width: 50,
+      height: 50,
+    });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: root.id, recursive: false }, ctx);
+    expect(out.nodesScanned).toBe(1);
+  });
+
+  it("works on a FigJam editor", async () => {
+    const ctx = figJamCtx();
+    const sticky = await ctx.figma.createSticky({ content: "x" });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: sticky.id }, ctx);
+    expect(out.nodeId).toBe(sticky.id);
+  });
+});

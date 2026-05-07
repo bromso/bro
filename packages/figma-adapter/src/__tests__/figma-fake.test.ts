@@ -1390,3 +1390,44 @@ describe("FigmaFake.getNodeBoundingBox", () => {
     await expect(fake.getNodeBoundingBox({ nodeId: "missing" })).rejects.toThrow(/not found/i);
   });
 });
+
+describe("FigmaFake.listNodeChildren", () => {
+  it("returns the immediate children of a frame", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 200, height: 100 });
+    const text = await fake.createTextInFrame({
+      parentId: frame.id,
+      content: "hi",
+    });
+    const children = await fake.listNodeChildren({ nodeId: frame.id });
+    expect(children).toEqual([text.id]);
+  });
+
+  it("returns an empty array for a leaf node", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const text = await fake.createText({ content: "hi" });
+    expect(await fake.listNodeChildren({ nodeId: text.id })).toEqual([]);
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.listNodeChildren({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+  });
+
+  it("returns nested children created via createFrameInFrame", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const root = await fake.createFrame({ width: 200, height: 200 });
+    const child1 = await fake.createFrameInFrame({
+      parentId: root.id,
+      width: 50,
+      height: 50,
+    });
+    const child2 = await fake.createFrameInFrame({
+      parentId: root.id,
+      width: 60,
+      height: 60,
+    });
+    const children = await fake.listNodeChildren({ nodeId: root.id });
+    expect(children).toEqual([child1.id, child2.id]);
+  });
+});

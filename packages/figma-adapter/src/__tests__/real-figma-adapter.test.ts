@@ -2086,3 +2086,33 @@ describe("RealFigmaAdapter.getNodeBoundingBox", () => {
     );
   });
 });
+
+describe("RealFigmaAdapter.listNodeChildren", () => {
+  it("returns children ids from node.children", async () => {
+    const node = { children: [{ id: "c1" }, { id: "c2" }] };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().listNodeChildren({ nodeId: "n1" })).toEqual(["c1", "c2"]);
+  });
+
+  it("returns an empty array when the node has no children property", async () => {
+    const node = {};
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().listNodeChildren({ nodeId: "n1" })).toEqual([]);
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().listNodeChildren({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});

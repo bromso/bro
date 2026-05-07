@@ -536,4 +536,11 @@ export interface FigmaAdapter {
    * (e.g. the document / page node).
    */
   getNodeBoundingBox(args: { nodeId: string }): Promise<NodeBoundingBox | null>;
+
+  /**
+   * Return the immediate child node ids for a node. Returns an empty
+   * array for leaf nodes (text, rect, etc.). Throws if the node id
+   * is unknown.
+   */
+  listNodeChildren(args: { nodeId: string }): Promise<readonly string[]>;
 }

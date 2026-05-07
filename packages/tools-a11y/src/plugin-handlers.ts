@@ -2,6 +2,7 @@ import type { A11yMetaKey } from "@repo/figma-adapter";
 import type { PluginHandler } from "@repo/protocol";
 import type {
   AddAnnotation,
+  AuditA11ySummary,
   AuditContrast,
   AuditTargetSize,
   GetAltText,
@@ -271,4 +272,207 @@ export const removeAnnotationPluginHandler: PluginHandler<typeof RemoveAnnotatio
     annotations: next,
   });
   return { nodeId: args.nodeId, count: next.length };
+};
+
+export const auditA11ySummaryPluginHandler: PluginHandler<typeof AuditA11ySummary> = async (
+  args,
+  { figma }
+) => {
+  // BFS walk.
+  const queue: string[] = [args.nodeId];
+  const visited = new Set<string>();
+  const contrastResults: Array<{
+    nodeId: string;
+    ratio: number | null;
+    passesAA: boolean | null;
+    fg: string | null;
+    bg: string | null;
+  }> = [];
+  const targetResults: Array<{
+    nodeId: string;
+    width: number | null;
+    passesMinimum: boolean | null;
+    passesEnhanced: boolean | null;
+  }> = [];
+
+  while (queue.length > 0) {
+    const id = queue.shift() as string;
+    if (visited.has(id)) continue;
+    visited.add(id);
+
+    // Contrast (only meaningful when fg + bg both resolve). When the
+    // node has a fill but no parent with a SOLID background, we skip
+    // the entry rather than counting it as "unresolvable" — root-level
+    // frames (which have a fill but no parent) would otherwise always
+    // poison the aggregate.
+    const fg = await figma.getResolvedTextFill({ nodeId: id });
+    if (fg) {
+      const bg = await figma.getResolvedBackground({ nodeId: id });
+      if (bg) {
+        const ratio = wcagContrastRatio(hexToRgb(fg.hex), hexToRgb(bg.hex));
+        contrastResults.push({
+          nodeId: id,
+          ratio,
+          passesAA: passesWCAG_AA(ratio, false),
+          fg: fg.hex,
+          bg: bg.hex,
+        });
+      }
+    }
+
+    // Target size
+    const bbox = await figma.getNodeBoundingBox({ nodeId: id });
+    if (bbox) {
+      const min = Math.min(bbox.width, bbox.height);
+      targetResults.push({
+        nodeId: id,
+        width: min,
+        passesMinimum: min >= WCAG_TARGET_SIZE_MIN,
+        passesEnhanced: min >= WCAG_TARGET_SIZE_ENHANCED,
+      });
+    }
+
+    // Recurse
+    if (args.recursive) {
+      const children = await figma.listNodeChildren({ nodeId: id });
+      for (const child of children) {
+        queue.push(child);
+      }
+    }
+  }
+
+  // Root-level metadata (alt text / aria label / landmark role)
+  const rootMeta = await figma.getNodeA11yMeta({ nodeId: args.nodeId });
+  let rootAltText = rootMeta.altText;
+  if (!rootAltText) {
+    const annotations = await figma.getNodeAnnotations({ nodeId: args.nodeId });
+    const fallback = annotations.find(
+      (a) => a.categoryId === undefined && typeof a.label === "string"
+    );
+    if (fallback?.label) rootAltText = fallback.label;
+  }
+
+  // Aggregate
+  const checks: Array<{
+    name: "contrast" | "target_size" | "alt_text" | "aria_label" | "landmark_role";
+    status: "ok" | "warn" | "error";
+    detail: string;
+  }> = [];
+
+  // Contrast
+  if (contrastResults.length === 0) {
+    checks.push({
+      name: "contrast",
+      status: "ok",
+      detail: "no text fills found in scanned nodes",
+    });
+  } else {
+    const failures = contrastResults.filter((r) => r.passesAA === false);
+    const unresolvable = contrastResults.filter((r) => r.passesAA === null);
+    if (failures.length > 0) {
+      const worst = failures.reduce(
+        (acc, r) => (r.ratio !== null && (acc.ratio === null || r.ratio < acc.ratio) ? r : acc),
+        failures[0]
+      );
+      checks.push({
+        name: "contrast",
+        status: "error",
+        detail: `${failures.length}/${contrastResults.length} nodes fail WCAG AA (worst: ${(worst.ratio ?? 0).toFixed(2)}:1, ${worst.fg ?? "?"} on ${worst.bg ?? "?"})`,
+      });
+    } else if (unresolvable.length > 0) {
+      checks.push({
+        name: "contrast",
+        status: "warn",
+        detail: `${unresolvable.length}/${contrastResults.length} nodes have unresolvable backgrounds (gradient/transparent)`,
+      });
+    } else {
+      checks.push({
+        name: "contrast",
+        status: "ok",
+        detail: `${contrastResults.length}/${contrastResults.length} nodes pass WCAG AA`,
+      });
+    }
+  }
+
+  // Target size
+  if (targetResults.length === 0) {
+    checks.push({
+      name: "target_size",
+      status: "ok",
+      detail: "no measurable nodes",
+    });
+  } else {
+    const subMinimum = targetResults.filter((r) => r.passesMinimum === false);
+    const subEnhanced = targetResults.filter((r) => r.passesEnhanced === false);
+    if (subMinimum.length > 0) {
+      checks.push({
+        name: "target_size",
+        status: "error",
+        detail: `${subMinimum.length}/${targetResults.length} nodes fail WCAG 2.2 minimum (24×24)`,
+      });
+    } else if (subEnhanced.length > 0) {
+      checks.push({
+        name: "target_size",
+        status: "warn",
+        detail: `${subEnhanced.length}/${targetResults.length} nodes fail WCAG 2.2 enhanced (44×44)`,
+      });
+    } else {
+      checks.push({
+        name: "target_size",
+        status: "ok",
+        detail: `${targetResults.length}/${targetResults.length} nodes pass WCAG 2.2 enhanced`,
+      });
+    }
+  }
+
+  // Alt text (root only)
+  if (rootAltText) {
+    checks.push({
+      name: "alt_text",
+      status: "ok",
+      detail: `alt text set: "${rootAltText.slice(0, 60)}${rootAltText.length > 60 ? "…" : ""}"`,
+    });
+  } else {
+    checks.push({
+      name: "alt_text",
+      status: "warn",
+      detail: "no alt text on root node",
+    });
+  }
+
+  // ARIA label (root only)
+  if (rootMeta.ariaLabel) {
+    checks.push({
+      name: "aria_label",
+      status: "ok",
+      detail: `aria label: "${rootMeta.ariaLabel.slice(0, 60)}"`,
+    });
+  } else {
+    checks.push({
+      name: "aria_label",
+      status: "ok",
+      detail: "no aria label (acceptable for non-interactive nodes)",
+    });
+  }
+
+  // Landmark role (root only)
+  if (rootMeta.landmarkRole) {
+    checks.push({
+      name: "landmark_role",
+      status: "ok",
+      detail: `landmark role: ${rootMeta.landmarkRole}`,
+    });
+  } else {
+    checks.push({
+      name: "landmark_role",
+      status: "ok",
+      detail: "no landmark role (only required on top-level page regions)",
+    });
+  }
+
+  return {
+    nodeId: args.nodeId,
+    checks,
+    nodesScanned: visited.size,
+  };
 };

@@ -275,3 +275,36 @@ describe("RemoveAnnotation schema", () => {
     ).toBe(false);
   });
 });
+
+import { AuditA11ySummary } from "../tools";
+
+describe("AuditA11ySummary schema", () => {
+  it("requires nodeId; recursive defaults to false", () => {
+    expect(AuditA11ySummary.input.safeParse({ nodeId: "n1" }).success).toBe(true);
+    expect(AuditA11ySummary.input.safeParse({ nodeId: "n1", recursive: true }).success).toBe(true);
+  });
+
+  it("output captures checks: [{name, status, detail}]", () => {
+    expect(
+      AuditA11ySummary.output.safeParse({
+        nodeId: "n1",
+        checks: [
+          { name: "contrast", status: "ok", detail: "21:1 AAA pass" },
+          { name: "target_size", status: "warn", detail: "30×24 — fails enhanced (44)" },
+          { name: "alt_text", status: "error", detail: "no alt text on 1 image-like node" },
+        ],
+        nodesScanned: 3,
+      }).success
+    ).toBe(true);
+  });
+
+  it("status is one of ok | warn | error", () => {
+    expect(
+      AuditA11ySummary.output.safeParse({
+        nodeId: "n1",
+        checks: [{ name: "contrast", status: "info", detail: "bad" }],
+        nodesScanned: 1,
+      }).success
+    ).toBe(false);
+  });
+});
