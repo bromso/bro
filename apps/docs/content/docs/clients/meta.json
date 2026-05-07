@@ -1,0 +1,4 @@
+{
+  "title": "Per-client install",
+  "pages": ["claude-code", "claude-desktop", "cursor", "windsurf", "copilot"]
+}

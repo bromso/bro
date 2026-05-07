@@ -1,68 +1,50 @@
 ---
-title: Getting Started
-description: Clone the template, install dependencies, and build your first plugin in under 5 minutes.
+title: Quickstart
+description: Install figma-mcp, pair the bridge plugin, and verify with doctor.
 ---
 
-## Prerequisites
+## What you need
 
-You need two things installed on your computer:
+- Bun OR Node ≥ 20.10 (the binary runs under either).
+- Figma desktop (the bridge plugin runs in Figma's plugin sandbox; not in the browser).
+- An MCP-aware AI client: Claude Code, Claude Desktop, Cursor, Windsurf, or VS Code Copilot. See [per-client guides](/docs/clients) for the matrix.
 
-1. **[Bun](https://bun.sh)** (version 1.0 or later) — a fast JavaScript runtime and package manager
-2. **[Figma desktop app](https://www.figma.com/downloads/)** — plugins can only be tested in the desktop app, not the browser
-
-## Step 1: Clone the template
-
-Open your terminal and run:
+## Step 1: Install figma-mcp
 
 ```bash
-git clone https://github.com/bromso/figma-plugin-template.git
-cd figma-plugin-template
+npx @bromso/figma-mcp setup
 ```
 
-## Step 2: Install dependencies
+`setup` auto-detects the AI clients on your machine, prints a table of the configs it will write, and writes them atomically. Use `--dry-run` to preview without touching anything, `--client <id>` to scope to a single client (useful when you only want to wire one of several detected clients), and `--cloud` to use the hosted relay instead of local IPC.
+
+## Step 2: Open Figma and import the bridge plugin
 
 ```bash
-bun install
+figma-mcp setup --open-figma
 ```
 
-This downloads all the libraries the template needs. It takes about 10-30 seconds.
+This opens the OS file picker at the bundled `manifest.json`. In Figma Desktop, go to **Plugins → Development → Import plugin from manifest** and pick the file. The plugin appears in your dev plugins list, ready to run.
 
-## Step 3: Build the plugin
+## Step 3: Run the bridge plugin in Figma
+
+Open any Figma file and run **Plugins → Development → Bridge** from the menu. The plugin window opens and pairs with the local daemon over loopback WebSocket; the handshake is silent on success and the plugin shows a **Connected** indicator.
+
+## Step 4: Verify
 
 ```bash
-bun run build
+figma-mcp doctor
 ```
 
-This creates the plugin files that Figma can load. You'll see output showing the build succeeded.
+`doctor` reports daemon liveness, plugin pairing, AI-client config drift, recent daemon errors, and IPC socket conflicts. A clean run prints all five checks as `ok`.
 
-## Step 4: Test in Figma
+## Step 5: Issue your first tool call
 
-See [Testing in Figma](/docs/getting-started/testing-in-figma) for how to load your plugin into the Figma desktop app.
+Open your AI client and prompt: *"Using figma-mcp, list the variables on the current page."* The client invokes the `list_variables` tool over MCP; the bridge plugin reads the variables in your open Figma file and the result streams back as JSON.
 
-## Step 5: Start developing
+If your client surfaces tool transcripts (Claude Code does, in the inline tool-use block), inspect the request and response there. From here, ask for selection details, mutate fills, or any other tool the catalog exposes — your AI client discovers them via `tools/list`.
 
-For active development with auto-rebuilding:
+## Next steps
 
-```bash
-bun run dev
-```
-
-This watches your files and rebuilds automatically when you make changes.
-
-## Using AI to build your plugin
-
-If you have [Claude Code](https://claude.ai/code), open this project and describe what you want:
-
-> "I want a plugin that renames all selected layers to lowercase"
-
-Claude will generate the code, build it, and guide you through testing. See [Using Claude](/docs/ai/using-claude) for more examples.
-
-## Available commands
-
-| Command | What it does |
-|---------|-------------|
-| `bun run dev` | Watch mode — rebuilds on changes |
-| `bun run build` | One-time production build |
-| `bun run test` | Run all tests |
-| `bun run lint` | Check code style |
-| `bun run storybook` | Browse UI components interactively |
+- Browse the [per-client config notes](/docs/clients).
+- Skim the [architecture page](/docs/architecture).
+- If anything fails, jump to [troubleshooting](/docs/troubleshooting).

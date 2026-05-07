@@ -1,13 +1,13 @@
 ---
 "@repo/tools-extract": minor
-"@repo/mcp-server": minor
+"@bromso/figma-mcp": minor
 "@repo/transport": minor
 "@repo/figma-adapter": minor
 ---
 
 Phase 3: daemon + canonical feature pack end-to-end.
 
-- @repo/mcp-server (apps/mcp-server) — daemon process model with
+- @bromso/figma-mcp (apps/mcp-server) — daemon process model with
   Unix-socket IPC, lockfile-based single-instance enforcement, MCP
   stdio shim that proxies tool calls to the daemon, and `@modelcontextprotocol/sdk`
   bridge for tool registration.

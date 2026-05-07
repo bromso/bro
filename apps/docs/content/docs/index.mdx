@@ -1,26 +1,33 @@
 ---
-title: Figma Plugin Template
-description: Build Figma plugins with React, Vite, TypeScript, and AI skills — no coding experience required.
+title: figma-mcp
+description: MCP server that bridges AI clients to Figma. One command to install.
 ---
 
-## What is this?
+## What is figma-mcp?
 
-This is a ready-to-use template for building Figma plugins. It includes everything you need: a modern tech stack, pre-built UI components, AI-powered development skills, and automated tooling.
+`figma-mcp` is a Model Context Protocol (MCP) server that pairs your AI client to Figma. It runs as an `npx`-installable binary that any MCP-aware client (Claude Code, Claude Desktop, Cursor, Windsurf, VS Code Copilot) can launch on demand. The pairing happens through a small bridge plugin that you drag-import into Figma Desktop once — after that, the AI can read your selection, query variables, and mutate the canvas.
 
-**You don't need to know how to code.** Open this project in [Claude Code](https://claude.ai/code) and describe what you want your plugin to do. Claude will build it for you.
+The server ships with roughly 25 tools today, grouped into packs for extracting node data, reading and writing variables, capturing the bridge plugin's console output, and mutating the canvas. The catalog grows over time; your AI client discovers tools via the standard `tools/list` handshake, so there's nothing to memorize.
 
-## What's included
+## Install
 
-- **14+ UI components** that look native in Figma (buttons, inputs, selects, accordions, and more)
-- **AI skills** that understand Figma plugin architecture and can generate complete plugins from descriptions
-- **Storybook** for browsing all components interactively
-- **Automated testing** with 27+ tests
-- **CI/CD pipeline** that validates every change
-- **Changesets** for version management
+```bash
+npx @bromso/figma-mcp setup
+```
+
+`setup` auto-detects the AI clients installed on your machine, prints a table of the config files it will write, and writes them atomically. Re-running is idempotent — sibling MCP entries are preserved. See the [Quickstart](/docs/getting-started) for the full first-run flow.
+
+## Verify
+
+```bash
+figma-mcp doctor
+```
+
+`doctor` reports daemon liveness, plugin pairing, AI-client config drift, recent daemon errors, and IPC socket conflicts. A clean run prints all five checks as `ok`.
 
 ## Quick links
 
-- [Getting Started](/docs/getting-started) — Clone, install, build your first plugin
-- [Architecture](/docs/guides/architecture) — How Figma plugins work (two processes)
-- [UI Components](/docs/guides/ui-components) — All available components
-- [Using Claude](/docs/ai/using-claude) — How to describe your plugin to AI
+- [Quickstart](/docs/getting-started) — full first-run flow.
+- [Per-client install](/docs/clients) — config paths, verification commands.
+- [Architecture](/docs/architecture) — how it works.
+- [Troubleshooting](/docs/troubleshooting) — what doctor catches and how to fix it.

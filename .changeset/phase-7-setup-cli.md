@@ -1,11 +1,11 @@
 ---
-"@repo/mcp-server": minor
+"@bromso/figma-mcp": minor
 "@repo/transport": minor
 ---
 
 Phase 7: Setup CLI + diagnostics.
 
-`@repo/mcp-server` (apps/mcp-server) gains a CLI dispatch layer:
+`@bromso/figma-mcp` (apps/mcp-server) gains a CLI dispatch layer:
 
 - `figma-mcp setup` detects installed AI clients (Claude Code,
   Claude Desktop, Cursor, Windsurf, VS Code Copilot) and writes

@@ -1,0 +1,44 @@
+---
+title: Windsurf
+description: Install figma-mcp into Windsurf and verify the connection.
+---
+
+## Config path
+
+- macOS / Linux: `~/.codeium/windsurf/mcp_config.json`
+- Windows: `%USERPROFILE%\.codeium\windsurf\mcp_config.json`
+
+This is the file Windsurf reads to discover MCP servers. The setup CLI writes the `mcpServers.figma` entry into it.
+
+## What `setup` writes
+
+```json
+{
+  "mcpServers": {
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "@bromso/figma-mcp"]
+    }
+  }
+}
+```
+
+`setup` preserves any sibling entries in `mcpServers` and any other top-level keys in the file. The write is atomic (temp file plus rename), so a partial write can never corrupt the config.
+
+## Reload behavior
+
+Open the MCP panel in Windsurf and click the refresh icon — the new entry appears without restarting the editor.
+
+## Verify
+
+```bash
+figma-mcp doctor --json | jq '.checks[] | select(.id == "ai-client-configs")'
+```
+
+This confirms the entry is present and that the binary on `PATH` matches the configured command.
+
+## Troubleshooting
+
+- Entry written but not visible — see [config drift](/docs/troubleshooting#ai-client-configs-config-drift).
+- Tool call hangs — see [plugin not paired](/docs/troubleshooting#plugin-pairing-plugin-not-paired).
+- Daemon errors after a Windsurf update — see [stale lockfile](/docs/troubleshooting#daemon-liveness-stale-lockfile-dead-daemon).

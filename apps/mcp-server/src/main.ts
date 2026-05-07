@@ -1,5 +1,5 @@
 /**
- * @repo/mcp-server — entry point.
+ * @bromso/figma-mcp — entry point.
  *
  * Argv dispatch order:
  *   1. CLI commands (`setup`, `doctor`, `--print-path`, `--help`) — handled

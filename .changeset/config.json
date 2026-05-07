@@ -2,10 +2,17 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": ["@changesets/changelog-github", { "repo": "bromso/bro" }],
   "commit": false,
-  "fixed": [["@repo/ui", "@repo/common"]],
+  "fixed": [],
   "linked": [],
   "access": "restricted",
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
-  "ignore": ["@repo/storybook"]
+  "ignore": [
+    "@repo/storybook",
+    "@repo/docs",
+    "@repo/relay",
+    "@repo/bridge-plugin",
+    "@repo/ui",
+    "@repo/common"
+  ]
 }

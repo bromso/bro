@@ -1,121 +1,82 @@
-# figma-plugin-template
+# @bromso/figma-mcp
 
-[![CI](https://github.com/bromso/figma-plugin-template/actions/workflows/ci.yml/badge.svg)](https://github.com/bromso/figma-plugin-template/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/github/license/bromso/figma-plugin-template)](LICENSE)
+> MCP server that lets your AI design in Figma.
+
+[![CI](https://github.com/bromso/bro/actions/workflows/ci.yml/badge.svg)](https://github.com/bromso/bro/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@bromso/figma-mcp)](https://www.npmjs.com/package/@bromso/figma-mcp)
+[![License: MIT](https://img.shields.io/github/license/bromso/bro)](LICENSE)
+![Node](https://img.shields.io/badge/node-%E2%89%A520.10-339933?logo=node.js&logoColor=white)
 ![Bun](https://img.shields.io/badge/bun-1.3-f9f1e1?logo=bun)
-![TypeScript](https://img.shields.io/badge/typescript-6-3178c6?logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/react-19-61dafb?logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/vite-8-646cff?logo=vite&logoColor=white)
-![Turborepo](https://img.shields.io/badge/turborepo-2-ef4444?logo=turborepo&logoColor=white)
-![Biome](https://img.shields.io/badge/biome-2-60a5fa?logo=biome&logoColor=white)
-![Storybook](https://img.shields.io/badge/storybook-10-ff4785?logo=storybook&logoColor=white)
-![Figma](https://img.shields.io/badge/figma-plugin-a259ff?logo=figma&logoColor=white)
 
-Figma/FigJam plugin boilerplate with React, Vite, TypeScript, and Turborepo monorepo.
+`figma-mcp` is a Model Context Protocol server that bridges any MCP-aware AI client — Claude Code, Claude Desktop, Cursor, Windsurf, VS Code Copilot — to a running Figma instance. Through a bundled Figma plugin it exposes ~25 tools across selection extraction, variable read/write, console capture, and canvas mutation. Designed for developers who use AI coding agents and design in Figma.
 
-## Features
-
-- **Turborepo monorepo** with Bun package manager — fast installs, cached builds
-- **React + TypeScript + Vite** build pipeline
-- **Single-file HTML output** — required by the Figma plugin API (all assets inlined)
-- **14+ UI components** via shadcn/ui + custom Figma components (Button, Input, Select, Accordion, Icon, and more)
-- **Storybook 10** for interactive component documentation with play tests
-- **Vitest** for testing (happy-dom for UI, node for common packages)
-- **Biome** for linting and formatting
-- **Type-safe message passing** between plugin and UI via monorepo-networker
-
-## Quick Start
+## Quick start
 
 ```bash
-# Clone the template
-git clone https://github.com/bromso/figma-plugin-template.git
-cd figma-plugin-template
-
-# Install dependencies
-bun install
-
-# Start development
-bun run dev
+npx @bromso/figma-mcp setup     # detect AI clients, write MCP configs
+# Open Figma desktop and drag-import the bundled plugin
+figma-mcp doctor                # verify daemon liveness, plugin pairing, configs
 ```
 
-## Project Structure
+For a step-by-step walkthrough with screenshots, see the [quickstart guide](https://bromso.github.io/bro/docs/getting-started). For per-client install instructions, see the [client matrix](https://bromso.github.io/bro/docs/clients).
 
-```
-apps/
-  design-plugin/  — Figma plugin app (Vite builds to dist/)
-  storybook/      — Storybook component documentation
-packages/
-  common/         — Shared types and network events (@repo/common)
-  ui/             — UI components, styles, and app shell (@repo/ui)
-```
+## Supported AI clients
 
-Packages are **JIT source-only** — they export raw TypeScript with no build step. Use `@repo/*` workspace imports for cross-package references.
+| Client            | Config path                                                              | Setup writes                |
+|-------------------|--------------------------------------------------------------------------|-----------------------------|
+| Claude Code       | `~/.claude.json`                                                         | `mcpServers.figma`          |
+| Claude Desktop    | `~/Library/Application Support/Claude/claude_desktop_config.json`*       | `mcpServers.figma`          |
+| Cursor            | `~/.cursor/mcp.json`                                                     | `mcpServers.figma`          |
+| Windsurf          | `~/.codeium/windsurf/mcp_config.json`                                    | `mcpServers.figma`          |
+| VS Code Copilot   | `~/Library/Application Support/Code/User/mcp.json`*                      | `mcpServers.figma`          |
 
-## Commands
+\* macOS path; Linux uses `~/.config/...`, Windows uses `%APPDATA%`.
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Watch mode (plugin + UI via Turborepo) |
-| `bun run build` | Production build |
-| `bun run test` | Run all tests |
-| `bun run test:watch` | Watch mode for tests |
-| `bun run lint` | Lint with Biome |
-| `bun run storybook` | Start Storybook dev server |
-| `turbo run build-storybook` | Build static Storybook (cached) |
+`figma-mcp setup --client <id>` configures one client only. `figma-mcp setup --dry-run` previews actions without writing. `figma-mcp setup --cloud` pairs through the optional cloud relay for environments without local IPC.
+
+## What's in the box
+
+- **Stdio shim + per-user daemon.** First invocation forks a daemon; subsequent AI clients reuse it via Unix socket / named pipe.
+- **Bundled bridge plugin.** Drag-imported once; pairs over loopback WebSocket. `figma-mcp --print-path` prints the manifest location for `--open-figma` to reveal in Finder/Explorer.
+- **Optional cloud relay.** Cloudflare Worker + Durable Objects + WebSocket Hibernation. Used when the AI client and the Figma user aren't on the same machine.
+- **Tool packs.** `extract` (selection, components, variables, styles), `variables` (read/write/streamed import), `console` (plugin-sandbox log capture + query), `design` (canvas mutation: shapes, text, fills, components).
+- **`figma-mcp doctor`.** Parallel checks: daemon liveness, plugin pairing, AI-client config drift, recent errors, socket conflicts. `--json` for machine consumption.
 
 ## Architecture
 
-The plugin runs as **two separate processes** that communicate via message passing:
-
-- **Plugin side** (`apps/design-plugin/src/plugin/`) — Runs in Figma's sandbox with access to the Figma API (`figma.*`). No DOM access. Entry: `plugin.ts`.
-- **UI side** (`packages/ui/src/`) — Runs in an iframe. React app with shadcn/ui components. Entry: `main.tsx` → `app.tsx`.
-- **Common** (`packages/common/src/`) — Shared between both sides. Contains network event type definitions.
-
-### Messaging
-
-Communication uses [monorepo-networker](https://github.com/CoconutGoodie/monorepo-networker):
-
-1. **Define events** in `packages/common/src/networkSides.ts` — each side declares the events it listens to with typed signatures.
-2. **Build channels** in `*.network.ts` files — set up postMessage transport and register handlers.
-3. **Use channels** — `PLUGIN_CHANNEL.emit(UI, "event", [args])` for fire-and-forget, `.request(...)` for request/response (returns a Promise).
-
-## UI Components
-
-`packages/ui` provides 14+ components via [shadcn/ui](https://ui.shadcn.com) and custom Figma-specific components:
-
-**shadcn/ui:** `Accordion`, `Alert`, `Button`, `Checkbox`, `Input`, `Label`, `RadioGroup`, `Select`, `Switch`, `Textarea`
-
-**Custom Figma:** `Icon`, `IconButton`, `SectionTitle`, `Type`
-
-Run `bun run storybook` to browse all components interactively with live examples.
-
-## Plugin Configuration
-
-Edit `apps/design-plugin/figma.manifest.ts` to set your plugin name, ID, and permissions:
-
-```ts
-export default {
-  name: "My Plugin",
-  id: "your-plugin-id-from-figma",
-  // ...
-};
+```
+AI client (Claude/Cursor/etc.)
+        │
+        │ stdio MCP
+        ▼
+   figma-mcp shim ──────► daemon ◄──── shim ◄── another AI client
+                            │
+                  WebSocket │ (loopback or cloud relay)
+                            ▼
+                  Bridge plugin (Figma sandbox)
+                            │
+                  figma.* API calls
+                            ▼
+                       Figma file
 ```
 
-Get your plugin ID from Figma: **Plugins > Manage plugins > Create new plugin**.
+A single daemon multiplexes multiple AI clients onto one bridge-plugin connection. See [Architecture](https://bromso.github.io/bro/docs/architecture) for depth.
 
-## Testing in Figma
+## Project layout
 
-1. Run `bun run build`
-2. Open the Figma desktop app
-3. Go to **Plugins > Development > Import plugin from manifest**
-4. Select `apps/design-plugin/dist/manifest.json`
+The published artifact is `@bromso/figma-mcp` from `apps/mcp-server`. The repo is a Turborepo monorepo with internal packages for protocol, transport, figma-adapter, and tool packs. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full layout.
 
-For active development, use `bun run dev` to keep the build updated automatically.
+## Versioning
 
-## Contributing
+Releases are managed by [Changesets](https://github.com/changesets/changesets). Every user-facing change adds a changeset; merging to `master` triggers the release workflow which version-bumps and publishes to npm. See [CONTRIBUTING.md](./CONTRIBUTING.md#changesets-policy).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and development workflow.
+## Links
+
+- [Documentation](https://bromso.github.io/bro)
+- [Issues](https://github.com/bromso/bro/issues)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [LICENSE](./LICENSE)
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](./LICENSE).
