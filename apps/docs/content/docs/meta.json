@@ -1,4 +1,4 @@
 {
   "title": "Documentation",
-  "pages": ["getting-started/index"]
+  "pages": ["---Get Started---", "getting-started/index", "---Per-client install---", "clients"]
 }

@@ -1,0 +1,44 @@
+---
+title: Claude Code
+description: Install figma-mcp into Claude Code and verify the connection.
+---
+
+## Config path
+
+- macOS / Linux: `~/.claude.json`
+- Windows: `%USERPROFILE%\.claude.json`
+
+This is the file Claude Code reads on startup to discover MCP servers. The setup CLI writes the `mcpServers.figma` entry into it.
+
+## What `setup` writes
+
+```json
+{
+  "mcpServers": {
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "@bromso/figma-mcp"]
+    }
+  }
+}
+```
+
+`setup` preserves any sibling entries in `mcpServers` and any other top-level keys in the file. The write is atomic (temp file plus rename), so a partial write can never corrupt the config.
+
+## Reload behavior
+
+Claude Code re-reads the config on the next tool invocation — no restart required.
+
+## Verify
+
+```bash
+figma-mcp doctor --json | jq '.checks[] | select(.id == "ai-client-configs")'
+```
+
+This confirms the entry is present and that the binary on `PATH` matches the configured command.
+
+## Troubleshooting
+
+- Entry written but not visible — see [config drift](/docs/troubleshooting#ai-client-configs-config-drift).
+- Tool call hangs — see [plugin not paired](/docs/troubleshooting#plugin-pairing-plugin-not-paired).
+- Daemon errors after a Claude Code update — see [stale lockfile](/docs/troubleshooting#daemon-liveness-stale-lockfile-dead-daemon).
