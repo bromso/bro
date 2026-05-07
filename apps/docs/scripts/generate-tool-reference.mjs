@@ -60,8 +60,41 @@ export function renderToolMdx({ pack, name, description, streaming, inputSchema,
   return lines.join("\n");
 }
 
+// Match Biome's JSON formatter: short arrays inline, long arrays multi-line.
+// Biome's default print-width is 100; we hard-wrap a hair earlier to stay safe
+// across emoji-heavy descriptions (none today, but future-proofing).
+function formatMetaJson(obj) {
+  const lines = ["{"];
+  const entries = Object.entries(obj);
+  for (let i = 0; i < entries.length; i++) {
+    const [k, v] = entries[i];
+    const trailing = i < entries.length - 1 ? "," : "";
+    if (Array.isArray(v)) {
+      // Biome formats array elements with ", " separators; default
+      // JSON.stringify uses "," only.
+      const inline = `[${v.map((item) => JSON.stringify(item)).join(", ")}]`;
+      const inlineLine = `  ${JSON.stringify(k)}: ${inline}${trailing}`;
+      if (inlineLine.length <= 100) {
+        lines.push(inlineLine);
+      } else {
+        lines.push(`  ${JSON.stringify(k)}: [`);
+        for (let j = 0; j < v.length; j++) {
+          const item = JSON.stringify(v[j]);
+          const itemTrailing = j < v.length - 1 ? "," : "";
+          lines.push(`    ${item}${itemTrailing}`);
+        }
+        lines.push(`  ]${trailing}`);
+      }
+    } else {
+      lines.push(`  ${JSON.stringify(k)}: ${JSON.stringify(v)}${trailing}`);
+    }
+  }
+  lines.push("}");
+  return lines.join("\n") + "\n";
+}
+
 export function renderPackMetaJson({ pack, title, tools }) {
-  return JSON.stringify({ title, pages: tools }, null, 2) + "\n";
+  return formatMetaJson({ title, pages: tools });
 }
 
 function isToolDef(value) {
@@ -94,7 +127,7 @@ async function main() {
     title: "Tool reference",
     pages: PACKS.map((p) => p.id.replace(/^tools-/, "")),
   };
-  await writeFile(join(OUTPUT_DIR, "meta.json"), JSON.stringify(topMeta, null, 2) + "\n");
+  await writeFile(join(OUTPUT_DIR, "meta.json"), formatMetaJson(topMeta));
 
   for (const pack of PACKS) {
     const packDir = join(OUTPUT_DIR, pack.id.replace(/^tools-/, ""));
