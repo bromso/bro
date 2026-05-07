@@ -44,11 +44,11 @@ export const GetConsoleWarnings = defineTool({
 export const QueryConsole = defineTool({
   name: "query_console",
   description:
-    "Filter captured console entries by JS regex on the message text. Pattern compiled with no flags.",
+    "Filter captured console entries by JS regex on the message text. Pattern compiled with no flags. Pattern is capped at 200 chars; each message is truncated to its first 1000 chars before matching to bound worst-case backtracking.",
   streaming: false,
   input: z
     .object({
-      pattern: z.string().min(1),
+      pattern: z.string().min(1).max(200),
       limit: z.number().int().min(1).max(1000).optional(),
     })
     .strict(),

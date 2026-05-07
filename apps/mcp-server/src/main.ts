@@ -207,6 +207,7 @@ import {
 import { type IpcTransportPair, pickIpcTransport } from "@repo/transport";
 import { createAiClientConfigsCheck } from "./cli/checks/ai-client-configs";
 import { createDaemonLivenessCheck } from "./cli/checks/daemon-liveness";
+import { createFigmaApiKeyCheck } from "./cli/checks/figma-api-key";
 import { createPluginPairingCheck, type PluginPairingProbe } from "./cli/checks/plugin-pairing";
 import { createRecentErrorsCheck } from "./cli/checks/recent-errors";
 import { createSocketConflictCheck } from "./cli/checks/socket-conflict";
@@ -229,7 +230,6 @@ import type { ChunkLoopTransport } from "./streaming/session-manager";
 
 const VERSION = "0.0.0";
 const DEFAULT_DIR = join(homedir(), ".figma-mcp");
-const SOCKET_PATH = join(DEFAULT_DIR, "daemon.sock");
 const LOCK_PATH = join(DEFAULT_DIR, "daemon.lock");
 
 async function main(): Promise<void> {
@@ -318,6 +318,7 @@ async function handleDoctor(flags: { json: boolean }): Promise<void> {
       createRecentErrorsCheck(join(homeDir, ".figma-mcp", "daemon.log"), (p) =>
         readFile(p, "utf-8")
       ),
+      createFigmaApiKeyCheck({ env: process.env }),
     ],
   });
   process.stdout.write(
@@ -384,6 +385,14 @@ async function connectPluginPairingProbe(ipc: IpcTransportPair): Promise<PluginP
 }
 
 async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
+  // Phase 14: pick the IPC transport once so the daemon-spawn path and the
+  // doctor command agree on the same socket/named-pipe path. Previously the
+  // daemon path used a hard-coded Unix socket (`SOCKET_PATH`) while doctor
+  // resolved a platform-specific path via `pickIpcTransport`, so on Windows
+  // the daemon bound a Unix path while doctor probed the named-pipe path
+  // and they never agreed.
+  const platform = process.platform as Platform;
+  const ipc = pickIpcTransport({ platform });
   const lockfile = new LockfileManager({ path: LOCK_PATH, isPidAlive: isPidAliveDefault });
 
   // Phase 11: build the typed REST client once. `null` when FIGMA_API_KEY is
@@ -395,7 +404,7 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
     argv: process.argv,
     version: VERSION,
     lockfile,
-    socketPath: SOCKET_PATH,
+    socketPath: ipc.socketPath,
     spawnDaemon: async () => {
       const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--daemon"], {
         detached: true,

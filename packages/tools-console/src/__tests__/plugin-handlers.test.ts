@@ -107,6 +107,43 @@ describe("queryConsolePluginHandler", () => {
       /regex/i
     );
   });
+
+  it("truncates message to 1000 chars before regex.test (Phase 14 DoS guard)", async () => {
+    const store = new ConsoleStore();
+    installConsoleCapture({ store, target: { log() {}, warn() {}, error() {}, info() {} } });
+    // First 1000 chars are "a"s; after the cap is "MARKER".
+    // The match should not see the marker because it's beyond the test cap.
+    store.append({
+      level: "log",
+      message: `${"a".repeat(1000)}MARKER`,
+      timestamp: 1,
+    });
+    const out = await queryConsolePluginHandler({ pattern: "MARKER" }, ctx());
+    expect(out.entries).toHaveLength(0);
+  });
+
+  it("returns the FULL message (not truncated) on a hit", async () => {
+    const store = new ConsoleStore();
+    installConsoleCapture({ store, target: { log() {}, warn() {}, error() {}, info() {} } });
+    const fullMessage = `START ${"x".repeat(2000)}END`;
+    store.append({ level: "log", message: fullMessage, timestamp: 1 });
+    const out = await queryConsolePluginHandler({ pattern: "^START" }, ctx());
+    expect(out.entries).toHaveLength(1);
+    expect(out.entries[0].message).toBe(fullMessage);
+  });
+
+  it("backtracking-prone pattern + bounded message finishes quickly", async () => {
+    const store = new ConsoleStore();
+    installConsoleCapture({ store, target: { log() {}, warn() {}, error() {}, info() {} } });
+    // Classic catastrophic-backtracking input — without truncation this would
+    // hang on a 100KB message; capped at 1000 chars it returns in ms.
+    store.append({ level: "log", message: "a".repeat(100_000), timestamp: 1 });
+    const start = Date.now();
+    const out = await queryConsolePluginHandler({ pattern: "^(a+)+$" }, ctx());
+    const duration = Date.now() - start;
+    expect(out.entries).toHaveLength(1);
+    expect(duration).toBeLessThan(2000);
+  });
 });
 
 describe("consoleStatusPluginHandler", () => {
