@@ -169,3 +169,44 @@ export const GetUserMe = defineTool({
     imgUrl: z.string(),
   }),
 });
+
+const CommentSummary = z.object({
+  id: z.string(),
+  message: z.string(),
+  parentId: z.string().optional(),
+  userHandle: z.string(),
+  createdAt: z.string(),
+  x: z.number().optional(),
+  y: z.number().optional(),
+});
+
+export const GetFileComments = defineTool({
+  name: "get_file_comments",
+  description: "REST. Return the file's comments.",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({ comments: z.array(CommentSummary) }),
+});
+
+export const PostFileComment = defineTool({
+  name: "post_file_comment",
+  description: "REST. Post a new comment. WRITE — gated behind --enable-write-tools (default off).",
+  streaming: false,
+  input: z
+    .object({
+      fileKey: FileKey,
+      message: z.string().min(1),
+      x: z.number().optional(),
+      y: z.number().optional(),
+    })
+    .strict(),
+  output: CommentSummary,
+});
+
+export const DeleteFileComment = defineTool({
+  name: "delete_file_comment",
+  description: "REST. Delete a comment. WRITE — gated behind --enable-write-tools (default off).",
+  streaming: false,
+  input: z.object({ fileKey: FileKey, commentId: z.string().min(1) }).strict(),
+  output: z.object({ ok: z.literal(true) }),
+});

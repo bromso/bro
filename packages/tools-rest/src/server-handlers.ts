@@ -1,8 +1,10 @@
 import type { FigmaApi } from "@repo/figma-api-client";
 import type { ServerHandler } from "@repo/protocol";
-import { mapRestError, requireApiKey } from "./guards";
+import { mapRestError, requireApiKey, requireWriteEnabled } from "./guards";
 import type {
+  DeleteFileComment,
   GetFileBranches,
+  GetFileComments,
   GetFileComponentSets,
   GetFileComponents,
   GetFileMetadata,
@@ -13,6 +15,7 @@ import type {
   GetImageRenders,
   GetNodeById,
   GetUserMe,
+  PostFileComment,
 } from "./tools";
 
 export interface RestDeps {
@@ -235,6 +238,76 @@ export function createGetUserMeServerHandler(deps: RestDeps): ServerHandler<type
     try {
       const me = await api.getMe();
       return { id: me.id, email: me.email, handle: me.handle, imgUrl: me.img_url };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export interface RestWriteDeps extends RestDeps {
+  readonly enableWriteTools: boolean;
+}
+
+const narrowComment = (c: {
+  id: string;
+  message: string;
+  parent_id?: string;
+  user: { handle: string };
+  created_at: string;
+  client_meta?: { x: number; y: number };
+}) => ({
+  id: c.id,
+  message: c.message,
+  parentId: c.parent_id || undefined,
+  userHandle: c.user.handle,
+  createdAt: c.created_at,
+  x: c.client_meta?.x,
+  y: c.client_meta?.y,
+});
+
+export function createGetFileCommentsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetFileComments> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_file_comments");
+    try {
+      const r = await api.getFileComments(args.fileKey);
+      return { comments: r.comments.map(narrowComment) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createPostFileCommentServerHandler(
+  deps: RestWriteDeps
+): ServerHandler<typeof PostFileComment> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "post_file_comment");
+    requireWriteEnabled(deps, "post_file_comment");
+    try {
+      const c = await api.postFileComment(args.fileKey, {
+        message: args.message,
+        ...(args.x !== undefined && args.y !== undefined
+          ? { client_meta: { x: args.x, y: args.y } }
+          : {}),
+      });
+      return narrowComment(c);
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createDeleteFileCommentServerHandler(
+  deps: RestWriteDeps
+): ServerHandler<typeof DeleteFileComment> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "delete_file_comment");
+    requireWriteEnabled(deps, "delete_file_comment");
+    try {
+      await api.deleteFileComment(args.fileKey, args.commentId);
+      return { ok: true as const };
     } catch (err) {
       mapRestError(err);
     }

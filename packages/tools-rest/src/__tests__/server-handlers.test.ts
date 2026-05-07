@@ -1,7 +1,9 @@
 import { FigmaApiFake } from "@repo/figma-api-client";
 import { describe, expect, it } from "vitest";
 import {
+  createDeleteFileCommentServerHandler,
   createGetFileBranchesServerHandler,
+  createGetFileCommentsServerHandler,
   createGetFileComponentSetsServerHandler,
   createGetFileComponentsServerHandler,
   createGetFileMetadataServerHandler,
@@ -12,6 +14,7 @@ import {
   createGetImageRendersServerHandler,
   createGetNodeByIdServerHandler,
   createGetUserMeServerHandler,
+  createPostFileCommentServerHandler,
 } from "../server-handlers";
 
 const noopLogger = {
@@ -262,5 +265,102 @@ describe("get_user_me server handler", () => {
     const handler = createGetUserMeServerHandler({ figmaApi });
     const r = await handler({}, ctx);
     expect(r).toEqual({ id: "u1", email: "x@y", handle: "Jonas", imgUrl: "http://i" });
+  });
+});
+
+describe("get_file_comments server handler", () => {
+  it("returns narrowed comments", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    await figmaApi.postFileComment("ABC", { message: "first" });
+    const handler = createGetFileCommentsServerHandler({ figmaApi });
+    const r = await handler({ fileKey: "ABC" }, ctx);
+    expect(r.comments).toHaveLength(1);
+    expect(r.comments[0].message).toBe("first");
+    expect(r.comments[0].userHandle).toBe("fake-user");
+  });
+});
+
+describe("post_file_comment server handler", () => {
+  it("returns E_WRITE_TOOLS_DISABLED when the gate is closed", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createPostFileCommentServerHandler({ figmaApi, enableWriteTools: false });
+    await expect(handler({ fileKey: "ABC", message: "hi" }, ctx)).rejects.toThrow(
+      /E_WRITE_TOOLS_DISABLED/
+    );
+  });
+
+  it("posts when the gate is open", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    const handler = createPostFileCommentServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler({ fileKey: "ABC", message: "hi" }, ctx);
+    expect(r.message).toBe("hi");
+    expect(r.id).toMatch(/^c/);
+  });
+
+  it("E_FIGMA_API_KEY_MISSING precedes the write-gate check", async () => {
+    const handler = createPostFileCommentServerHandler({ figmaApi: null, enableWriteTools: true });
+    await expect(handler({ fileKey: "ABC", message: "hi" }, ctx)).rejects.toThrow(
+      /E_FIGMA_API_KEY_MISSING/
+    );
+  });
+});
+
+describe("delete_file_comment server handler", () => {
+  it("returns E_WRITE_TOOLS_DISABLED when the gate is closed", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createDeleteFileCommentServerHandler({ figmaApi, enableWriteTools: false });
+    await expect(handler({ fileKey: "ABC", commentId: "c1" }, ctx)).rejects.toThrow(
+      /E_WRITE_TOOLS_DISABLED/
+    );
+  });
+
+  it("deletes when gate is open and the comment exists", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    const c = await figmaApi.postFileComment("ABC", { message: "x" });
+    const handler = createDeleteFileCommentServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler({ fileKey: "ABC", commentId: c.id }, ctx);
+    expect(r).toEqual({ ok: true });
+    const list = await figmaApi.getFileComments("ABC");
+    expect(list.comments).toEqual([]);
+  });
+
+  it("propagates E_FIGMA_REST_404 for unknown commentId", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    const handler = createDeleteFileCommentServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(handler({ fileKey: "ABC", commentId: "missing" }, ctx)).rejects.toThrow(
+      /E_FIGMA_REST_404/
+    );
   });
 });

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  DeleteFileComment,
   GetFileBranches,
+  GetFileComments,
   GetFileComponentSets,
   GetFileComponents,
   GetFileMetadata,
@@ -11,6 +13,7 @@ import {
   GetImageRenders,
   GetNodeById,
   GetUserMe,
+  PostFileComment,
 } from "../tools";
 
 describe("GetFileMetadata schema", () => {
@@ -165,5 +168,44 @@ describe("GetUserMe schema", () => {
     expect(
       GetUserMe.output.safeParse({ id: "u", email: "x@y", handle: "j", imgUrl: "" }).success
     ).toBe(true);
+  });
+});
+
+describe("GetFileComments schema", () => {
+  it("requires fileKey", () => {
+    expect(GetFileComments.input.safeParse({ fileKey: "ABC" }).success).toBe(true);
+  });
+
+  it("output { comments: [...] }", () => {
+    expect(GetFileComments.output.safeParse({ comments: [] }).success).toBe(true);
+  });
+});
+
+describe("PostFileComment schema", () => {
+  it("requires fileKey + message", () => {
+    expect(PostFileComment.input.safeParse({ fileKey: "ABC", message: "hi" }).success).toBe(true);
+    expect(PostFileComment.input.safeParse({ fileKey: "ABC" }).success).toBe(false);
+  });
+
+  it("rejects empty message", () => {
+    expect(PostFileComment.input.safeParse({ fileKey: "ABC", message: "" }).success).toBe(false);
+  });
+
+  it("accepts optional x/y pin", () => {
+    expect(
+      PostFileComment.input.safeParse({ fileKey: "ABC", message: "x", x: 10, y: 20 }).success
+    ).toBe(true);
+  });
+});
+
+describe("DeleteFileComment schema", () => {
+  it("requires fileKey + commentId", () => {
+    expect(DeleteFileComment.input.safeParse({ fileKey: "ABC", commentId: "c1" }).success).toBe(
+      true
+    );
+  });
+
+  it("output is { ok: true }", () => {
+    expect(DeleteFileComment.output.safeParse({ ok: true }).success).toBe(true);
   });
 });
