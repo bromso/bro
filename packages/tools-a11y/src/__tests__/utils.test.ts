@@ -36,6 +36,12 @@ describe("hexToRgb", () => {
     expect(() => hexToRgb("#1234567")).toThrow(/hex/i);
     expect(() => hexToRgb("")).toThrow(/hex/i);
   });
+
+  it("rejects non-string input", () => {
+    // Force a non-string through the public API to exercise the typeof guard.
+    expect(() => hexToRgb(undefined as unknown as string)).toThrow(/hex/i);
+    expect(() => hexToRgb(123 as unknown as string)).toThrow(/hex/i);
+  });
 });
 
 describe("rgbToHex", () => {

@@ -475,21 +475,21 @@ describe("auditA11ySummaryPluginHandler", () => {
   it("flags target_size as warn when minimum passes but enhanced fails", async () => {
     const ctx = designCtx();
     const frame = await ctx.figma.createFrame({ width: 30, height: 30 });
-    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
     expect(out.checks.find((c) => c.name === "target_size")?.status).toBe("warn");
   });
 
   it("flags target_size as error when below minimum", async () => {
     const ctx = designCtx();
     const frame = await ctx.figma.createFrame({ width: 20, height: 20 });
-    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
     expect(out.checks.find((c) => c.name === "target_size")?.status).toBe("error");
   });
 
   it("flags alt_text as warn when not set on the root frame", async () => {
     const ctx = designCtx();
     const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
-    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
     const altCheck = out.checks.find((c) => c.name === "alt_text");
     expect(altCheck?.status).toBe("warn");
     expect(altCheck?.detail).toMatch(/alt/i);
@@ -498,7 +498,7 @@ describe("auditA11ySummaryPluginHandler", () => {
   it("flags landmark_role as info when not set", async () => {
     const ctx = designCtx();
     const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
-    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id }, ctx);
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
     expect(out.checks.find((c) => c.name === "landmark_role")?.status).toMatch(/^(ok|warn)$/);
   });
 
@@ -534,7 +534,55 @@ describe("auditA11ySummaryPluginHandler", () => {
   it("works on a FigJam editor", async () => {
     const ctx = figJamCtx();
     const sticky = await ctx.figma.createSticky({ content: "x" });
-    const out = await auditA11ySummaryPluginHandler({ nodeId: sticky.id }, ctx);
+    const out = await auditA11ySummaryPluginHandler({ nodeId: sticky.id, recursive: false }, ctx);
     expect(out.nodeId).toBe(sticky.id);
+  });
+
+  it("returns ok status when ariaLabel and landmarkRole are set on the root", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "ariaLabel",
+      value: "Hero region",
+    });
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "landmarkRole",
+      value: "main",
+    });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
+    const aria = out.checks.find((c) => c.name === "aria_label");
+    const role = out.checks.find((c) => c.name === "landmark_role");
+    expect(aria?.detail).toMatch(/Hero region/);
+    expect(role?.detail).toMatch(/main/);
+  });
+
+  it("truncates long alt text in the detail string", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const longAlt = "x".repeat(120);
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "altText",
+      value: longAlt,
+    });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
+    const alt = out.checks.find((c) => c.name === "alt_text");
+    expect(alt?.detail).toMatch(/…/);
+    expect(alt?.detail.length).toBeLessThan(longAlt.length);
+  });
+
+  it("falls back to a categoryless annotation when pluginData has no alt text", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "annotation alt" }],
+    });
+    const out = await auditA11ySummaryPluginHandler({ nodeId: frame.id, recursive: false }, ctx);
+    const alt = out.checks.find((c) => c.name === "alt_text");
+    expect(alt?.status).toBe("ok");
+    expect(alt?.detail).toMatch(/annotation alt/);
   });
 });
