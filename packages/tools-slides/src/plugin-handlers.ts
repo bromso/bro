@@ -1,4 +1,5 @@
 import type { PluginHandler } from "@repo/protocol";
+import { requireSlides } from "./guard";
 import type {
   CreateSlide,
   CreateSlideRow,
@@ -17,18 +18,12 @@ import type {
   SetSlideTransition,
 } from "./tools";
 
-const E_MISMATCH = "E_FIGMA_EDITOR_TYPE_MISMATCH";
-
 export const createSlidePluginHandler: PluginHandler<typeof CreateSlide> = async (
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: create_slide requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createSlide(args);
+  const sl = requireSlides(figma, "create_slide");
+  const node = await sl.createSlide(args);
   return { nodeId: node.id, type: "SLIDE" };
 };
 
@@ -36,12 +31,8 @@ export const createSlideRowPluginHandler: PluginHandler<typeof CreateSlideRow> =
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: create_slide_row requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createSlideRow(args);
+  const sl = requireSlides(figma, "create_slide_row");
+  const node = await sl.createSlideRow(args);
   return { nodeId: node.id, type: "SLIDE_ROW" };
 };
 
@@ -49,12 +40,8 @@ export const setSlideNamePluginHandler: PluginHandler<typeof SetSlideName> = asy
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: set_slide_name requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.setSlideName({ slideId: args.slideId, name: args.name });
+  const sl = requireSlides(figma, "set_slide_name");
+  await sl.setSlideName({ slideId: args.slideId, name: args.name });
   return { nodeId: args.slideId, type: "SLIDE" };
 };
 
@@ -62,12 +49,8 @@ export const setSlideSkippedPluginHandler: PluginHandler<typeof SetSlideSkipped>
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: set_slide_skipped requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.setSlideSkipped({ slideId: args.slideId, skipped: args.skipped });
+  const sl = requireSlides(figma, "set_slide_skipped");
+  await sl.setSlideSkipped({ slideId: args.slideId, skipped: args.skipped });
   return { nodeId: args.slideId, type: "SLIDE" };
 };
 
@@ -75,12 +58,8 @@ export const setSlideTransitionPluginHandler: PluginHandler<typeof SetSlideTrans
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: set_slide_transition requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.setSlideTransition({
+  const sl = requireSlides(figma, "set_slide_transition");
+  await sl.setSlideTransition({
     slideId: args.slideId,
     style: args.style,
     durationSec: args.durationSec,
@@ -95,22 +74,14 @@ export const setSlideBackgroundPluginHandler: PluginHandler<typeof SetSlideBackg
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: set_slide_background requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.setSlideBackground({ slideId: args.slideId, paint: args.paint });
+  const sl = requireSlides(figma, "set_slide_background");
+  await sl.setSlideBackground({ slideId: args.slideId, paint: args.paint });
   return { nodeId: args.slideId, type: "SLIDE" };
 };
 
 export const moveSlidePluginHandler: PluginHandler<typeof MoveSlide> = async (args, { figma }) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: move_slide requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.moveSlide({
+  const sl = requireSlides(figma, "move_slide");
+  await sl.moveSlide({
     slideId: args.slideId,
     rowIndex: args.rowIndex,
     columnIndex: args.columnIndex,
@@ -126,12 +97,8 @@ export const duplicateSlidePluginHandler: PluginHandler<typeof DuplicateSlide> =
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: duplicate_slide requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.duplicateSlide({ slideId: args.slideId });
+  const sl = requireSlides(figma, "duplicate_slide");
+  const node = await sl.duplicateSlide({ slideId: args.slideId });
   return { nodeId: node.id, type: "SLIDE" };
 };
 
@@ -139,12 +106,8 @@ export const deleteSlidePluginHandler: PluginHandler<typeof DeleteSlide> = async
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: delete_slide requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.deleteSlide({ slideId: args.slideId });
+  const sl = requireSlides(figma, "delete_slide");
+  await sl.deleteSlide({ slideId: args.slideId });
   return { slideId: args.slideId, deleted: true as const };
 };
 
@@ -152,12 +115,8 @@ export const listSlidesPluginHandler: PluginHandler<typeof ListSlides> = async (
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: list_slides requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const nodeIds = await figma.listSlides({ rowIndex: args.rowIndex });
+  const sl = requireSlides(figma, "list_slides");
+  const nodeIds = await sl.listSlides({ rowIndex: args.rowIndex });
   return { nodeIds: [...nodeIds], count: nodeIds.length };
 };
 
@@ -165,12 +124,8 @@ export const listSlideRowsPluginHandler: PluginHandler<typeof ListSlideRows> = a
   _args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: list_slide_rows requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const rowIds = await figma.listSlideRows();
+  const sl = requireSlides(figma, "list_slide_rows");
+  const rowIds = await sl.listSlideRows();
   return { rowIds: [...rowIds], count: rowIds.length };
 };
 
@@ -178,27 +133,19 @@ export const setActiveSlidePluginHandler: PluginHandler<typeof SetActiveSlide> =
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: set_active_slide requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.setActiveSlide({ slideId: args.slideId });
+  const sl = requireSlides(figma, "set_active_slide");
+  await sl.setActiveSlide({ slideId: args.slideId });
   return { slideId: args.slideId };
 };
 
 export const getSlidePluginHandler: PluginHandler<typeof GetSlide> = async (args, { figma }) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: get_slide requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.getNodeById({ nodeId: args.slideId });
+  const sl = requireSlides(figma, "get_slide");
+  const node = await sl.getNodeById({ nodeId: args.slideId });
   if (!node || node.type !== "SLIDE") {
     throw new Error(`expected SLIDE node: ${args.slideId}`);
   }
-  const transition = await figma.getSlideTransition({ slideId: args.slideId });
-  const grid = await figma.getSlideGrid();
+  const transition = await sl.getSlideTransition({ slideId: args.slideId });
+  const grid = await sl.getSlideGrid();
   const isFirst = grid[0]?.[0] === args.slideId;
   return {
     nodeId: args.slideId,
@@ -218,12 +165,8 @@ export const setSlidesViewPluginHandler: PluginHandler<typeof SetSlidesView> = a
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: set_slides_view requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  await figma.setSlidesView({ view: args.view });
+  const sl = requireSlides(figma, "set_slides_view");
+  await sl.setSlidesView({ view: args.view });
   return { view: args.view };
 };
 
@@ -231,11 +174,7 @@ export const getSlideGridPluginHandler: PluginHandler<typeof GetSlideGrid> = asy
   _args,
   { figma }
 ) => {
-  if (figma.editorType !== "slides") {
-    throw new Error(
-      `${E_MISMATCH}: get_slide_grid requires editorType=slides (got ${figma.editorType})`
-    );
-  }
-  const grid = await figma.getSlideGrid();
+  const sl = requireSlides(figma, "get_slide_grid");
+  const grid = await sl.getSlideGrid();
   return { grid: grid.map((row) => [...row]) };
 };
