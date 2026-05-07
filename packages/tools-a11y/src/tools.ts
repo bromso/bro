@@ -37,3 +37,23 @@ export const AuditTargetSize = defineTool({
     reason: z.string().optional(),
   }),
 });
+
+const ColorBlindnessType = z.enum(["protanopia", "deuteranopia", "tritanopia", "achromatopsia"]);
+
+export const SimulateColorBlindness = defineTool({
+  name: "simulate_color_blindness",
+  description:
+    "Simulate how a hex color appears to a viewer with the named color-vision deficiency. Pure computation — does not touch the design. Useful for the LLM to check whether a brand color survives the deficiency before accepting it.",
+  streaming: false,
+  input: z
+    .object({
+      hex: z.string().regex(/^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/),
+      type: ColorBlindnessType,
+    })
+    .strict(),
+  output: z.object({
+    sourceHex: z.string(),
+    simulatedHex: z.string(),
+    type: ColorBlindnessType,
+  }),
+});

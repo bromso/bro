@@ -126,3 +126,32 @@ describe("auditTargetSizePluginHandler", () => {
     expect(out.nodeId).toBe(sticky.id);
   });
 });
+
+import { simulateColorBlindnessPluginHandler } from "../plugin-handlers";
+
+describe("simulateColorBlindnessPluginHandler", () => {
+  it("returns the simulated hex for achromatopsia (greyscale)", async () => {
+    const ctx = designCtx();
+    const out = await simulateColorBlindnessPluginHandler(
+      { hex: "#FF0000", type: "achromatopsia" },
+      ctx
+    );
+    expect(out.type).toBe("achromatopsia");
+    expect(out.sourceHex).toBe("#FF0000");
+    // Achromatopsia: red has luminance ≈ 0.2126 → channels equal.
+    const hex = out.simulatedHex;
+    expect(hex).toMatch(/^#([0-9A-F]{2})\1\1$/);
+  });
+
+  it("works the same on every editor type (no guard)", async () => {
+    const out1 = await simulateColorBlindnessPluginHandler(
+      { hex: "#FF0000", type: "protanopia" },
+      designCtx()
+    );
+    const out2 = await simulateColorBlindnessPluginHandler(
+      { hex: "#FF0000", type: "protanopia" },
+      figJamCtx()
+    );
+    expect(out1.simulatedHex).toBe(out2.simulatedHex);
+  });
+});

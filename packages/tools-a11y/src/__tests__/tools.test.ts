@@ -72,3 +72,46 @@ describe("AuditTargetSize schema", () => {
     ).toBe(true);
   });
 });
+
+import { SimulateColorBlindness } from "../tools";
+
+describe("SimulateColorBlindness schema", () => {
+  it("accepts every documented type", () => {
+    for (const type of ["protanopia", "deuteranopia", "tritanopia", "achromatopsia"]) {
+      expect(
+        SimulateColorBlindness.input.safeParse({
+          hex: "#FF0000",
+          type,
+        }).success
+      ).toBe(true);
+    }
+  });
+
+  it("rejects unknown type", () => {
+    expect(
+      SimulateColorBlindness.input.safeParse({
+        hex: "#FF0000",
+        type: "rainbow",
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects malformed hex", () => {
+    expect(
+      SimulateColorBlindness.input.safeParse({
+        hex: "nope",
+        type: "protanopia",
+      }).success
+    ).toBe(false);
+  });
+
+  it("output is {simulatedHex, type}", () => {
+    expect(
+      SimulateColorBlindness.output.safeParse({
+        simulatedHex: "#808080",
+        type: "achromatopsia",
+        sourceHex: "#FF0000",
+      }).success
+    ).toBe(true);
+  });
+});

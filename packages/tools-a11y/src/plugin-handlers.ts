@@ -1,9 +1,10 @@
 import type { PluginHandler } from "@repo/protocol";
-import type { AuditContrast, AuditTargetSize } from "./tools";
+import type { AuditContrast, AuditTargetSize, SimulateColorBlindness } from "./tools";
 import {
   hexToRgb,
   passesWCAG_AA,
   passesWCAG_AAA,
+  simulateColorBlindness,
   WCAG_TARGET_SIZE_ENHANCED,
   WCAG_TARGET_SIZE_MIN,
   wcagContrastRatio,
@@ -81,5 +82,19 @@ export const auditTargetSizePluginHandler: PluginHandler<typeof AuditTargetSize>
     height: bbox.height,
     passesMinimum: min >= WCAG_TARGET_SIZE_MIN,
     passesEnhanced: min >= WCAG_TARGET_SIZE_ENHANCED,
+  };
+};
+
+export const simulateColorBlindnessPluginHandler: PluginHandler<
+  typeof SimulateColorBlindness
+> = async (args, _ctx) => {
+  const sourceHex = args.hex.startsWith("#")
+    ? args.hex.toUpperCase()
+    : `#${args.hex.toUpperCase()}`;
+  const simulatedHex = simulateColorBlindness(args.hex, args.type);
+  return {
+    sourceHex,
+    simulatedHex,
+    type: args.type,
   };
 };
