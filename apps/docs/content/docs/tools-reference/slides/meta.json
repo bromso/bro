@@ -1,0 +1,20 @@
+{
+  "title": "slides",
+  "pages": [
+    "create_slide",
+    "create_slide_row",
+    "delete_slide",
+    "duplicate_slide",
+    "get_slide",
+    "get_slide_grid",
+    "list_slide_rows",
+    "list_slides",
+    "move_slide",
+    "set_active_slide",
+    "set_slide_background",
+    "set_slide_name",
+    "set_slide_skipped",
+    "set_slide_transition",
+    "set_slides_view"
+  ]
+}

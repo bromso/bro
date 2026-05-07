@@ -1,0 +1,23 @@
+---
+title: set_alt_text
+description: "Write alt text for a node. Stored in pluginData under `a11y/altText` AND attached as an annotation (categoryless) so the alt text is visible in Figma's annotation panel. Overwrites any existing alt text. Idempotent — calling again with a new value replaces both the pluginData entry and the existing annotation."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="set_alt_text"
+  description="Write alt text for a node. Stored in pluginData under `a11y/altText` AND attached as an annotation (categoryless) so the alt text is visible in Figma's annotation panel. Overwrites any existing alt text. Idempotent — calling again with a new value replaces both the pluginData entry and the existing annotation."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"text":{"type":"string","minLength":1}},"required":["nodeId","text"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"text":{"type":"string"}},"required":["nodeId","text"],"additionalProperties":false}}
+/>
+
+## Description
+
+Write alt text for a node. Stored in pluginData under `a11y/altText` AND attached as an annotation (categoryless) so the alt text is visible in Figma's annotation panel. Overwrites any existing alt text. Idempotent — calling again with a new value replaces both the pluginData entry and the existing annotation.
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

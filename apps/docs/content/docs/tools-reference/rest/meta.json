@@ -1,0 +1,25 @@
+{
+  "title": "rest",
+  "pages": [
+    "delete_file_comment",
+    "get_dev_resources",
+    "get_file_branches",
+    "get_file_comments",
+    "get_file_component_sets",
+    "get_file_components",
+    "get_file_metadata",
+    "get_file_pages",
+    "get_file_styles",
+    "get_file_versions",
+    "get_image_fills",
+    "get_image_renders",
+    "get_node_by_id",
+    "get_project_files",
+    "get_team_components",
+    "get_team_projects",
+    "get_team_styles",
+    "get_user_me",
+    "post_dev_resources",
+    "post_file_comment"
+  ]
+}

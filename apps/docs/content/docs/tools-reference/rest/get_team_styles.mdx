@@ -1,0 +1,23 @@
+---
+title: get_team_styles
+description: "REST. Return team styles (cursor-paginated)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_team_styles"
+  description="REST. Return team styles (cursor-paginated)."
+  streaming={false}
+  input={{"type":"object","properties":{"teamId":{"type":"string","minLength":1},"pageSize":{"type":"integer","exclusiveMinimum":true,"minimum":0},"cursor":{"type":"string"}},"required":["teamId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"styles":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"styleType":{"type":"string"}},"required":["key","name","description","styleType"],"additionalProperties":false}},"nextCursor":{"type":"string"}},"required":["styles"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return team styles (cursor-paginated).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

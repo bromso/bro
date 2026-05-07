@@ -1,0 +1,23 @@
+---
+title: create_frame
+description: "Create a frame (auto-layout-capable container) on the current page."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="create_frame"
+  description="Create a frame (auto-layout-capable container) on the current page."
+  streaming={false}
+  input={{"type":"object","properties":{"width":{"type":"number","exclusiveMinimum":true,"minimum":0},"height":{"$ref":"#/properties/width"},"x":{"type":"number"},"y":{"type":"number"},"name":{"type":"string"}},"required":["width","height"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["FRAME"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Create a frame (auto-layout-capable container) on the current page.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

@@ -10,6 +10,14 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@repo/tools-a11y": "workspace:*",
+    "@repo/tools-console": "workspace:*",
+    "@repo/tools-design": "workspace:*",
+    "@repo/tools-extract": "workspace:*",
+    "@repo/tools-figjam": "workspace:*",
+    "@repo/tools-rest": "workspace:*",
+    "@repo/tools-slides": "workspace:*",
+    "@repo/tools-variables": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "@types/mdx": "^2.0.13",
     "fumadocs-core": "^14.7.0",

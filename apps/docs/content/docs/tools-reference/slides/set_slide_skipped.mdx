@@ -1,0 +1,23 @@
+---
+title: set_slide_skipped
+description: "Slides-only. Toggle whether a slide is skipped during presentation playback (slide.isSkippedSlide). This is the only slide-level metadata flag the plugin API exposes."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="set_slide_skipped"
+  description="Slides-only. Toggle whether a slide is skipped during presentation playback (slide.isSkippedSlide). This is the only slide-level metadata flag the plugin API exposes."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1},"skipped":{"type":"boolean"}},"required":["slideId","skipped"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Toggle whether a slide is skipped during presentation playback (slide.isSkippedSlide). This is the only slide-level metadata flag the plugin API exposes.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

@@ -1,0 +1,23 @@
+---
+title: get_node_by_id
+description: "REST. Return the type/name of a node by id (returns found: false when the node does not exist)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_node_by_id"
+  description="REST. Return the type/name of a node by id (returns found: false when the node does not exist)."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1},"nodeId":{"type":"string","minLength":1}},"required":["fileKey","nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"id":{"type":"string"},"type":{"type":"string"},"name":{"type":"string"},"found":{"type":"boolean"}},"required":["id","type","found"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the type/name of a node by id (returns found: false when the node does not exist).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

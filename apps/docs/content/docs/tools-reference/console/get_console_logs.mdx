@@ -1,0 +1,23 @@
+---
+title: get_console_logs
+description: "Return recent console entries from the Figma plugin sandbox (all levels)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-console"
+  name="get_console_logs"
+  description="Return recent console entries from the Figma plugin sandbox (all levels)."
+  streaming={false}
+  input={{"type":"object","properties":{"limit":{"type":"integer","minimum":1,"maximum":1000}},"additionalProperties":false}}
+  output={{"type":"object","properties":{"entries":{"type":"array","items":{"type":"object","properties":{"level":{"type":"string","enum":["log","warn","error","info"]},"message":{"type":"string"},"timestamp":{"type":"integer","minimum":0}},"required":["level","message","timestamp"],"additionalProperties":false}}},"required":["entries"],"additionalProperties":false}}
+/>
+
+## Description
+
+Return recent console entries from the Figma plugin sandbox (all levels).
+
+## See also
+
+- Pack overview: [tools-console](/docs/tools/console)

@@ -1,0 +1,23 @@
+---
+title: remove_annotation
+description: "Remove the annotation at the given array index. Indices shift after removal — re-list before removing more than one. Throws if `annotationIndex` is out of range."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="remove_annotation"
+  description="Remove the annotation at the given array index. Indices shift after removal — re-list before removing more than one. Throws if `annotationIndex` is out of range."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"annotationIndex":{"type":"integer","minimum":0}},"required":["nodeId","annotationIndex"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"count":{"type":"integer","minimum":0}},"required":["nodeId","count"],"additionalProperties":false}}
+/>
+
+## Description
+
+Remove the annotation at the given array index. Indices shift after removal — re-list before removing more than one. Throws if `annotationIndex` is out of range.
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

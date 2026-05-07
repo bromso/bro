@@ -1,4 +1,4 @@
 {
   "title": "Tool reference",
-  "pages": []
+  "pages": ["extract", "variables", "console", "design", "figjam", "slides", "a11y", "rest"]
 }

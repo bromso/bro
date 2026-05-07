@@ -1,0 +1,23 @@
+---
+title: get_file_metadata
+description: "REST. Return narrowed metadata for a Figma file: name, lastModified, version, role, editorType."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_file_metadata"
+  description="REST. Return narrowed metadata for a Figma file: name, lastModified, version, role, editorType."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"name":{"type":"string"},"lastModified":{"type":"string"},"version":{"type":"string"},"role":{"type":"string"},"editorType":{"type":"string"}},"required":["name","lastModified","version","role","editorType"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return narrowed metadata for a Figma file: name, lastModified, version, role, editorType.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

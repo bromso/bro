@@ -25,11 +25,17 @@ export function escapeForJsxProp(s) {
   return firstLine.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+export function escapeForYamlString(s) {
+  // YAML double-quoted scalar: collapse newlines and escape backslash + double-quote.
+  const firstLine = String(s).split("\n")[0];
+  return firstLine.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 export function renderToolMdx({ pack, name, description, streaming, inputSchema, outputSchema }) {
   const lines = [];
   lines.push("---");
   lines.push(`title: ${name}`);
-  lines.push(`description: ${escapeForJsxProp(description)}`);
+  lines.push(`description: "${escapeForYamlString(description)}"`);
   lines.push("---");
   lines.push("");
   lines.push("import { ToolReference } from \"@/components/tool-reference\";");

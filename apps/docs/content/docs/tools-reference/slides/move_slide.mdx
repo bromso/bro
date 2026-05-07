@@ -1,0 +1,23 @@
+---
+title: move_slide
+description: "Slides-only. Move a slide to (rowIndex, columnIndex). Internally calls figma.setSlideGrid with the mutated grid."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="move_slide"
+  description="Slides-only. Move a slide to (rowIndex, columnIndex). Internally calls figma.setSlideGrid with the mutated grid."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1},"rowIndex":{"type":"integer","minimum":0},"columnIndex":{"$ref":"#/properties/rowIndex"}},"required":["slideId","rowIndex","columnIndex"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"rowIndex":{"type":"integer","minimum":0},"columnIndex":{"$ref":"#/properties/rowIndex"}},"required":["nodeId","rowIndex","columnIndex"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Move a slide to (rowIndex, columnIndex). Internally calls figma.setSlideGrid with the mutated grid.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

@@ -1,0 +1,23 @@
+---
+title: delete_file_comment
+description: "REST. Delete a comment. WRITE — gated behind --enable-write-tools (default off)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="delete_file_comment"
+  description="REST. Delete a comment. WRITE — gated behind --enable-write-tools (default off)."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1},"commentId":{"type":"string","minLength":1}},"required":["fileKey","commentId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"ok":{"type":"boolean","enum":[true]}},"required":["ok"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Delete a comment. WRITE — gated behind --enable-write-tools (default off).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

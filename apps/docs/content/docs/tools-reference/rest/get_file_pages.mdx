@@ -1,0 +1,23 @@
+---
+title: get_file_pages
+description: "REST. Return the page list (CANVAS children) of a Figma file."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_file_pages"
+  description="REST. Return the page list (CANVAS children) of a Figma file."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"pages":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"}},"required":["id","name"],"additionalProperties":false}}},"required":["pages"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the page list (CANVAS children) of a Figma file.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

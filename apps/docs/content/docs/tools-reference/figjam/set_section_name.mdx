@@ -1,0 +1,23 @@
+---
+title: set_section_name
+description: "FigJam-only. Replace the name label of an existing section."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="set_section_name"
+  description="FigJam-only. Replace the name label of an existing section."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"name":{"type":"string","minLength":1}},"required":["nodeId","name"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SECTION"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Replace the name label of an existing section.
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

@@ -1,0 +1,23 @@
+---
+title: create_connector
+description: "FigJam-only. Create a connector linking two existing nodes by id. Both endpoints must exist."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="create_connector"
+  description="FigJam-only. Create a connector linking two existing nodes by id. Both endpoints must exist."
+  streaming={false}
+  input={{"type":"object","properties":{"startNodeId":{"type":"string","minLength":1},"endNodeId":{"type":"string","minLength":1}},"required":["startNodeId","endNodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["CONNECTOR"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Create a connector linking two existing nodes by id. Both endpoints must exist.
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

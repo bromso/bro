@@ -1,0 +1,23 @@
+---
+title: get_file_component_sets
+description: "REST. Return the file's published component sets (variants)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_file_component_sets"
+  description="REST. Return the file's published component sets (variants)."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"componentSets":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"nodeId":{"type":"string"}},"required":["key","name","description"],"additionalProperties":false}}},"required":["componentSets"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the file's published component sets (variants).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

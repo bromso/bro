@@ -1,0 +1,23 @@
+---
+title: get_file_branches
+description: "REST. Return the file's branches."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_file_branches"
+  description="REST. Return the file's branches."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"mainFileKey":{"type":"string"},"branches":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string"},"lastModified":{"type":"string"}},"required":["key","name","lastModified"],"additionalProperties":false}}},"required":["mainFileKey","branches"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the file's branches.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

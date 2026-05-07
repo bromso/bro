@@ -1,0 +1,23 @@
+---
+title: extract_styles
+description: "Return all local paint, text, and effect styles in the current file."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-extract"
+  name="extract_styles"
+  description="Return all local paint, text, and effect styles in the current file."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"paintStyles":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"}},"required":["id","name"],"additionalProperties":false}},"textStyles":{"type":"array","items":{"$ref":"#/properties/paintStyles/items"}},"effectStyles":{"type":"array","items":{"$ref":"#/properties/paintStyles/items"}}},"required":["paintStyles","textStyles","effectStyles"],"additionalProperties":false}}
+/>
+
+## Description
+
+Return all local paint, text, and effect styles in the current file.
+
+## See also
+
+- Pack overview: [tools-extract](/docs/tools/extract)

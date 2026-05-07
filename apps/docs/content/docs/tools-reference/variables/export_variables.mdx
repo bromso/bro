@@ -1,0 +1,23 @@
+---
+title: export_variables
+description: "Return local variables, paginated. Pass nextCursor to resume."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-variables"
+  name="export_variables"
+  description="Return local variables, paginated. Pass nextCursor to resume."
+  streaming={false}
+  input={{"type":"object","properties":{"pageSize":{"type":"integer","minimum":1,"maximum":1000,"default":100},"cursor":{"anyOf":[{"type":"string"},{"enum":["null"],"nullable":true}],"default":null}},"additionalProperties":false}}
+  output={{"type":"object","properties":{"items":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"resolvedType":{"type":"string","enum":["COLOR","FLOAT","STRING","BOOLEAN"]},"valuesByMode":{"type":"object","additionalProperties":{}}},"required":["id","name","resolvedType","valuesByMode"],"additionalProperties":false}},"nextCursor":{"anyOf":[{"type":"string"},{"enum":["null"],"nullable":true}]}},"required":["items","nextCursor"],"additionalProperties":false}}
+/>
+
+## Description
+
+Return local variables, paginated. Pass nextCursor to resume.
+
+## See also
+
+- Pack overview: [tools-variables](/docs/tools/variables)

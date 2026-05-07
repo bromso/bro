@@ -1,0 +1,23 @@
+---
+title: set_slides_view
+description: "Slides-only. Toggle the editor viewport mode. 'grid' shows the whole grid; 'single-slide' zooms in on the focused slide."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="set_slides_view"
+  description="Slides-only. Toggle the editor viewport mode. 'grid' shows the whole grid; 'single-slide' zooms in on the focused slide."
+  streaming={false}
+  input={{"type":"object","properties":{"view":{"type":"string","enum":["grid","single-slide"]}},"required":["view"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"view":{"type":"string","enum":["grid","single-slide"]}},"required":["view"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Toggle the editor viewport mode. 'grid' shows the whole grid; 'single-slide' zooms in on the focused slide.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

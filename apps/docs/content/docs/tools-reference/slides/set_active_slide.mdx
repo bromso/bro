@@ -1,0 +1,23 @@
+---
+title: set_active_slide
+description: "Slides-only. Focus a slide (writes figma.currentPage.focusedSlide). Note: the plugin API has no scrollAndZoomIntoSlide; assigning focusedSlide is the only way to programmatically focus a slide."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="set_active_slide"
+  description="Slides-only. Focus a slide (writes figma.currentPage.focusedSlide). Note: the plugin API has no scrollAndZoomIntoSlide; assigning focusedSlide is the only way to programmatically focus a slide."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1}},"required":["slideId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"slideId":{"type":"string"}},"required":["slideId"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Focus a slide (writes figma.currentPage.focusedSlide). Note: the plugin API has no scrollAndZoomIntoSlide; assigning focusedSlide is the only way to programmatically focus a slide.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

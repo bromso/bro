@@ -13,7 +13,7 @@ describe("renderToolMdx", () => {
     });
     expect(out).toMatch(/^---\n/);
     expect(out).toMatch(/title: extract_styles/);
-    expect(out).toMatch(/description: Return all local styles\./);
+    expect(out).toMatch(/description: "Return all local styles\."/);
     expect(out).toMatch(/<ToolReference/);
     expect(out).toMatch(/pack="tools-extract"/);
     expect(out).toMatch(/name="extract_styles"/);

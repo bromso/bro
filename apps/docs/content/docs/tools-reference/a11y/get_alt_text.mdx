@@ -1,0 +1,23 @@
+---
+title: get_alt_text
+description: "Read alt text for a node. First checks pluginData (`a11y/altText`); if absent, falls back to the first annotation whose category is the alt-text category (or, in this implementation, the first categoryless annotation). Returns null if neither source has a value."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="get_alt_text"
+  description="Read alt text for a node. First checks pluginData (`a11y/altText`); if absent, falls back to the first annotation whose category is the alt-text category (or, in this implementation, the first categoryless annotation). Returns null if neither source has a value."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"text":{"type":"string","nullable":true}},"required":["nodeId","text"],"additionalProperties":false}}
+/>
+
+## Description
+
+Read alt text for a node. First checks pluginData (`a11y/altText`); if absent, falls back to the first annotation whose category is the alt-text category (or, in this implementation, the first categoryless annotation). Returns null if neither source has a value.
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

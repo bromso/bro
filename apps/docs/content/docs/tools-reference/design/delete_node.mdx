@@ -1,0 +1,23 @@
+---
+title: delete_node
+description: "Remove a node from the page."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="delete_node"
+  description="Remove a node from the page."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"}},"required":["nodeId"],"additionalProperties":false}}
+/>
+
+## Description
+
+Remove a node from the page.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

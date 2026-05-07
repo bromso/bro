@@ -1,0 +1,23 @@
+---
+title: set_landmark_role
+description: "Tag a node with a WAI-ARIA landmark role. Writes pluginData under `a11y/landmarkRole`. Use to mark headers (`banner`), nav menus (`navigation`), main content regions (`main`), sidebars (`complementary`), footers (`contentinfo`), search forms (`search`), generic forms (`form`), or generic regions (`region`)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="set_landmark_role"
+  description="Tag a node with a WAI-ARIA landmark role. Writes pluginData under `a11y/landmarkRole`. Use to mark headers (`banner`), nav menus (`navigation`), main content regions (`main`), sidebars (`complementary`), footers (`contentinfo`), search forms (`search`), generic forms (`form`), or generic regions (`region`)."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"role":{"type":"string","enum":["banner","navigation","main","complementary","contentinfo","search","form","region"]}},"required":["nodeId","role"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"role":{"type":"string","enum":["banner","navigation","main","complementary","contentinfo","search","form","region"]}},"required":["nodeId","role"],"additionalProperties":false}}
+/>
+
+## Description
+
+Tag a node with a WAI-ARIA landmark role. Writes pluginData under `a11y/landmarkRole`. Use to mark headers (`banner`), nav menus (`navigation`), main content regions (`main`), sidebars (`complementary`), footers (`contentinfo`), search forms (`search`), generic forms (`form`), or generic regions (`region`).
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

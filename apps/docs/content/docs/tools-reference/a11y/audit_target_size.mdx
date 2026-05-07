@@ -1,0 +1,23 @@
+---
+title: audit_target_size
+description: "WCAG 2.2 target-size audit (Success Criterion 2.5.5). Reads node.absoluteBoundingBox and reports whether min(width, height) is ≥ 24 (passesMinimum) and ≥ 44 (passesEnhanced)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="audit_target_size"
+  description="WCAG 2.2 target-size audit (Success Criterion 2.5.5). Reads node.absoluteBoundingBox and reports whether min(width, height) is ≥ 24 (passesMinimum) and ≥ 44 (passesEnhanced)."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"width":{"type":"number","nullable":true},"height":{"type":"number","nullable":true},"passesMinimum":{"type":"boolean","nullable":true},"passesEnhanced":{"type":"boolean","nullable":true},"reason":{"type":"string"}},"required":["nodeId","width","height","passesMinimum","passesEnhanced"],"additionalProperties":false}}
+/>
+
+## Description
+
+WCAG 2.2 target-size audit (Success Criterion 2.5.5). Reads node.absoluteBoundingBox and reports whether min(width, height) is ≥ 24 (passesMinimum) and ≥ 44 (passesEnhanced).
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

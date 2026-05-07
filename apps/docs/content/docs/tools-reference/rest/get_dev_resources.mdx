@@ -1,0 +1,23 @@
+---
+title: get_dev_resources
+description: "REST. Return dev resources for the file (optionally filtered by node ids)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_dev_resources"
+  description="REST. Return dev resources for the file (optionally filtered by node ids)."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1},"nodeIds":{"type":"array","items":{"type":"string","minLength":1}}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"devResources":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"fileKey":{"type":"string"},"nodeId":{"type":"string"},"name":{"type":"string"},"url":{"type":"string"}},"required":["id","fileKey","nodeId","name","url"],"additionalProperties":false}}},"required":["devResources"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return dev resources for the file (optionally filtered by node ids).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

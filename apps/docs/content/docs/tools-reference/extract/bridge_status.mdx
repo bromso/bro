@@ -1,0 +1,23 @@
+---
+title: bridge_status
+description: "Report daemon liveness, version, and whether a Figma plugin is paired."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-extract"
+  name="bridge_status"
+  description="Report daemon liveness, version, and whether a Figma plugin is paired."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"daemon":{"type":"object","properties":{"pid":{"type":"integer"},"version":{"type":"string"},"uptimeMs":{"type":"integer","minimum":0}},"required":["pid","version","uptimeMs"],"additionalProperties":false},"plugin":{"type":"object","properties":{"connected":{"type":"boolean"},"lastConnectedAt":{"type":"integer"}},"required":["connected"],"additionalProperties":false}},"required":["daemon","plugin"],"additionalProperties":false}}
+/>
+
+## Description
+
+Report daemon liveness, version, and whether a Figma plugin is paired.
+
+## See also
+
+- Pack overview: [tools-extract](/docs/tools/extract)

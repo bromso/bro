@@ -1,0 +1,23 @@
+---
+title: set_text_content
+description: "Replace the characters of an existing TEXT node."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="set_text_content"
+  description="Replace the characters of an existing TEXT node."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"characters":{"type":"string"}},"required":["nodeId","characters"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["TEXT"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Replace the characters of an existing TEXT node.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

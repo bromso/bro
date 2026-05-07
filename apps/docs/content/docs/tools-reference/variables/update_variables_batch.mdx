@@ -1,0 +1,23 @@
+---
+title: update_variables_batch
+description: "Apply many setValueForMode calls in one request. Non-atomic: per-item failures don't stop the rest."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-variables"
+  name="update_variables_batch"
+  description="Apply many setValueForMode calls in one request. Non-atomic: per-item failures don't stop the rest."
+  streaming={false}
+  input={{"type":"object","properties":{"updates":{"type":"array","items":{"type":"object","properties":{"variableId":{"type":"string"},"modeId":{"type":"string"},"value":{}},"required":["variableId","modeId"],"additionalProperties":false}}},"required":["updates"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"applied":{"type":"integer","minimum":0},"failed":{"type":"integer","minimum":0},"failedDetails":{"type":"array","items":{"type":"object","properties":{"index":{"type":"integer","minimum":0},"reason":{"type":"string"},"name":{"type":"string"}},"required":["index","reason"],"additionalProperties":false},"default":[]}},"required":["applied","failed"],"additionalProperties":false}}
+/>
+
+## Description
+
+Apply many setValueForMode calls in one request. Non-atomic: per-item failures don't stop the rest.
+
+## See also
+
+- Pack overview: [tools-variables](/docs/tools/variables)

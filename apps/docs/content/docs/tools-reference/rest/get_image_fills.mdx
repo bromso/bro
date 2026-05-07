@@ -1,0 +1,23 @@
+---
+title: get_image_fills
+description: "REST. Return the file's image fill asset URLs (by hash)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_image_fills"
+  description="REST. Return the file's image fill asset URLs (by hash)."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"images":{"type":"object","additionalProperties":{"type":"string"}}},"required":["images"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the file's image fill asset URLs (by hash).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

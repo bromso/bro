@@ -1,0 +1,17 @@
+{
+  "title": "design",
+  "pages": [
+    "clone_node",
+    "create_component",
+    "create_ellipse",
+    "create_frame",
+    "create_line",
+    "create_rectangle",
+    "create_text",
+    "delete_node",
+    "resize_node",
+    "set_fill",
+    "set_stroke",
+    "set_text_content"
+  ]
+}

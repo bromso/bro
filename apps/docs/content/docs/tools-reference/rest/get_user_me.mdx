@@ -1,0 +1,23 @@
+---
+title: get_user_me
+description: "REST. Return the authenticated user's profile."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_user_me"
+  description="REST. Return the authenticated user's profile."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"id":{"type":"string"},"email":{"type":"string"},"handle":{"type":"string"},"imgUrl":{"type":"string"}},"required":["id","email","handle","imgUrl"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the authenticated user's profile.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

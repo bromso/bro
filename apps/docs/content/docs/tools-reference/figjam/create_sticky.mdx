@@ -1,0 +1,23 @@
+---
+title: create_sticky
+description: "FigJam-only. Create a sticky note with the given content (and optional author name)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="create_sticky"
+  description="FigJam-only. Create a sticky note with the given content (and optional author name)."
+  streaming={false}
+  input={{"type":"object","properties":{"content":{"type":"string","minLength":1},"authorName":{"type":"string"},"x":{"type":"number"},"y":{"type":"number"},"width":{"type":"number","exclusiveMinimum":true,"minimum":0},"height":{"$ref":"#/properties/width"}},"required":["content"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["STICKY"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Create a sticky note with the given content (and optional author name).
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

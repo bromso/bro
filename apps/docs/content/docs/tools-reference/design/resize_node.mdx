@@ -1,0 +1,23 @@
+---
+title: resize_node
+description: "Resize a node's bounding box."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="resize_node"
+  description="Resize a node's bounding box."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"width":{"type":"number","exclusiveMinimum":true,"minimum":0},"height":{"type":"number","exclusiveMinimum":true,"minimum":0}},"required":["nodeId","width","height"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"}},"required":["nodeId"],"additionalProperties":false}}
+/>
+
+## Description
+
+Resize a node's bounding box.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

@@ -1,0 +1,23 @@
+---
+title: set_aria_label
+description: "Write an ARIA label for a node. Stored in pluginData under `a11y/ariaLabel`. Does NOT attach an annotation (ARIA labels are usually shorter than alt text and clutter the annotation panel; designers can still surface them via `audit_a11y_summary`)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="set_aria_label"
+  description="Write an ARIA label for a node. Stored in pluginData under `a11y/ariaLabel`. Does NOT attach an annotation (ARIA labels are usually shorter than alt text and clutter the annotation panel; designers can still surface them via `audit_a11y_summary`)."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"label":{"type":"string","minLength":1}},"required":["nodeId","label"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"label":{"type":"string"}},"required":["nodeId","label"],"additionalProperties":false}}
+/>
+
+## Description
+
+Write an ARIA label for a node. Stored in pluginData under `a11y/ariaLabel`. Does NOT attach an annotation (ARIA labels are usually shorter than alt text and clutter the annotation panel; designers can still surface them via `audit_a11y_summary`).
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

@@ -1,0 +1,23 @@
+---
+title: set_sticky_content
+description: "FigJam-only. Replace the content of an existing sticky note."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="set_sticky_content"
+  description="FigJam-only. Replace the content of an existing sticky note."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"content":{"type":"string","minLength":1}},"required":["nodeId","content"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["STICKY"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Replace the content of an existing sticky note.
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

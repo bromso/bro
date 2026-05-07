@@ -1,0 +1,23 @@
+---
+title: get_project_files
+description: "REST. Return all files in a project."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_project_files"
+  description="REST. Return all files in a project."
+  streaming={false}
+  input={{"type":"object","properties":{"projectId":{"type":"string","minLength":1},"branchData":{"type":"boolean"}},"required":["projectId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"name":{"type":"string"},"files":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string"},"lastModified":{"type":"string"}},"required":["key","name","lastModified"],"additionalProperties":false}}},"required":["name","files"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return all files in a project.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)
