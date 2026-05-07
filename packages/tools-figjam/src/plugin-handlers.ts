@@ -1,4 +1,5 @@
 import type { PluginHandler } from "@repo/protocol";
+import { requireFigJam } from "./guard";
 import type {
   CreateCodeBlock,
   CreateConnector,
@@ -12,18 +13,12 @@ import type {
   SetStickyContent,
 } from "./tools";
 
-const E_MISMATCH = "E_FIGMA_EDITOR_TYPE_MISMATCH";
-
 export const createStickyPluginHandler: PluginHandler<typeof CreateSticky> = async (
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: create_sticky requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createSticky(args);
+  const fj = requireFigJam(figma, "create_sticky");
+  const node = await fj.createSticky(args);
   return { nodeId: node.id, type: "STICKY" };
 };
 
@@ -31,12 +26,8 @@ export const createSectionPluginHandler: PluginHandler<typeof CreateSection> = a
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: create_section requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createSection(args);
+  const fj = requireFigJam(figma, "create_section");
+  const node = await fj.createSection(args);
   return { nodeId: node.id, type: "SECTION" };
 };
 
@@ -44,12 +35,8 @@ export const createConnectorPluginHandler: PluginHandler<typeof CreateConnector>
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: create_connector requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createConnector(args);
+  const fj = requireFigJam(figma, "create_connector");
+  const node = await fj.createConnector(args);
   return { nodeId: node.id, type: "CONNECTOR" };
 };
 
@@ -57,12 +44,8 @@ export const createCodeBlockPluginHandler: PluginHandler<typeof CreateCodeBlock>
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: create_code_block requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createCodeBlock({
+  const fj = requireFigJam(figma, "create_code_block");
+  const node = await fj.createCodeBlock({
     code: args.code,
     language: args.language,
     x: args.x,
@@ -75,12 +58,8 @@ export const createShapeWithTextPluginHandler: PluginHandler<typeof CreateShapeW
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: create_shape_with_text requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createShapeWithText({
+  const fj = requireFigJam(figma, "create_shape_with_text");
+  const node = await fj.createShapeWithText({
     shape: args.shape,
     content: args.content,
     x: args.x,
@@ -95,12 +74,8 @@ export const createTablePluginHandler: PluginHandler<typeof CreateTable> = async
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: create_table requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const node = await figma.createTable({
+  const fj = requireFigJam(figma, "create_table");
+  const node = await fj.createTable({
     rows: args.rows,
     columns: args.columns,
     x: args.x,
@@ -115,12 +90,8 @@ export const setStickyContentPluginHandler: PluginHandler<typeof SetStickyConten
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: set_sticky_content requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  await figma.setStickyContent({ nodeId: args.nodeId, content: args.content });
+  const fj = requireFigJam(figma, "set_sticky_content");
+  await fj.setStickyContent({ nodeId: args.nodeId, content: args.content });
   return { nodeId: args.nodeId, type: "STICKY" };
 };
 
@@ -128,12 +99,8 @@ export const setSectionNamePluginHandler: PluginHandler<typeof SetSectionName> =
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: set_section_name requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  await figma.setSectionName({ nodeId: args.nodeId, name: args.name });
+  const fj = requireFigJam(figma, "set_section_name");
+  await fj.setSectionName({ nodeId: args.nodeId, name: args.name });
   return { nodeId: args.nodeId, type: "SECTION" };
 };
 
@@ -141,12 +108,8 @@ export const moveIntoSectionPluginHandler: PluginHandler<typeof MoveIntoSection>
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: move_into_section requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  await figma.moveIntoSection({
+  const fj = requireFigJam(figma, "move_into_section");
+  await fj.moveIntoSection({
     sectionId: args.sectionId,
     nodeIds: args.nodeIds,
   });
@@ -157,11 +120,7 @@ export const listSectionChildrenPluginHandler: PluginHandler<typeof ListSectionC
   args,
   { figma }
 ) => {
-  if (figma.editorType !== "figjam") {
-    throw new Error(
-      `${E_MISMATCH}: list_section_children requires editorType=figjam (got ${figma.editorType})`
-    );
-  }
-  const nodeIds = await figma.listSectionChildren({ sectionId: args.sectionId });
+  const fj = requireFigJam(figma, "list_section_children");
+  const nodeIds = await fj.listSectionChildren({ sectionId: args.sectionId });
   return { nodeIds: [...nodeIds], count: nodeIds.length };
 };
