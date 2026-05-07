@@ -1,4 +1,5 @@
 import type { FigmaAdapter } from "@repo/figma-adapter";
+import type { FigmaApi } from "@repo/figma-api-client";
 import {
   ErrorCode,
   type ErrorEnvelope,
@@ -24,6 +25,12 @@ export interface DaemonStartOptions {
   readonly figma: FigmaAdapter;
   readonly packs: readonly Pack[];
   readonly logger?: Logger;
+  /**
+   * Optional REST client. Threaded into ServerHandlerContext.figmaApi
+   * for Phase 11 tools-rest server-handlers. `null` when the daemon was
+   * started without `FIGMA_API_KEY`.
+   */
+  readonly figmaApi?: FigmaApi | null;
 }
 
 const noopLogger: Logger = {
@@ -49,6 +56,7 @@ export class Daemon {
   private readonly _serverRegistry = new ServerRegistryImpl();
   private readonly pluginRegistry = new PluginRegistryImpl();
   private readonly figma: FigmaAdapter;
+  private readonly figmaApi: FigmaApi | null;
   private readonly version: string;
   private readonly logger: Logger;
   private readonly startedAt = Date.now();
@@ -66,7 +74,8 @@ export class Daemon {
       ws,
       options.figma,
       options.version,
-      options.logger ?? noopLogger
+      options.logger ?? noopLogger,
+      options.figmaApi ?? null
     );
     for (const pack of options.packs) {
       pack.registerServer?.(daemon._serverRegistry);
@@ -88,13 +97,15 @@ export class Daemon {
     ws: WebSocketServerTransport,
     figma: FigmaAdapter,
     version: string,
-    logger: Logger
+    logger: Logger,
+    figmaApi: FigmaApi | null
   ) {
     this.ipc = ipc;
     this.ws = ws;
     this.figma = figma;
     this.version = version;
     this.logger = logger;
+    this.figmaApi = figmaApi;
   }
 
   get pid(): number {
@@ -172,7 +183,10 @@ export class Daemon {
 
   private async dispatch(req: RequestEnvelope): Promise<unknown> {
     if (this._serverRegistry.has(req.tool)) {
-      return this._serverRegistry.dispatch(req.tool, req.args, { logger: this.logger });
+      return this._serverRegistry.dispatch(req.tool, req.args, {
+        logger: this.logger,
+        figmaApi: this.figmaApi,
+      });
     }
     // Plugin-tool resolution: prefer the connected WS plugin; fall back to in-process.
     const knownByPack = this.pluginRegistry.has(req.tool);

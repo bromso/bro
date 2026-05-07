@@ -80,11 +80,13 @@
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@repo/figma-adapter": "workspace:*",
+        "@repo/figma-api-client": "workspace:*",
         "@repo/protocol": "workspace:*",
         "@repo/tools-console": "workspace:*",
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-figjam": "workspace:*",
+        "@repo/tools-rest": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "zod": "^3.23.8",
@@ -179,6 +181,7 @@
         "zod": "^3.23.8",
       },
       "devDependencies": {
+        "@repo/figma-api-client": "workspace:*",
         "@vitest/coverage-v8": "4.1.4",
         "fast-check": "^3.23.0",
         "typescript": "^6.0.0",

@@ -20,6 +20,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { FigmaFake } from "@repo/figma-adapter/testing";
+import { FigmaApiClient } from "@repo/figma-api-client";
 import {
   ClearConsole,
   ConsoleStatusTool,
@@ -93,6 +94,48 @@ import {
   setStickyContentPluginHandler,
 } from "@repo/tools-figjam";
 import {
+  createDeleteFileCommentServerHandler,
+  createGetDevResourcesServerHandler,
+  createGetFileBranchesServerHandler,
+  createGetFileCommentsServerHandler,
+  createGetFileComponentSetsServerHandler,
+  createGetFileComponentsServerHandler,
+  createGetFileMetadataServerHandler,
+  createGetFilePagesServerHandler,
+  createGetFileStylesServerHandler,
+  createGetFileVersionsServerHandler,
+  createGetImageFillsServerHandler,
+  createGetImageRendersServerHandler,
+  createGetNodeByIdServerHandler,
+  createGetProjectFilesServerHandler,
+  createGetTeamComponentsServerHandler,
+  createGetTeamProjectsServerHandler,
+  createGetTeamStylesServerHandler,
+  createGetUserMeServerHandler,
+  createPostDevResourcesServerHandler,
+  createPostFileCommentServerHandler,
+  DeleteFileComment,
+  GetDevResources,
+  GetFileBranches,
+  GetFileComments,
+  GetFileComponentSets,
+  GetFileComponents,
+  GetFileMetadata,
+  GetFilePages,
+  GetFileStyles,
+  GetFileVersions,
+  GetImageFills,
+  GetImageRenders,
+  GetNodeById,
+  GetProjectFiles,
+  GetTeamComponents,
+  GetTeamProjects,
+  GetTeamStyles,
+  GetUserMe,
+  PostDevResources,
+  PostFileComment,
+} from "@repo/tools-rest";
+import {
   createStreamStatusPluginHandler,
   ExportVariables,
   exportVariablesPluginHandler,
@@ -153,7 +196,7 @@ async function main(): Promise<void> {
   }
 
   // cmd.kind === "runtime" — fall through to existing shim/daemon path:
-  await runRuntime();
+  await runRuntime({ enableWriteTools: cmd.flags.enableWriteTools });
 }
 
 async function handleSetup(flags: {
@@ -280,8 +323,13 @@ async function connectPluginPairingProbe(ipc: IpcTransportPair): Promise<PluginP
   };
 }
 
-async function runRuntime(): Promise<void> {
+async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
   const lockfile = new LockfileManager({ path: LOCK_PATH, isPidAlive: isPidAliveDefault });
+
+  // Phase 11: build the typed REST client once. `null` when FIGMA_API_KEY is
+  // unset — REST handlers surface E_FIGMA_API_KEY_MISSING via requireApiKey.
+  const figmaApiKey = process.env.FIGMA_API_KEY;
+  const figmaApi = figmaApiKey ? new FigmaApiClient({ apiKey: figmaApiKey }) : null;
 
   const startup = await resolveStartup({
     argv: process.argv,
@@ -335,6 +383,7 @@ async function runRuntime(): Promise<void> {
       socketPath: startup.socketPath,
       version: VERSION,
       figma,
+      figmaApi,
       packs: [
         {
           name: "tools-extract",
@@ -458,6 +507,74 @@ async function runRuntime(): Promise<void> {
             reg.register(ListSectionChildren, listSectionChildrenPluginHandler);
           },
         },
+        {
+          name: "tools-rest",
+          tools: [
+            GetFileMetadata,
+            GetFilePages,
+            GetNodeById,
+            GetFileVersions,
+            GetFileStyles,
+            GetFileComponents,
+            GetFileComponentSets,
+            GetFileBranches,
+            GetImageRenders,
+            GetImageFills,
+            GetUserMe,
+            GetFileComments,
+            PostFileComment,
+            DeleteFileComment,
+            GetTeamProjects,
+            GetProjectFiles,
+            GetTeamComponents,
+            GetTeamStyles,
+            GetDevResources,
+            PostDevResources,
+          ],
+          registerServer: (reg) => {
+            reg.register(GetFileMetadata, createGetFileMetadataServerHandler({ figmaApi }));
+            reg.register(GetFilePages, createGetFilePagesServerHandler({ figmaApi }));
+            reg.register(GetNodeById, createGetNodeByIdServerHandler({ figmaApi }));
+            reg.register(GetFileVersions, createGetFileVersionsServerHandler({ figmaApi }));
+            reg.register(GetFileStyles, createGetFileStylesServerHandler({ figmaApi }));
+            reg.register(GetFileComponents, createGetFileComponentsServerHandler({ figmaApi }));
+            reg.register(
+              GetFileComponentSets,
+              createGetFileComponentSetsServerHandler({ figmaApi })
+            );
+            reg.register(GetFileBranches, createGetFileBranchesServerHandler({ figmaApi }));
+            reg.register(GetImageRenders, createGetImageRendersServerHandler({ figmaApi }));
+            reg.register(GetImageFills, createGetImageFillsServerHandler({ figmaApi }));
+            reg.register(GetUserMe, createGetUserMeServerHandler({ figmaApi }));
+            reg.register(GetFileComments, createGetFileCommentsServerHandler({ figmaApi }));
+            reg.register(
+              PostFileComment,
+              createPostFileCommentServerHandler({
+                figmaApi,
+                enableWriteTools: opts.enableWriteTools,
+              })
+            );
+            reg.register(
+              DeleteFileComment,
+              createDeleteFileCommentServerHandler({
+                figmaApi,
+                enableWriteTools: opts.enableWriteTools,
+              })
+            );
+            reg.register(GetTeamProjects, createGetTeamProjectsServerHandler({ figmaApi }));
+            reg.register(GetProjectFiles, createGetProjectFilesServerHandler({ figmaApi }));
+            reg.register(GetTeamComponents, createGetTeamComponentsServerHandler({ figmaApi }));
+            reg.register(GetTeamStyles, createGetTeamStylesServerHandler({ figmaApi }));
+            reg.register(GetDevResources, createGetDevResourcesServerHandler({ figmaApi }));
+            reg.register(
+              PostDevResources,
+              createPostDevResourcesServerHandler({
+                figmaApi,
+                enableWriteTools: opts.enableWriteTools,
+              })
+            );
+          },
+        },
       ],
     });
     daemonRef = daemon;
@@ -510,6 +627,26 @@ async function runRuntime(): Promise<void> {
       SetSectionName,
       MoveIntoSection,
       ListSectionChildren,
+      GetFileMetadata,
+      GetFilePages,
+      GetNodeById,
+      GetFileVersions,
+      GetFileStyles,
+      GetFileComponents,
+      GetFileComponentSets,
+      GetFileBranches,
+      GetImageRenders,
+      GetImageFills,
+      GetUserMe,
+      GetFileComments,
+      PostFileComment,
+      DeleteFileComment,
+      GetTeamProjects,
+      GetProjectFiles,
+      GetTeamComponents,
+      GetTeamStyles,
+      GetDevResources,
+      PostDevResources,
     ],
     mcpServerInfo: { name: "figma-mcp", version: VERSION },
   });
