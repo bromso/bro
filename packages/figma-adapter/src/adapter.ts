@@ -142,6 +142,73 @@ export interface TableNode {
   readonly height: number;
 }
 
+// ---- Phase 12 (slides) ----
+
+export interface SlideNode {
+  readonly id: string;
+  readonly type: "SLIDE";
+  readonly name: string;
+  readonly isSkipped: boolean;
+  readonly fills: readonly SolidPaint[];
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface SlideRowNode {
+  readonly id: string;
+  readonly type: "SLIDE_ROW";
+  readonly name: string;
+}
+
+export type SlideTransitionStyle =
+  | "NONE"
+  | "DISSOLVE"
+  | "SLIDE_FROM_LEFT"
+  | "SLIDE_FROM_RIGHT"
+  | "SLIDE_FROM_TOP"
+  | "SLIDE_FROM_BOTTOM"
+  | "PUSH_FROM_LEFT"
+  | "PUSH_FROM_RIGHT"
+  | "PUSH_FROM_TOP"
+  | "PUSH_FROM_BOTTOM"
+  | "MOVE_FROM_LEFT"
+  | "MOVE_FROM_RIGHT"
+  | "MOVE_FROM_TOP"
+  | "MOVE_FROM_BOTTOM"
+  | "SLIDE_OUT_TO_LEFT"
+  | "SLIDE_OUT_TO_RIGHT"
+  | "SLIDE_OUT_TO_TOP"
+  | "SLIDE_OUT_TO_BOTTOM"
+  | "MOVE_OUT_TO_LEFT"
+  | "MOVE_OUT_TO_RIGHT"
+  | "MOVE_OUT_TO_TOP"
+  | "MOVE_OUT_TO_BOTTOM"
+  | "SMART_ANIMATE";
+
+export type SlideTransitionCurve =
+  | "EASE_IN"
+  | "EASE_OUT"
+  | "EASE_IN_AND_OUT"
+  | "LINEAR"
+  | "GENTLE"
+  | "QUICK"
+  | "BOUNCY"
+  | "SLOW";
+
+export type SlideTransitionTimingType = "ON_CLICK" | "AFTER_DELAY";
+
+export interface SlideTransition {
+  readonly style: SlideTransitionStyle;
+  readonly duration: number;
+  readonly curve: SlideTransitionCurve;
+  readonly timing: {
+    readonly type: SlideTransitionTimingType;
+    readonly delay?: number;
+  };
+}
+
+export type SlidesView = "grid" | "single-slide";
+
 export type SolidPaint = {
   readonly type: "SOLID";
   readonly color: { readonly r: number; readonly g: number; readonly b: number };
@@ -171,6 +238,8 @@ export interface NodeSnapshot {
   readonly shape?: ShapeWithTextShape;
   readonly rows?: number;
   readonly columns?: number;
+  // Phase 12 (slides):
+  readonly isSkipped?: boolean;
 }
 
 export interface PageSelection {
@@ -346,4 +415,47 @@ export interface FigmaAdapter {
   moveIntoSection(args: { sectionId: string; nodeIds: readonly string[] }): Promise<void>;
 
   listSectionChildren(args: { sectionId: string }): Promise<readonly string[]>;
+
+  // ---- Phase 12: Slides-specific node creation and grid management ----
+
+  createSlide(args: { name?: string; rowIndex?: number; columnIndex?: number }): Promise<SlideNode>;
+
+  createSlideRow(args: { rowIndex?: number }): Promise<SlideRowNode>;
+
+  setSlideName(args: { slideId: string; name: string }): Promise<void>;
+
+  setSlideSkipped(args: { slideId: string; skipped: boolean }): Promise<void>;
+
+  setSlideTransition(args: {
+    slideId: string;
+    style: SlideTransitionStyle;
+    durationSec?: number;
+    curve?: SlideTransitionCurve;
+    timingType?: SlideTransitionTimingType;
+    timingDelaySec?: number;
+  }): Promise<void>;
+
+  getSlideTransition(args: { slideId: string }): Promise<SlideTransition>;
+
+  setSlideBackground(args: { slideId: string; paint: SolidPaint }): Promise<void>;
+
+  moveSlide(args: { slideId: string; rowIndex: number; columnIndex: number }): Promise<void>;
+
+  duplicateSlide(args: { slideId: string }): Promise<SlideNode>;
+
+  deleteSlide(args: { slideId: string }): Promise<void>;
+
+  listSlides(args: { rowIndex?: number }): Promise<readonly string[]>;
+
+  listSlideRows(): Promise<readonly string[]>;
+
+  setActiveSlide(args: { slideId: string }): Promise<void>;
+
+  getActiveSlideId(): Promise<string | null>;
+
+  setSlidesView(args: { view: SlidesView }): Promise<void>;
+
+  getSlidesView(): Promise<SlidesView>;
+
+  getSlideGrid(): Promise<readonly (readonly string[])[]>;
 }

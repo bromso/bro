@@ -16,6 +16,13 @@ import type {
   SectionNode,
   ShapeWithTextNode,
   ShapeWithTextShape,
+  SlideNode,
+  SlideRowNode,
+  SlidesView,
+  SlideTransition,
+  SlideTransitionCurve,
+  SlideTransitionStyle,
+  SlideTransitionTimingType,
   SolidPaint,
   StickyNode,
   TableNode,
@@ -633,4 +640,281 @@ export class RealFigmaAdapter implements FigmaAdapter {
     };
     return sectionWithChildren.children.map((c) => c.id);
   }
+
+  // ---- Phase 12: Slides node creation, mutation, and grid management ----
+
+  async createSlide(args: {
+    name?: string;
+    rowIndex?: number;
+    columnIndex?: number;
+  }): Promise<SlideNode> {
+    const node = (
+      figma as unknown as {
+        createSlide: (rowIndex?: number, columnIndex?: number) => SlideRT;
+      }
+    ).createSlide(args.rowIndex, args.columnIndex);
+    if (args.name !== undefined) node.name = args.name;
+    return {
+      id: node.id,
+      type: "SLIDE",
+      name: node.name,
+      isSkipped: node.isSkippedSlide ?? false,
+      fills: solidPaintsFrom(node.fills),
+      width: node.width,
+      height: node.height,
+    };
+  }
+
+  async createSlideRow(args: { rowIndex?: number }): Promise<SlideRowNode> {
+    const node = (
+      figma as unknown as {
+        createSlideRow: (rowIndex?: number) => SlideRowRT;
+      }
+    ).createSlideRow(args.rowIndex);
+    return { id: node.id, type: "SLIDE_ROW", name: node.name };
+  }
+
+  async setSlideName(args: { slideId: string; name: string }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    (node as unknown as { name: string }).name = args.name;
+  }
+
+  async setSlideSkipped(args: { slideId: string; skipped: boolean }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    (node as unknown as { isSkippedSlide: boolean }).isSkippedSlide = args.skipped;
+  }
+
+  async setSlideTransition(args: {
+    slideId: string;
+    style: SlideTransitionStyle;
+    durationSec?: number;
+    curve?: SlideTransitionCurve;
+    timingType?: SlideTransitionTimingType;
+    timingDelaySec?: number;
+  }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    const transition: SlideTransition = {
+      style: args.style,
+      duration: args.durationSec ?? 0.3,
+      curve: args.curve ?? "EASE_IN_AND_OUT",
+      timing: {
+        type: args.timingType ?? "ON_CLICK",
+        delay: args.timingDelaySec,
+      },
+    };
+    (
+      node as unknown as {
+        setSlideTransition: (t: SlideTransition) => void;
+      }
+    ).setSlideTransition(transition);
+  }
+
+  async getSlideTransition(args: { slideId: string }): Promise<SlideTransition> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    const t = (
+      node as unknown as { getSlideTransition: () => SlideTransition }
+    ).getSlideTransition();
+    return {
+      style: t.style,
+      duration: t.duration,
+      curve: t.curve,
+      timing: { type: t.timing.type, delay: t.timing.delay },
+    };
+  }
+
+  async setSlideBackground(args: { slideId: string; paint: SolidPaint }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    (node as unknown as { fills: readonly Paint[] }).fills = [args.paint as unknown as Paint];
+  }
+
+  async moveSlide(args: { slideId: string; rowIndex: number; columnIndex: number }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    const figmaSlides = figma as unknown as {
+      getSlideGrid: () => SlideRT[][];
+      setSlideGrid: (grid: SlideRT[][]) => void;
+    };
+    const grid = figmaSlides.getSlideGrid().map((r) => [...r]);
+    let target: SlideRT | undefined;
+    for (const row of grid) {
+      const idx = row.findIndex((s) => s.id === args.slideId);
+      if (idx >= 0) {
+        target = row.splice(idx, 1)[0];
+        break;
+      }
+    }
+    if (!target) throw new Error(`slide not found in grid: ${args.slideId}`);
+    if (args.rowIndex < 0 || args.rowIndex >= grid.length) {
+      throw new Error(`rowIndex out of range: ${args.rowIndex}`);
+    }
+    const targetRow = grid[args.rowIndex];
+    if (args.columnIndex < 0 || args.columnIndex > targetRow.length) {
+      throw new Error(`columnIndex out of range: ${args.columnIndex}`);
+    }
+    targetRow.splice(args.columnIndex, 0, target);
+    figmaSlides.setSlideGrid(grid);
+  }
+
+  async duplicateSlide(args: { slideId: string }): Promise<SlideNode> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    const cloned = (node as unknown as { clone: () => SlideRT }).clone();
+    const figmaSlides = figma as unknown as {
+      getSlideGrid: () => SlideRT[][];
+      setSlideGrid: (grid: SlideRT[][]) => void;
+    };
+    const grid = figmaSlides.getSlideGrid().map((r) => [...r]);
+    for (const row of grid) {
+      const idx = row.findIndex((s) => s.id === args.slideId);
+      if (idx >= 0) {
+        row.splice(idx + 1, 0, cloned);
+        break;
+      }
+    }
+    figmaSlides.setSlideGrid(grid);
+    return {
+      id: cloned.id,
+      type: "SLIDE",
+      name: cloned.name,
+      isSkipped: cloned.isSkippedSlide ?? false,
+      fills: solidPaintsFrom(cloned.fills),
+      width: cloned.width,
+      height: cloned.height,
+    };
+  }
+
+  async deleteSlide(args: { slideId: string }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    (node as unknown as { remove: () => void }).remove();
+  }
+
+  async listSlides(args: { rowIndex?: number }): Promise<readonly string[]> {
+    const grid = (figma as unknown as { getSlideGrid: () => SlideRT[][] }).getSlideGrid();
+    if (args.rowIndex === undefined) {
+      return grid.flat().map((s) => s.id);
+    }
+    if (args.rowIndex < 0 || args.rowIndex >= grid.length) {
+      throw new Error(`row not found: ${args.rowIndex}`);
+    }
+    return grid[args.rowIndex].map((s) => s.id);
+  }
+
+  async listSlideRows(): Promise<readonly string[]> {
+    const page = figma.currentPage as unknown as {
+      children: readonly {
+        id: string;
+        type: string;
+        children?: readonly { id: string; type: string }[];
+      }[];
+    };
+    const out: string[] = [];
+    const visit = (
+      nodes: readonly {
+        id: string;
+        type: string;
+        children?: readonly { id: string; type: string }[];
+      }[]
+    ): void => {
+      for (const n of nodes) {
+        if (n.type === "SLIDE_ROW") out.push(n.id);
+        if (n.children) visit(n.children);
+      }
+    };
+    visit(page.children);
+    return out;
+  }
+
+  async setActiveSlide(args: { slideId: string }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.slideId);
+    if (!node) throw new Error(`node not found: ${args.slideId}`);
+    if (node.type !== "SLIDE") {
+      throw new Error(`expected SLIDE node: ${args.slideId}`);
+    }
+    (figma.currentPage as unknown as { focusedSlide?: SlideRT }).focusedSlide =
+      node as unknown as SlideRT;
+  }
+
+  async getActiveSlideId(): Promise<string | null> {
+    const focused = (figma.currentPage as unknown as { focusedSlide?: SlideRT | null })
+      .focusedSlide;
+    return focused ? focused.id : null;
+  }
+
+  async setSlidesView(args: { view: SlidesView }): Promise<void> {
+    (figma.viewport as unknown as { slidesView: SlidesView }).slidesView = args.view;
+  }
+
+  async getSlidesView(): Promise<SlidesView> {
+    return (figma.viewport as unknown as { slidesView: SlidesView }).slidesView;
+  }
+
+  async getSlideGrid(): Promise<readonly (readonly string[])[]> {
+    const grid = (figma as unknown as { getSlideGrid: () => SlideRT[][] }).getSlideGrid();
+    return grid.map((row) => row.map((s) => s.id));
+  }
+}
+
+/**
+ * Local runtime alias for the Slides plugin API's `SlideNode`. The
+ * `@figma/plugin-typings` package only exposes this type when
+ * `editorType === "slides"`, so we mirror the runtime shape here to
+ * avoid a hard dependency on the conditional.
+ */
+interface SlideRT {
+  readonly id: string;
+  name: string;
+  isSkippedSlide?: boolean;
+  fills: readonly Paint[];
+  width: number;
+  height: number;
+}
+
+interface SlideRowRT {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Filter the runtime's heterogeneous Paint list down to the SOLID
+ * paints we surface through the adapter contract. Mirrors the Phase 8
+ * fills handling in `getNodeById`.
+ */
+function solidPaintsFrom(paints: readonly Paint[]): SolidPaint[] {
+  const out: SolidPaint[] = [];
+  for (const p of paints) {
+    if (p.type === "SOLID") {
+      out.push({ type: "SOLID", color: p.color, opacity: p.opacity });
+    }
+  }
+  return out;
 }

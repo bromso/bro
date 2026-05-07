@@ -1166,3 +1166,626 @@ describe("RealFigmaAdapter.listSectionChildren", () => {
     );
   });
 });
+
+// ---- Phase 12: Slides ----
+
+describe("RealFigmaAdapter.createSlide", () => {
+  it("calls figma.createSlide with row + col, sets name, returns summary", async () => {
+    const node = {
+      id: "sld1",
+      name: "untitled",
+      isSkippedSlide: false,
+      fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 }, opacity: 1 }],
+      width: 1920,
+      height: 1080,
+    };
+    const createSlide = vi.fn().mockReturnValue(node);
+    vi.stubGlobal("figma", stubFigma({ createSlide } as never));
+    const r = await new RealFigmaAdapter().createSlide({
+      name: "Intro",
+      rowIndex: 1,
+      columnIndex: 0,
+    });
+    expect(createSlide).toHaveBeenCalledWith(1, 0);
+    expect(node.name).toBe("Intro");
+    expect(r).toMatchObject({ id: "sld1", type: "SLIDE", name: "Intro" });
+    expect(r.fills[0]).toMatchObject({ type: "SOLID" });
+  });
+
+  it("leaves the runtime name when no override is provided", async () => {
+    const node = {
+      id: "sld2",
+      name: "Slide 2",
+      isSkippedSlide: false,
+      fills: [],
+      width: 1920,
+      height: 1080,
+    };
+    const createSlide = vi.fn().mockReturnValue(node);
+    vi.stubGlobal("figma", stubFigma({ createSlide } as never));
+    const r = await new RealFigmaAdapter().createSlide({});
+    expect(r.name).toBe("Slide 2");
+    expect(r.isSkipped).toBe(false);
+  });
+});
+
+describe("RealFigmaAdapter.createSlideRow", () => {
+  it("calls figma.createSlideRow with the rowIndex", async () => {
+    const node = { id: "slr1", name: "Row 1" };
+    const createSlideRow = vi.fn().mockReturnValue(node);
+    vi.stubGlobal("figma", stubFigma({ createSlideRow } as never));
+    const r = await new RealFigmaAdapter().createSlideRow({ rowIndex: 0 });
+    expect(createSlideRow).toHaveBeenCalledWith(0);
+    expect(r).toEqual({ id: "slr1", type: "SLIDE_ROW", name: "Row 1" });
+  });
+
+  it("passes undefined when rowIndex is omitted", async () => {
+    const node = { id: "slr2", name: "Row 2" };
+    const createSlideRow = vi.fn().mockReturnValue(node);
+    vi.stubGlobal("figma", stubFigma({ createSlideRow } as never));
+    await new RealFigmaAdapter().createSlideRow({});
+    expect(createSlideRow).toHaveBeenCalledWith(undefined);
+  });
+});
+
+describe("RealFigmaAdapter.setSlideName", () => {
+  it("assigns name on the SLIDE node", async () => {
+    const slide = { id: "sld1", type: "SLIDE", name: "old" };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(slide) } as never)
+    );
+    await new RealFigmaAdapter().setSlideName({ slideId: "sld1", name: "new" });
+    expect(slide.name).toBe("new");
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideName({ slideId: "missing", name: "x" })
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "f1", type: "FRAME" }),
+      } as never)
+    );
+    await expect(new RealFigmaAdapter().setSlideName({ slideId: "f1", name: "x" })).rejects.toThrow(
+      /SLIDE/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.setSlideSkipped", () => {
+  it("assigns isSkippedSlide on the SLIDE", async () => {
+    const slide = { id: "sld1", type: "SLIDE", isSkippedSlide: false };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(slide) } as never)
+    );
+    await new RealFigmaAdapter().setSlideSkipped({
+      slideId: "sld1",
+      skipped: true,
+    });
+    expect(slide.isSkippedSlide).toBe(true);
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideSkipped({ slideId: "x", skipped: true })
+    ).rejects.toThrow(/SLIDE/i);
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideSkipped({ slideId: "missing", skipped: true })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.setSlideTransition", () => {
+  it("delegates to slide.setSlideTransition with the built object", async () => {
+    const setSlideTransition = vi.fn();
+    const slide = { id: "sld1", type: "SLIDE", setSlideTransition };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue(slide),
+      } as never)
+    );
+    await new RealFigmaAdapter().setSlideTransition({
+      slideId: "sld1",
+      style: "DISSOLVE",
+      durationSec: 0.5,
+      curve: "EASE_OUT",
+      timingType: "AFTER_DELAY",
+      timingDelaySec: 1,
+    });
+    expect(setSlideTransition).toHaveBeenCalledWith({
+      style: "DISSOLVE",
+      duration: 0.5,
+      curve: "EASE_OUT",
+      timing: { type: "AFTER_DELAY", delay: 1 },
+    });
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideTransition({ slideId: "x", style: "NONE" })
+    ).rejects.toThrow(/SLIDE/);
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideTransition({ slideId: "missing", style: "NONE" })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.getSlideTransition", () => {
+  it("returns the runtime transition flattened to our shape", async () => {
+    const t = {
+      style: "DISSOLVE",
+      duration: 0.4,
+      curve: "EASE_IN",
+      timing: { type: "ON_CLICK", delay: undefined },
+    };
+    const slide = {
+      id: "sld1",
+      type: "SLIDE",
+      getSlideTransition: vi.fn().mockReturnValue(t),
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(slide) } as never)
+    );
+    const r = await new RealFigmaAdapter().getSlideTransition({ slideId: "sld1" });
+    expect(r).toEqual(t);
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(new RealFigmaAdapter().getSlideTransition({ slideId: "x" })).rejects.toThrow(
+      /SLIDE/
+    );
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().getSlideTransition({ slideId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.setSlideBackground", () => {
+  it("writes the paint to the slide's fills", async () => {
+    const slide: { id: string; type: string; fills?: readonly unknown[] } = {
+      id: "sld1",
+      type: "SLIDE",
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(slide) } as never)
+    );
+    await new RealFigmaAdapter().setSlideBackground({
+      slideId: "sld1",
+      paint: { type: "SOLID", color: { r: 0, g: 0, b: 1 } },
+    });
+    expect(slide.fills).toEqual([{ type: "SOLID", color: { r: 0, g: 0, b: 1 } }]);
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideBackground({
+        slideId: "x",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      })
+    ).rejects.toThrow(/SLIDE/);
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setSlideBackground({
+        slideId: "missing",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.moveSlide", () => {
+  it("reads + mutates + writes the slide grid", async () => {
+    const a = { id: "sld1" };
+    const b = { id: "sld2" };
+    const setSlideGrid = vi.fn();
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "sld1", type: "SLIDE" }),
+        getSlideGrid: vi.fn().mockReturnValue([[a, b]]),
+        setSlideGrid,
+      } as never)
+    );
+    await new RealFigmaAdapter().moveSlide({
+      slideId: "sld1",
+      rowIndex: 0,
+      columnIndex: 1,
+    });
+    expect(setSlideGrid).toHaveBeenCalled();
+    const newGrid = setSlideGrid.mock.calls[0][0];
+    expect(newGrid[0][0]).toBe(b);
+    expect(newGrid[0][1]).toBe(a);
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().moveSlide({ slideId: "x", rowIndex: 0, columnIndex: 0 })
+    ).rejects.toThrow(/SLIDE/);
+  });
+
+  it("rejects when the slide is missing from the grid", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "sld1", type: "SLIDE" }),
+        getSlideGrid: vi.fn().mockReturnValue([[]]),
+        setSlideGrid: vi.fn(),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().moveSlide({
+        slideId: "sld1",
+        rowIndex: 0,
+        columnIndex: 0,
+      })
+    ).rejects.toThrow(/not found in grid/i);
+  });
+
+  it("rejects an out-of-range rowIndex", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "sld1", type: "SLIDE" }),
+        getSlideGrid: vi.fn().mockReturnValue([[{ id: "sld1" }]]),
+        setSlideGrid: vi.fn(),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().moveSlide({
+        slideId: "sld1",
+        rowIndex: 99,
+        columnIndex: 0,
+      })
+    ).rejects.toThrow(/rowIndex out of range/i);
+  });
+
+  it("rejects an out-of-range columnIndex", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "sld1", type: "SLIDE" }),
+        getSlideGrid: vi.fn().mockReturnValue([[{ id: "sld1" }]]),
+        setSlideGrid: vi.fn(),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().moveSlide({
+        slideId: "sld1",
+        rowIndex: 0,
+        columnIndex: 99,
+      })
+    ).rejects.toThrow(/columnIndex out of range/i);
+  });
+});
+
+describe("RealFigmaAdapter.duplicateSlide", () => {
+  it("clones the slide and writes the new grid via setSlideGrid", async () => {
+    const original = {
+      id: "sld1",
+      type: "SLIDE",
+      name: "Intro",
+      isSkippedSlide: false,
+      fills: [],
+      width: 1920,
+      height: 1080,
+      clone: vi.fn(),
+    };
+    const cloned = {
+      id: "sld1_copy",
+      name: "Intro",
+      isSkippedSlide: false,
+      fills: [],
+      width: 1920,
+      height: 1080,
+    };
+    original.clone.mockReturnValue(cloned);
+    const setSlideGrid = vi.fn();
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue(original),
+        getSlideGrid: vi.fn().mockReturnValue([[{ id: "sld1" }]]),
+        setSlideGrid,
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().duplicateSlide({ slideId: "sld1" });
+    expect(original.clone).toHaveBeenCalled();
+    expect(setSlideGrid).toHaveBeenCalled();
+    const newGrid = setSlideGrid.mock.calls[0][0];
+    expect(newGrid[0][1].id).toBe("sld1_copy");
+    expect(r).toMatchObject({ id: "sld1_copy", type: "SLIDE", name: "Intro" });
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(new RealFigmaAdapter().duplicateSlide({ slideId: "x" })).rejects.toThrow(/SLIDE/);
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().duplicateSlide({ slideId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.deleteSlide", () => {
+  it("calls remove() on the slide", async () => {
+    const remove = vi.fn();
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "sld1", type: "SLIDE", remove }),
+      } as never)
+    );
+    await new RealFigmaAdapter().deleteSlide({ slideId: "sld1" });
+    expect(remove).toHaveBeenCalled();
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(new RealFigmaAdapter().deleteSlide({ slideId: "x" })).rejects.toThrow(/SLIDE/);
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().deleteSlide({ slideId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.listSlides", () => {
+  it("returns flattened ids when rowIndex is omitted", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getSlideGrid: vi.fn().mockReturnValue([[{ id: "sld1" }], [{ id: "sld2" }, { id: "sld3" }]]),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().listSlides({});
+    expect(r).toEqual(["sld1", "sld2", "sld3"]);
+  });
+
+  it("returns a single row's ids when rowIndex is given", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getSlideGrid: vi.fn().mockReturnValue([[{ id: "sld1" }], [{ id: "sld2" }]]),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().listSlides({ rowIndex: 1 });
+    expect(r).toEqual(["sld2"]);
+  });
+
+  it("rejects an out-of-range rowIndex", async () => {
+    vi.stubGlobal("figma", stubFigma({ getSlideGrid: vi.fn().mockReturnValue([[]]) } as never));
+    await expect(new RealFigmaAdapter().listSlides({ rowIndex: 99 })).rejects.toThrow(
+      /row.*not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.listSlideRows", () => {
+  it("returns SLIDE_ROW ids from currentPage children", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        currentPage: {
+          selection: [],
+          children: [
+            { id: "slr1", type: "SLIDE_ROW" },
+            { id: "slr2", type: "SLIDE_ROW" },
+          ],
+        },
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().listSlideRows();
+    expect(r).toEqual(["slr1", "slr2"]);
+  });
+
+  it("descends into nested children to find SLIDE_ROWs", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        currentPage: {
+          selection: [],
+          children: [
+            {
+              id: "grid",
+              type: "SLIDE_GRID",
+              children: [
+                { id: "slr1", type: "SLIDE_ROW" },
+                { id: "slr2", type: "SLIDE_ROW" },
+              ],
+            },
+          ],
+        },
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().listSlideRows();
+    expect(r).toEqual(["slr1", "slr2"]);
+  });
+});
+
+describe("RealFigmaAdapter.setActiveSlide", () => {
+  it("assigns figma.currentPage.focusedSlide", async () => {
+    const slide = { id: "sld1", type: "SLIDE" };
+    const currentPage: {
+      selection: readonly { id: string }[];
+      focusedSlide?: typeof slide;
+    } = { selection: [] };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue(slide),
+        currentPage,
+      } as never)
+    );
+    await new RealFigmaAdapter().setActiveSlide({ slideId: "sld1" });
+    expect(currentPage.focusedSlide).toBe(slide);
+  });
+
+  it("rejects when nodeId points to a non-slide", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "x", type: "FRAME" }),
+      } as never)
+    );
+    await expect(new RealFigmaAdapter().setActiveSlide({ slideId: "x" })).rejects.toThrow(/SLIDE/);
+  });
+
+  it("rejects when the slide is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().setActiveSlide({ slideId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.getActiveSlideId", () => {
+  it("returns the focused slide id when set", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        currentPage: { selection: [], focusedSlide: { id: "sld1" } },
+      } as never)
+    );
+    expect(await new RealFigmaAdapter().getActiveSlideId()).toBe("sld1");
+  });
+
+  it("returns null when no focused slide is set", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ currentPage: { selection: [], focusedSlide: null } } as never)
+    );
+    expect(await new RealFigmaAdapter().getActiveSlideId()).toBeNull();
+  });
+});
+
+describe("RealFigmaAdapter.setSlidesView", () => {
+  it("assigns figma.viewport.slidesView", async () => {
+    const viewport: { slidesView?: string } = {};
+    vi.stubGlobal("figma", stubFigma({ viewport } as never));
+    await new RealFigmaAdapter().setSlidesView({ view: "single-slide" });
+    expect(viewport.slidesView).toBe("single-slide");
+  });
+
+  it("can switch back to grid", async () => {
+    const viewport: { slidesView?: string } = { slidesView: "single-slide" };
+    vi.stubGlobal("figma", stubFigma({ viewport } as never));
+    await new RealFigmaAdapter().setSlidesView({ view: "grid" });
+    expect(viewport.slidesView).toBe("grid");
+  });
+});
+
+describe("RealFigmaAdapter.getSlidesView", () => {
+  it("reads figma.viewport.slidesView", async () => {
+    vi.stubGlobal("figma", stubFigma({ viewport: { slidesView: "single-slide" } } as never));
+    expect(await new RealFigmaAdapter().getSlidesView()).toBe("single-slide");
+  });
+});
+
+describe("RealFigmaAdapter.getSlideGrid", () => {
+  it("returns ids in 2D form", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getSlideGrid: vi.fn().mockReturnValue([[{ id: "sld1" }, { id: "sld2" }], [{ id: "sld3" }]]),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().getSlideGrid();
+    expect(r).toEqual([["sld1", "sld2"], ["sld3"]]);
+  });
+});
