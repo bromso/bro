@@ -1,5 +1,12 @@
 import type { PluginHandler } from "@repo/protocol";
-import type { CreateSlide, CreateSlideRow, SetSlideName, SetSlideSkipped } from "./tools";
+import type {
+  CreateSlide,
+  CreateSlideRow,
+  SetSlideBackground,
+  SetSlideName,
+  SetSlideSkipped,
+  SetSlideTransition,
+} from "./tools";
 
 const E_MISMATCH = "E_FIGMA_EDITOR_TYPE_MISMATCH";
 
@@ -52,5 +59,38 @@ export const setSlideSkippedPluginHandler: PluginHandler<typeof SetSlideSkipped>
     );
   }
   await figma.setSlideSkipped({ slideId: args.slideId, skipped: args.skipped });
+  return { nodeId: args.slideId, type: "SLIDE" };
+};
+
+export const setSlideTransitionPluginHandler: PluginHandler<typeof SetSlideTransition> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "slides") {
+    throw new Error(
+      `${E_MISMATCH}: set_slide_transition requires editorType=slides (got ${figma.editorType})`
+    );
+  }
+  await figma.setSlideTransition({
+    slideId: args.slideId,
+    style: args.style,
+    durationSec: args.durationSec,
+    curve: args.curve,
+    timingType: args.timingType,
+    timingDelaySec: args.timingDelaySec,
+  });
+  return { nodeId: args.slideId, type: "SLIDE" };
+};
+
+export const setSlideBackgroundPluginHandler: PluginHandler<typeof SetSlideBackground> = async (
+  args,
+  { figma }
+) => {
+  if (figma.editorType !== "slides") {
+    throw new Error(
+      `${E_MISMATCH}: set_slide_background requires editorType=slides (got ${figma.editorType})`
+    );
+  }
+  await figma.setSlideBackground({ slideId: args.slideId, paint: args.paint });
   return { nodeId: args.slideId, type: "SLIDE" };
 };

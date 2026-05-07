@@ -58,3 +58,90 @@ export const SetSlideSkipped = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("SLIDE") }),
 });
+
+const SlideTransitionStyleEnum = z.enum([
+  "NONE",
+  "DISSOLVE",
+  "SLIDE_FROM_LEFT",
+  "SLIDE_FROM_RIGHT",
+  "SLIDE_FROM_TOP",
+  "SLIDE_FROM_BOTTOM",
+  "PUSH_FROM_LEFT",
+  "PUSH_FROM_RIGHT",
+  "PUSH_FROM_TOP",
+  "PUSH_FROM_BOTTOM",
+  "MOVE_FROM_LEFT",
+  "MOVE_FROM_RIGHT",
+  "MOVE_FROM_TOP",
+  "MOVE_FROM_BOTTOM",
+  "SLIDE_OUT_TO_LEFT",
+  "SLIDE_OUT_TO_RIGHT",
+  "SLIDE_OUT_TO_TOP",
+  "SLIDE_OUT_TO_BOTTOM",
+  "MOVE_OUT_TO_LEFT",
+  "MOVE_OUT_TO_RIGHT",
+  "MOVE_OUT_TO_TOP",
+  "MOVE_OUT_TO_BOTTOM",
+  "SMART_ANIMATE",
+]);
+
+const SlideTransitionCurveEnum = z.enum([
+  "EASE_IN",
+  "EASE_OUT",
+  "EASE_IN_AND_OUT",
+  "LINEAR",
+  "GENTLE",
+  "QUICK",
+  "BOUNCY",
+  "SLOW",
+]);
+
+const SlideTransitionTimingTypeEnum = z.enum(["ON_CLICK", "AFTER_DELAY"]);
+
+const NonNegativeNumber = z.number().nonnegative();
+
+const NormalizedChannel = z.number().min(0).max(1);
+
+const SolidPaintSchema = z
+  .object({
+    type: z.literal("SOLID"),
+    color: z.object({
+      r: NormalizedChannel,
+      g: NormalizedChannel,
+      b: NormalizedChannel,
+    }),
+    opacity: NormalizedChannel.optional(),
+  })
+  .strict();
+
+export const SetSlideTransition = defineTool({
+  name: "set_slide_transition",
+  description:
+    "Slides-only. Set the slide-to-slide transition (style + optional duration, curve, timing).",
+  streaming: false,
+  input: z
+    .object({
+      slideId: z.string().min(1),
+      style: SlideTransitionStyleEnum,
+      durationSec: NonNegativeNumber.optional(),
+      curve: SlideTransitionCurveEnum.optional(),
+      timingType: SlideTransitionTimingTypeEnum.optional(),
+      timingDelaySec: NonNegativeNumber.optional(),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("SLIDE") }),
+});
+
+export const SetSlideBackground = defineTool({
+  name: "set_slide_background",
+  description:
+    "Slides-only. Set the slide's background to a single SOLID paint (writes through to slide.fills).",
+  streaming: false,
+  input: z
+    .object({
+      slideId: z.string().min(1),
+      paint: SolidPaintSchema,
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("SLIDE") }),
+});

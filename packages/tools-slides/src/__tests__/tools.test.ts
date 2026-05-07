@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CreateSlide, CreateSlideRow, SetSlideName, SetSlideSkipped } from "../tools";
+import {
+  CreateSlide,
+  CreateSlideRow,
+  SetSlideBackground,
+  SetSlideName,
+  SetSlideSkipped,
+  SetSlideTransition,
+} from "../tools";
 
 describe("CreateSlide schema", () => {
   it("accepts an empty object (all fields optional)", () => {
@@ -76,5 +83,126 @@ describe("SetSlideSkipped schema", () => {
     expect(SetSlideSkipped.input.safeParse({ slideId: "sld1", skipped: "yes" }).success).toBe(
       false
     );
+  });
+});
+
+describe("SetSlideTransition schema", () => {
+  it("accepts every documented transition style", () => {
+    const styles = [
+      "NONE",
+      "DISSOLVE",
+      "SLIDE_FROM_LEFT",
+      "SLIDE_FROM_RIGHT",
+      "SLIDE_FROM_TOP",
+      "SLIDE_FROM_BOTTOM",
+      "PUSH_FROM_LEFT",
+      "PUSH_FROM_RIGHT",
+      "PUSH_FROM_TOP",
+      "PUSH_FROM_BOTTOM",
+      "MOVE_FROM_LEFT",
+      "MOVE_FROM_RIGHT",
+      "MOVE_FROM_TOP",
+      "MOVE_FROM_BOTTOM",
+      "SLIDE_OUT_TO_LEFT",
+      "SLIDE_OUT_TO_RIGHT",
+      "SLIDE_OUT_TO_TOP",
+      "SLIDE_OUT_TO_BOTTOM",
+      "MOVE_OUT_TO_LEFT",
+      "MOVE_OUT_TO_RIGHT",
+      "MOVE_OUT_TO_TOP",
+      "MOVE_OUT_TO_BOTTOM",
+      "SMART_ANIMATE",
+    ];
+    for (const style of styles) {
+      expect(SetSlideTransition.input.safeParse({ slideId: "sld1", style }).success).toBe(true);
+    }
+  });
+
+  it("rejects unknown transition style", () => {
+    expect(SetSlideTransition.input.safeParse({ slideId: "sld1", style: "MORPH" }).success).toBe(
+      false
+    );
+  });
+
+  it("accepts optional durationSec, curve, timingType, timingDelaySec", () => {
+    expect(
+      SetSlideTransition.input.safeParse({
+        slideId: "sld1",
+        style: "DISSOLVE",
+        durationSec: 0.4,
+        curve: "EASE_OUT",
+        timingType: "ON_CLICK",
+        timingDelaySec: 0.2,
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects negative durationSec / timingDelaySec", () => {
+    expect(
+      SetSlideTransition.input.safeParse({
+        slideId: "sld1",
+        style: "DISSOLVE",
+        durationSec: -0.1,
+      }).success
+    ).toBe(false);
+    expect(
+      SetSlideTransition.input.safeParse({
+        slideId: "sld1",
+        style: "DISSOLVE",
+        timingDelaySec: -1,
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects unknown curve", () => {
+    expect(
+      SetSlideTransition.input.safeParse({
+        slideId: "sld1",
+        style: "DISSOLVE",
+        curve: "ELASTIC",
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("SetSlideBackground schema", () => {
+  it("requires slideId + paint", () => {
+    expect(
+      SetSlideBackground.input.safeParse({
+        slideId: "sld1",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      }).success
+    ).toBe(true);
+    expect(SetSlideBackground.input.safeParse({ slideId: "sld1" }).success).toBe(false);
+  });
+
+  it("requires SOLID paint type with color rgb in [0, 1]", () => {
+    expect(
+      SetSlideBackground.input.safeParse({
+        slideId: "sld1",
+        paint: { type: "GRADIENT", color: { r: 0, g: 0, b: 0 } },
+      }).success
+    ).toBe(false);
+    expect(
+      SetSlideBackground.input.safeParse({
+        slideId: "sld1",
+        paint: { type: "SOLID", color: { r: 1.5, g: 0, b: 0 } },
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts optional opacity in [0, 1]", () => {
+    expect(
+      SetSlideBackground.input.safeParse({
+        slideId: "sld1",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 0.5 },
+      }).success
+    ).toBe(true);
+    expect(
+      SetSlideBackground.input.safeParse({
+        slideId: "sld1",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 1.5 },
+      }).success
+    ).toBe(false);
   });
 });
