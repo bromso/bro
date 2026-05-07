@@ -1,5 +1,13 @@
 # @repo/tools-design
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`bbbedc9`](https://github.com/bromso/bro/commit/bbbedc93cd008f187efaf8e823c825698882f3a5)]:
+  - @repo/figma-adapter@0.4.0
+  - @repo/protocol@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @repo/transport
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @repo/protocol@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
