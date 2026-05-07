@@ -1,5 +1,5 @@
 export type CliCommand =
-  | { kind: "runtime" }
+  | { kind: "runtime"; flags: { enableWriteTools: boolean } }
   | { kind: "help" }
   | { kind: "print-path" }
   | {
@@ -40,7 +40,12 @@ export function dispatch(options: DispatchOptions): CliCommand {
   if (sub === "doctor") {
     return { kind: "doctor", flags: { json: args.includes("--json") } };
   }
-  return { kind: "runtime" };
+  return {
+    kind: "runtime",
+    flags: {
+      enableWriteTools: args.includes("--enable-write-tools"),
+    },
+  };
 }
 
 function takeValue(args: readonly string[], flag: string): string | null {

@@ -80,11 +80,13 @@
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@repo/figma-adapter": "workspace:*",
+        "@repo/figma-api-client": "workspace:*",
         "@repo/protocol": "workspace:*",
         "@repo/tools-console": "workspace:*",
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-figjam": "workspace:*",
+        "@repo/tools-rest": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "zod": "^3.23.8",
@@ -162,6 +164,15 @@
         "vitest": "4.1.4",
       },
     },
+    "packages/figma-api-client": {
+      "name": "@repo/figma-api-client",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/protocol": {
       "name": "@repo/protocol",
       "version": "0.1.0",
@@ -170,6 +181,7 @@
         "zod": "^3.23.8",
       },
       "devDependencies": {
+        "@repo/figma-api-client": "workspace:*",
         "@vitest/coverage-v8": "4.1.4",
         "fast-check": "^3.23.0",
         "typescript": "^6.0.0",
@@ -223,6 +235,20 @@
       "version": "0.0.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/tools-rest": {
+      "name": "@repo/tools-rest",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-api-client": "workspace:*",
         "@repo/protocol": "workspace:*",
         "zod": "^3.23.8",
       },
@@ -966,6 +992,8 @@
 
     "@repo/figma-adapter": ["@repo/figma-adapter@workspace:packages/figma-adapter"],
 
+    "@repo/figma-api-client": ["@repo/figma-api-client@workspace:packages/figma-api-client"],
+
     "@repo/protocol": ["@repo/protocol@workspace:packages/protocol"],
 
     "@repo/relay": ["@repo/relay@workspace:apps/relay"],
@@ -979,6 +1007,8 @@
     "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
 
     "@repo/tools-figjam": ["@repo/tools-figjam@workspace:packages/tools-figjam"],
+
+    "@repo/tools-rest": ["@repo/tools-rest@workspace:packages/tools-rest"],
 
     "@repo/tools-variables": ["@repo/tools-variables@workspace:packages/tools-variables"],
 

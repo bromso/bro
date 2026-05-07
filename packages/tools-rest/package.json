@@ -1,14 +1,10 @@
 {
-  "name": "@repo/protocol",
-  "version": "0.1.0",
+  "name": "@repo/tools-rest",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./envelope": "./src/envelope.ts",
-    "./errors": "./src/errors.ts",
-    "./streaming": "./src/streaming.ts",
-    "./tools": "./src/tools.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -17,13 +13,12 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "@repo/figma-adapter": "workspace:*",
+    "@repo/figma-api-client": "workspace:*",
+    "@repo/protocol": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@repo/figma-api-client": "workspace:*",
     "@vitest/coverage-v8": "4.1.4",
-    "fast-check": "^3.23.0",
     "typescript": "^6.0.0",
     "vitest": "4.1.4"
   }

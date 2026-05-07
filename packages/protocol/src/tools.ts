@@ -1,4 +1,5 @@
 import type { FigmaAdapter } from "@repo/figma-adapter";
+import type { FigmaApi } from "@repo/figma-api-client";
 import type { z } from "zod";
 
 export interface Logger {
@@ -28,12 +29,15 @@ export function defineTool<TInput extends z.ZodTypeAny, TOutput extends z.ZodTyp
 export type ServerHandlerContext = {
   readonly logger: Logger;
   /**
-   * @deprecated Phase 1 placeholder. Will be replaced in a later phase
-   * with a higher-level `FigmaApiClient` that has the key already
-   * plumbed and provides typed REST endpoints. Handlers should not
-   * depend on this raw string — feature packs that need Figma REST
-   * access should bracket their use of it with a TODO comment so the
-   * migration site is greppable.
+   * Phase 11+: typed Figma REST client. `null` when the daemon was
+   * started without `FIGMA_API_KEY`. REST tools call `requireApiKey()`
+   * to surface `E_FIGMA_API_KEY_MISSING` cleanly.
+   */
+  readonly figmaApi?: FigmaApi | null;
+  /**
+   * @deprecated Phase 1 placeholder; superseded by `figmaApi` in Phase 11.
+   * One phase of overlap so any third-party server-handler still using
+   * the raw key has a migration window. To be removed in Phase 12+.
    */
   readonly figmaApiKey?: string;
 };
