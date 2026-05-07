@@ -1,5 +1,13 @@
 # @repo/tools-figjam
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [[`ee1ef8b`](https://github.com/bromso/bro/commit/ee1ef8be73c70ab7cd2515f22df73a1bbef35a48)]:
+  - @repo/figma-adapter@0.3.0
+  - @repo/protocol@0.1.2
+
 ## 0.1.0
 
 ### Minor Changes
