@@ -32,3 +32,42 @@ export const GetConsoleErrors = defineTool({
   input: z.object({ limit: z.number().int().min(1).max(1000).optional() }).strict(),
   output: z.object({ entries: z.array(ConsoleEntry) }),
 });
+
+export const GetConsoleWarnings = defineTool({
+  name: "get_console_warnings",
+  description: "Return recent console entries at level=warn only.",
+  streaming: false,
+  input: z.object({ limit: z.number().int().min(1).max(1000).optional() }).strict(),
+  output: z.object({ entries: z.array(ConsoleEntry) }),
+});
+
+export const QueryConsole = defineTool({
+  name: "query_console",
+  description:
+    "Filter captured console entries by JS regex on the message text. Pattern compiled with no flags.",
+  streaming: false,
+  input: z
+    .object({
+      pattern: z.string().min(1),
+      limit: z.number().int().min(1).max(1000).optional(),
+    })
+    .strict(),
+  output: z.object({ entries: z.array(ConsoleEntry) }),
+});
+
+export const ConsoleStatusTool = defineTool({
+  name: "console_status",
+  description: "Report buffer statistics: total, per-level counts, and dropped (overflowed) count.",
+  streaming: false,
+  input: z.object({}).strict(),
+  output: z.object({
+    total: z.number().int().nonnegative(),
+    byLevel: z.object({
+      log: z.number().int().nonnegative(),
+      warn: z.number().int().nonnegative(),
+      error: z.number().int().nonnegative(),
+      info: z.number().int().nonnegative(),
+    }),
+    droppedCount: z.number().int().nonnegative(),
+  }),
+});

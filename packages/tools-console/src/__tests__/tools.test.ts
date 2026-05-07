@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ClearConsole, GetConsoleErrors, GetConsoleLogs } from "../tools";
+import {
+  ClearConsole,
+  ConsoleStatusTool,
+  GetConsoleErrors,
+  GetConsoleLogs,
+  QueryConsole,
+} from "../tools";
 
 describe("GetConsoleLogs schema", () => {
   it("accepts an empty input or a limit", () => {
@@ -34,5 +40,38 @@ describe("GetConsoleErrors schema", () => {
       entries: [{ level: "error", message: "boom", timestamp: 1 }],
     });
     expect(ok.success).toBe(true);
+  });
+});
+
+describe("QueryConsole schema", () => {
+  it("requires pattern (string)", () => {
+    expect(QueryConsole.input.safeParse({}).success).toBe(false);
+    expect(QueryConsole.input.safeParse({ pattern: "foo" }).success).toBe(true);
+  });
+
+  it("rejects empty pattern", () => {
+    expect(QueryConsole.input.safeParse({ pattern: "" }).success).toBe(false);
+  });
+});
+
+describe("ConsoleStatus schema", () => {
+  it("output shape includes total/byLevel/droppedCount", () => {
+    expect(
+      ConsoleStatusTool.output.safeParse({
+        total: 0,
+        byLevel: { log: 0, warn: 0, error: 0, info: 0 },
+        droppedCount: 0,
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects missing byLevel keys", () => {
+    expect(
+      ConsoleStatusTool.output.safeParse({
+        total: 0,
+        byLevel: { log: 0 },
+        droppedCount: 0,
+      }).success
+    ).toBe(false);
   });
 });
