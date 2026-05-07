@@ -1,6 +1,31 @@
 ---
 title: Capture plugin console errors
-description: Recipe walkthrough — content lands in Task 10.
+description: Surface errors and warnings from the bridge plugin's sandbox.
 ---
 
-(Content lands in Task 10 — see implementation plan.)
+## The prompt
+
+```text
+Using figma-mcp, fetch the most recent 20 console errors from the bridge plugin. If any of them mention "is not a function" or "undefined", suggest a likely fix.
+```
+
+## What happens
+
+The AI calls `get_console_errors` with `limit: 20`, scans the messages, and returns a summary with suggested fixes. If you want a regex query, the AI may instead call `query_console`.
+
+## Tools used
+
+- [get_console_errors](/docs/tools-reference/console/get_console_errors)
+- [query_console](/docs/tools-reference/console/query_console)
+- [console_status](/docs/tools-reference/console/console_status) — for buffer-level diagnostics.
+
+## Variations
+
+- "…clear the buffer first, then run my plugin code, then fetch errors." Adds [clear_console](/docs/tools-reference/console/clear_console) at the start.
+- "…tail the buffer over the next 60 seconds." The AI calls `console_status` periodically, or you can rerun the prompt.
+- "…surface only error AND warn levels." Use [query_console](/docs/tools-reference/console/query_console) with a level-filter regex, or chain [get_console_errors](/docs/tools-reference/console/get_console_errors) and [get_console_warnings](/docs/tools-reference/console/get_console_warnings).
+
+## Troubleshooting
+
+- The buffer says `droppedCount > 0`. Your plugin is logging more than 1000 entries; older messages have rolled off. Increase the buffer's capacity (compile-time setting in the bridge plugin) or reduce the volume of `console.log` calls.
+- The console store is empty. Either nothing has been logged yet, or the bridge plugin isn't paired. Run `figma-mcp doctor`.
