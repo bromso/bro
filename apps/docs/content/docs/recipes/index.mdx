@@ -1,6 +1,18 @@
 ---
 title: Recipes
-description: Recipes overview — content lands in Task 9.
+description: Copy-paste prompts that turn figma-mcp's tools into common workflows.
 ---
 
-(Content lands in Task 9 — see implementation plan.)
+Recipes are concrete prompts that the AI client parses, dispatches across the right tools, and returns useful output. Each recipe documents the literal text you can paste in, what tool flow it triggers, and how to adapt it.
+
+| Recipe | What it produces |
+| ------ | ---------------- |
+| [Extract design tokens](/docs/recipes/extract-design-tokens) | A JSON snapshot of every variable + style. |
+| [Audit a frame's accessibility](/docs/recipes/audit-accessibility) | A structured a11y report (contrast / target-size / alt-text). |
+| [Generate slides from a markdown outline](/docs/recipes/slides-from-outline) | A populated Slides deck. |
+| [Build a UI from a description](/docs/recipes/ui-from-description) | A wireframe assembled from primitives. |
+| [Audit a Figma file via cloud mode](/docs/recipes/audit-via-cloud) | A read-only audit using just `FIGMA_API_KEY`. |
+| [Capture plugin console errors](/docs/recipes/debug-plugin-console) | Recent errors / warnings for a plugin in development. |
+| [Document components](/docs/recipes/document-components) | Components annotated with alt-text + ARIA + landmark roles. |
+
+Recipes are deliberately short — most are copy-paste and tweak. For a deeper view of any tool, click into [Tool reference](/docs/tools-reference).

@@ -1,6 +1,46 @@
 ---
 title: Build a UI from a description
-description: Recipe walkthrough — content lands in Task 9.
+description: Assemble a wireframe from a prose description using primitive shape and text tools.
 ---
 
-(Content lands in Task 9 — see implementation plan.)
+## The prompt
+
+```text
+Using figma-mcp, build a wireframe of a sign-in form on the current Figma Design page:
+
+- 360 × 480 frame, white background, centered.
+- "Sign in" heading at the top, 24pt.
+- Email input (rectangle, 320 × 44, 8px from heading), placeholder text "you@example.com".
+- Password input below it, same shape.
+- Primary button (320 × 48, blue #0066FF) with "Sign in" text.
+- Forgot password link below the button, 14pt.
+```
+
+## What happens
+
+The AI plans the layout (positions the frame, then computes child x/y), then issues a sequence of:
+
+- `create_frame` — outer container.
+- `create_text` × 4 — heading, two placeholders, button label, link.
+- `create_rectangle` × 3 — two input backgrounds + button background.
+- `set_fill` × 3 — input + button colors.
+
+Roughly 10-15 tool calls. The AI returns the frame id; you nudge the result in Figma to taste.
+
+## Tools used
+
+- [create_frame](/docs/tools-reference/design/create_frame)
+- [create_rectangle](/docs/tools-reference/design/create_rectangle)
+- [create_text](/docs/tools-reference/design/create_text)
+- [set_fill](/docs/tools-reference/design/set_fill)
+
+## Variations
+
+- "…also wrap the result into a component when done." Adds [create_component](/docs/tools-reference/design/create_component).
+- "…stroke the inputs with a 1px gray border." Adds [set_stroke](/docs/tools-reference/design/set_stroke).
+- "…annotate every input with an ARIA label matching its placeholder." Adds [set_aria_label](/docs/tools-reference/a11y/set_aria_label).
+
+## Troubleshooting
+
+- The AI gets the geometry wrong. Adjust by adding explicit pixel constraints to the prompt; the AI is better at exact numbers than relative layout.
+- `E_FIGMA_EDITOR_TYPE_MISMATCH`. The current file isn't Figma Design — open a design file and re-run.
