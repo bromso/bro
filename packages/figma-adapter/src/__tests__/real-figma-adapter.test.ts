@@ -8,6 +8,13 @@ const stubFigma = (overrides: Partial<typeof figma> = {}) => {
     getLocalTextStylesAsync: vi.fn().mockResolvedValue([]),
     getLocalEffectStylesAsync: vi.fn().mockResolvedValue([]),
     createRectangle: vi.fn(),
+    createFrame: vi.fn(),
+    createText: vi.fn(),
+    createEllipse: vi.fn(),
+    createLine: vi.fn(),
+    createComponentFromNode: vi.fn(),
+    getNodeByIdAsync: vi.fn().mockResolvedValue(null),
+    loadFontAsync: vi.fn().mockResolvedValue(undefined),
     currentPage: { selection: [] as readonly { id: string }[] },
     root: {
       findAllWithCriteria: vi.fn().mockReturnValue([]),
@@ -299,5 +306,421 @@ describe("RealFigmaAdapter.deleteVariableAsync", () => {
     await expect(new RealFigmaAdapter().deleteVariableAsync("missing")).rejects.toThrow(
       /not found/i
     );
+  });
+});
+
+// ---- Phase 8 design adapter methods ----
+
+describe("RealFigmaAdapter.createFrame", () => {
+  it("calls figma.createFrame and resizes/places", async () => {
+    const node = {
+      id: "f1",
+      x: 0,
+      y: 0,
+      name: "",
+      width: 0,
+      height: 0,
+      resize(w: number, h: number) {
+        this.width = w;
+        this.height = h;
+      },
+    };
+    vi.stubGlobal("figma", stubFigma({ createFrame: vi.fn().mockReturnValue(node) } as never));
+    const r = await new RealFigmaAdapter().createFrame({
+      width: 200,
+      height: 100,
+      x: 5,
+      y: 6,
+      name: "Hero",
+    });
+    expect(r).toMatchObject({
+      id: "f1",
+      type: "FRAME",
+      width: 200,
+      height: 100,
+      x: 5,
+      y: 6,
+      name: "Hero",
+    });
+  });
+});
+
+describe("RealFigmaAdapter.createText", () => {
+  it("calls figma.createText, loads font, sets characters and fontSize", async () => {
+    const node = {
+      id: "t1",
+      x: 0,
+      y: 0,
+      characters: "",
+      fontSize: 16,
+      fontName: { family: "Inter", style: "Regular" },
+    };
+    const loadFontAsync = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        createText: vi.fn().mockReturnValue(node),
+        loadFontAsync,
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().createText({
+      content: "hello",
+      fontSize: 24,
+      x: 10,
+      y: 20,
+    });
+    expect(loadFontAsync).toHaveBeenCalledWith({ family: "Inter", style: "Regular" });
+    expect(node.characters).toBe("hello");
+    expect(node.fontSize).toBe(24);
+    expect(r).toMatchObject({ id: "t1", type: "TEXT", characters: "hello", fontSize: 24 });
+  });
+
+  it("falls back to fontSize 16 when the underlying property is non-numeric", async () => {
+    const node = {
+      id: "t2",
+      x: 0,
+      y: 0,
+      characters: "",
+      fontSize: "mixed",
+      fontName: { family: "Inter", style: "Regular" },
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        createText: vi.fn().mockReturnValue(node),
+        loadFontAsync: vi.fn().mockResolvedValue(undefined),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().createText({ content: "x" });
+    expect(r.fontSize).toBe(16);
+  });
+});
+
+describe("RealFigmaAdapter.createEllipse", () => {
+  it("calls figma.createEllipse and resizes", async () => {
+    const node = {
+      id: "e1",
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      resize(w: number, h: number) {
+        this.width = w;
+        this.height = h;
+      },
+    };
+    vi.stubGlobal("figma", stubFigma({ createEllipse: vi.fn().mockReturnValue(node) } as never));
+    const r = await new RealFigmaAdapter().createEllipse({ width: 80, height: 80 });
+    expect(r).toMatchObject({ id: "e1", type: "ELLIPSE", width: 80, height: 80 });
+  });
+});
+
+describe("RealFigmaAdapter.createLine", () => {
+  it("calls figma.createLine with rotation and resize", async () => {
+    const node = {
+      id: "ln1",
+      x: 0,
+      y: 0,
+      rotation: 0,
+      resize: vi.fn(),
+    };
+    vi.stubGlobal("figma", stubFigma({ createLine: vi.fn().mockReturnValue(node) } as never));
+    const r = await new RealFigmaAdapter().createLine({ x1: 0, y1: 0, x2: 100, y2: 0 });
+    expect(node.x).toBe(0);
+    expect(node.y).toBe(0);
+    expect(node.resize).toHaveBeenCalledWith(100, 0);
+    expect(r).toMatchObject({ id: "ln1", type: "LINE", x1: 0, x2: 100 });
+  });
+});
+
+describe("RealFigmaAdapter.setNodeFill", () => {
+  it("looks up the node and assigns fills", async () => {
+    const target = { id: "n1", fills: [] as readonly unknown[] };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(target) } as never)
+    );
+    await new RealFigmaAdapter().setNodeFill({
+      nodeId: "n1",
+      paint: { type: "SOLID", color: { r: 1, g: 0, b: 0 } },
+    });
+    expect(target.fills).toEqual([{ type: "SOLID", color: { r: 1, g: 0, b: 0 } }]);
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setNodeFill({
+        nodeId: "missing",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.setNodeStroke", () => {
+  it("assigns strokes and strokeWeight", async () => {
+    const target = {
+      id: "n1",
+      strokes: [] as readonly unknown[],
+      strokeWeight: 0,
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(target) } as never)
+    );
+    await new RealFigmaAdapter().setNodeStroke({
+      nodeId: "n1",
+      paint: { type: "SOLID", color: { r: 0, g: 0, b: 1 } },
+      weight: 4,
+    });
+    expect(target.strokes).toEqual([{ type: "SOLID", color: { r: 0, g: 0, b: 1 } }]);
+    expect(target.strokeWeight).toBe(4);
+  });
+
+  it("omits strokeWeight when not provided", async () => {
+    const target = {
+      id: "n1",
+      strokes: [] as readonly unknown[],
+      strokeWeight: 7,
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(target) } as never)
+    );
+    await new RealFigmaAdapter().setNodeStroke({
+      nodeId: "n1",
+      paint: { type: "SOLID", color: { r: 0, g: 0, b: 1 } },
+    });
+    expect(target.strokeWeight).toBe(7);
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setNodeStroke({
+        nodeId: "missing",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.setTextContent", () => {
+  it("loads the font and writes characters on a TEXT node", async () => {
+    const target = {
+      id: "t1",
+      type: "TEXT" as const,
+      fontName: { family: "Inter", style: "Regular" },
+      characters: "old",
+    };
+    const loadFontAsync = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue(target),
+        loadFontAsync,
+      } as never)
+    );
+    await new RealFigmaAdapter().setTextContent({ nodeId: "t1", characters: "new" });
+    expect(loadFontAsync).toHaveBeenCalledWith({ family: "Inter", style: "Regular" });
+    expect(target.characters).toBe("new");
+  });
+
+  it("rejects on a non-TEXT node", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "r1", type: "RECTANGLE" }),
+        loadFontAsync: vi.fn().mockResolvedValue(undefined),
+      } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setTextContent({ nodeId: "r1", characters: "x" })
+    ).rejects.toThrow(/text/i);
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setTextContent({ nodeId: "missing", characters: "x" })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.resizeNode", () => {
+  it("calls node.resize with the requested width/height", async () => {
+    const resize = vi.fn();
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "r1", resize }),
+      } as never)
+    );
+    await new RealFigmaAdapter().resizeNode({ nodeId: "r1", width: 300, height: 250 });
+    expect(resize).toHaveBeenCalledWith(300, 250);
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().resizeNode({ nodeId: "missing", width: 1, height: 1 })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.cloneNode", () => {
+  it("calls node.clone() and returns the new id", async () => {
+    const clone = vi.fn().mockReturnValue({ id: "r2" });
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "r1", clone }),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().cloneNode({ nodeId: "r1" });
+    expect(clone).toHaveBeenCalled();
+    expect(r).toEqual({ id: "r2" });
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().cloneNode({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.deleteNode", () => {
+  it("calls node.remove()", async () => {
+    const remove = vi.fn();
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "r1", remove }),
+      } as never)
+    );
+    await new RealFigmaAdapter().deleteNode({ nodeId: "r1" });
+    expect(remove).toHaveBeenCalled();
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().deleteNode({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.createComponent", () => {
+  it("calls figma.createComponentFromNode and summarizes", async () => {
+    const sourceNode = { id: "r1" };
+    const componentNode = {
+      id: "cmp1",
+      name: "Button",
+      key: "btn-key",
+      description: "primary",
+    };
+    const createComponentFromNode = vi.fn().mockReturnValue(componentNode);
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue(sourceNode),
+        createComponentFromNode,
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().createComponent({ nodeId: "r1" });
+    expect(createComponentFromNode).toHaveBeenCalledWith(sourceNode);
+    expect(r).toEqual({
+      id: "cmp1",
+      name: "Button",
+      key: "btn-key",
+      description: "primary",
+    });
+  });
+
+  it("rejects when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().createComponent({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.getNodeById", () => {
+  it("returns null when the node is missing", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    expect(await new RealFigmaAdapter().getNodeById({ nodeId: "missing" })).toBeNull();
+  });
+
+  it("emits a NodeSnapshot with the present scalar fields", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({
+          id: "r1",
+          type: "RECTANGLE",
+          width: 100,
+          height: 50,
+          x: 10,
+          y: 20,
+          fills: [{ type: "SOLID", color: { r: 1, g: 0, b: 0 } }],
+          strokes: [],
+          strokeWeight: 1,
+        }),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().getNodeById({ nodeId: "r1" });
+    expect(r).toMatchObject({
+      id: "r1",
+      type: "RECTANGLE",
+      width: 100,
+      height: 50,
+      x: 10,
+      y: 20,
+      strokeWeight: 1,
+    });
+    expect(r?.fills?.[0]).toEqual({ type: "SOLID", color: { r: 1, g: 0, b: 0 } });
+  });
+
+  it("includes characters for TEXT nodes", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({
+          id: "t1",
+          type: "TEXT",
+          characters: "hello",
+          x: 0,
+          y: 0,
+        }),
+      } as never)
+    );
+    const r = await new RealFigmaAdapter().getNodeById({ nodeId: "t1" });
+    expect(r).toMatchObject({ id: "t1", type: "TEXT", characters: "hello" });
   });
 });
