@@ -1,110 +1,142 @@
-# Contributing
+# Contributing to figma-mcp
 
-Thank you for your interest in contributing to figma-plugin-template! We welcome all contributions — bug fixes, improvements, and new features.
+Welcome — bug fixes, new tools, doc improvements, and architectural ideas are all on the table.
 
 ## Prerequisites
 
-- Node.js >= 18
-- [Bun](https://bun.sh) >= 1.0
-- Figma desktop app (for plugin testing)
+- [Bun](https://bun.sh) **1.3.11** — `bun.lock` is the source of truth for dependency resolution.
+- [Node](https://nodejs.org) **≥ 20.10** — matches the published binary's `engines` constraint.
+- **Figma desktop** — required to test the bridge plugin.
+- _Optional_: [Cloudflare Wrangler](https://developers.cloudflare.com/workers/wrangler/) — if touching `apps/relay`.
 
-## Getting Started
+## Getting started
 
 ```bash
-git clone https://github.com/bromso/figma-plugin-template.git
-cd figma-plugin-template
+git clone https://github.com/bromso/bro.git
+cd bro
 bun install
-bun run build
+bun run test                                     # run all tests across packages
+bun run --filter @repo/docs dev                  # docs site at http://localhost:3000
 ```
 
-## Development Workflow
+## Repo layout
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Watch mode (plugin + UI via Turborepo) |
-| `bun run build` | Production build to `apps/figma-plugin/dist/` |
-| `bun run test` | Run all tests (Vitest) |
-| `bun run test:watch` | Watch mode for tests |
-| `bun run lint` | Lint with Biome |
-| `bun run storybook` | Start Storybook dev server |
-
-## Project Structure
-
-This is a Turborepo monorepo:
+The repo is a Turborepo monorepo. The published artifact is `@bromso/figma-mcp` (everything else is internal).
 
 ```
 apps/
-  design-plugin/  — The Figma plugin application
-  storybook/      — Storybook for component documentation
+  mcp-server/      The published binary (@bromso/figma-mcp). CLI + shim + daemon.
+  bridge-plugin/   The Figma plugin runtime. Drag-imported into Figma desktop.
+  relay/           Optional Cloudflare Worker for cloud-mode pairing.
+  docs/            Fumadocs site. Deployed to GitHub Pages.
+  storybook/       UI scaffolding for the bridge plugin's UI components.
 packages/
-  common/         — Shared types and network events (@repo/common)
-  ui/             — UI components and styles (@repo/ui)
+  protocol/        Tool/envelope/streaming wire types. Internal.
+  transport/       WebSocket + Unix-socket + named-pipe transports. Internal.
+  figma-adapter/   Plugin-runtime adapter contract + FigmaFake test double. Internal.
+  tools-extract/   Selection/page extraction tool pack. Internal.
+  tools-variables/ Variable read/write tool pack. Internal.
+  tools-console/   Console capture + query tool pack. Internal.
+  tools-design/    Canvas mutation tool pack. Internal.
+  ui/              Storybook components.
+  common/          Shared types for the storybook scaffold.
 ```
 
-Packages are **JIT source-only** — they export raw TypeScript with no build step. Use `@repo/*` workspace imports for cross-package references (e.g., `import { Button } from '@repo/ui'`).
+## Development workflow
 
-## Testing in Figma
+| Command                                       | What it does                                   |
+|-----------------------------------------------|------------------------------------------------|
+| `bun run dev`                                 | Watch mode (parallel via Turborepo).           |
+| `bun run test`                                | Run all tests via Vitest.                      |
+| `bun run lint`                                | Biome lint + format check.                     |
+| `bun run types`                               | `tsc --noEmit` per package.                    |
+| `bun run --filter @bromso/figma-mcp test`     | Scoped run for the published package.          |
+| `bun run --filter @repo/docs dev`             | Local docs site preview.                       |
+| `bun run storybook`                           | Storybook for the bridge plugin's UI.          |
 
-1. Run `bun run build` (or `bun run dev` for watch mode)
-2. Open the Figma desktop app
-3. Go to **Plugins > Development > Import plugin from manifest**
-4. Select `apps/figma-plugin/dist/manifest.json`
+## Branching policy
 
-## Submitting a Pull Request
+| Prefix    | Use for                                            |
+|-----------|----------------------------------------------------|
+| `feat/`   | New features, new tools, new tool packs.           |
+| `fix/`    | Bug fixes.                                         |
+| `chore/`  | Lockfile bumps, CI tweaks, internal refactors.     |
+| `docs/`   | Docs-only changes (README, CONTRIBUTING, site).    |
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/my-feature`
-3. Make your changes and ensure all checks pass:
-   ```bash
-   bun run build
-   bun run test
-   bun run lint
-   ```
-4. Commit with a descriptive message
-5. Push and open a PR against `master`
-6. Describe what changed and why in the PR description
+**Phase branches** — `feat/phase-N-<slug>` — track multi-task plans checked into `docs/plans/`. The plan is the source of truth; the executor follows it task-by-task and commits per task.
 
-## Branch Naming
+## Commit messages
 
-| Prefix | Purpose | Example |
-|--------|---------|---------|
-| `feat/` | New features | `feat/color-picker-plugin` |
-| `fix/` | Bug fixes | `fix/icon-render-crash` |
-| `chore/` | Maintenance, deps | `chore/update-react-19` |
-| `docs/` | Documentation | `docs/add-api-guide` |
-
-## Commit Messages
-
-Use [conventional commits](https://www.conventionalcommits.org/):
+Conventional Commits with a scope:
 
 ```
-feat: add color picker component
-fix: resolve icon rendering in dark mode
-chore: update dependencies
-docs: add plugin testing guide
+feat(mcp-server): wire CLI dispatcher into main.ts
+fix(transport): drop messages received before first onMessage handler
+chore(changeset): record Phase 8 tools-console + tools-design
 ```
 
-## Versioning
+The scope is the package or app. Use `!` after the scope (`feat(mcp-server)!:`) for breaking changes.
 
-This project uses [changesets](https://github.com/changesets/changesets) for versioning.
+## Changesets policy
 
-**After making changes**, run:
+Every user-facing change requires a changeset:
 
 ```bash
 bun changeset
+# pick affected packages, choose patch/minor/major, write a one-paragraph summary
 ```
 
-This creates a changeset file describing your changes. Commit it with your PR.
+- **Internal-only refactors** (no published surface change): no changeset needed.
+- **Phase-completion changesets** land in the same PR as the phase.
+- **Major bumps** must have a `!` in the matching commit.
 
-A GitHub Action will automatically create a "Version Packages" PR that bumps the version and updates CHANGELOG.md. Merging that PR creates a new release.
+The release workflow consumes pending changesets on every merge to `master` and either opens a "Version Packages" PR or publishes to npm — see `.github/workflows/release.yml`.
 
-**Version types:**
-- **Major** (2.0.0): Breaking changes to template structure
-- **Minor** (1.4.0): New features, components, or skills
-- **Patch** (1.3.1): Bug fixes, dependency updates
+## Coverage gates
 
-## Code Style
+Each package's `vitest.config.ts` enforces its own threshold:
 
-- **Biome** handles linting and formatting — pre-commit hooks run automatically
-- Use **TypeScript strict mode**
-- Use `@repo/*` imports for cross-package references (not relative paths)
+| Package                                | Lines | Branches | Functions | Statements |
+|----------------------------------------|-------|----------|-----------|------------|
+| `@repo/protocol`, `@repo/transport`    | 90    | 85       | 90        | 90         |
+| `@repo/figma-adapter`                  | 90    | 85       | 90        | 90         |
+| `@repo/tools-*`                        | 90    | 85       | 90        | 90         |
+| `@bromso/figma-mcp`                    | 80    | 75       | 80        | 80         |
+| `@repo/relay`                          | 80    | 75       | 80        | 80         |
+
+CI fails if a threshold drops. Run `bun run --filter <pkg> test --coverage` locally to see the report.
+
+## Adding a new tool pack
+
+The canonical example is `packages/tools-extract/`. To add a new pack `tools-foo`:
+
+1. Scaffold the package at `packages/tools-foo/` mirroring `tools-extract`'s shape (`package.json`, `tsconfig.json`, `vitest.config.ts`, `src/{tools,plugin-handlers,index}.ts`).
+2. Define schemas in `src/tools.ts` using `defineTool({name, description, streaming, input, output})` from `@repo/protocol`.
+3. Implement plugin handlers in `src/plugin-handlers.ts` against `@repo/figma-adapter`'s `FigmaAdapter` interface.
+4. (Optional) Implement server handlers in `src/server-handlers.ts` for REST-API-backed tools.
+5. Test against `FigmaFake` from `@repo/figma-adapter/testing`. Hit ≥90/85 coverage.
+6. Wire the pack into `apps/mcp-server/src/main.ts` (registry + shim catalog) and `apps/bridge-plugin/src/plugin.ts` (runtime handler registration).
+7. Add a changeset and a Phase plan if the pack ships >5 tools.
+
+## Shipping the bridge plugin to Figma Community
+
+The bundled bridge plugin in `apps/bridge-plugin/` is built into the published `@bromso/figma-mcp` artifact. To list it on the [Figma Plugin Community](https://www.figma.com/community):
+
+1. Build: `bun run --filter @repo/bridge-plugin build` produces `apps/bridge-plugin/dist/`.
+2. Sign in to the [Figma developer portal](https://www.figma.com/developers/plugins).
+3. Submit the built `dist/` for review.
+
+The submission process is manual and outside this repo's CI. Submission only matters if you want to ship the plugin separately from the npm package.
+
+## Reporting bugs
+
+When opening an issue, include:
+
+- The output of `figma-mcp doctor --json` (run after the bug repros).
+- The AI client and version (e.g. Claude Code 1.0.x).
+- The relevant section of `~/.figma-mcp/daemon.log` (last 50 lines).
+- Steps to reproduce.
+
+## License
+
+By contributing, you agree your contributions are MIT-licensed.
