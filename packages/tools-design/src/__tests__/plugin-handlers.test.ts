@@ -6,6 +6,8 @@ import {
   createLinePluginHandler,
   createRectanglePluginHandler,
   createTextPluginHandler,
+  setFillPluginHandler,
+  setStrokePluginHandler,
   setTextContentPluginHandler,
 } from "../plugin-handlers";
 
@@ -102,5 +104,55 @@ describe("setTextContentPluginHandler", () => {
     await expect(
       setTextContentPluginHandler({ nodeId: r.id, characters: "x" }, { logger: noopLogger, figma })
     ).rejects.toThrow(/text/i);
+  });
+});
+
+describe("setFillPluginHandler", () => {
+  it("writes the SOLID paint to the node's fills", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    await setFillPluginHandler(
+      {
+        nodeId: r.id,
+        paint: { type: "SOLID", color: { r: 1, g: 0, b: 0 } },
+      },
+      { logger: noopLogger, figma }
+    );
+    const node = await figma.getNodeById({ nodeId: r.id });
+    expect(node?.fills?.[0]).toEqual({
+      type: "SOLID",
+      color: { r: 1, g: 0, b: 0 },
+    });
+  });
+
+  it("rejects on a missing node", async () => {
+    const figma = new FigmaFake();
+    await expect(
+      setFillPluginHandler(
+        {
+          nodeId: "missing",
+          paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+        },
+        { logger: noopLogger, figma }
+      )
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("setStrokePluginHandler", () => {
+  it("writes paint and weight", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    await setStrokePluginHandler(
+      {
+        nodeId: r.id,
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 1 } },
+        weight: 4,
+      },
+      { logger: noopLogger, figma }
+    );
+    const node = await figma.getNodeById({ nodeId: r.id });
+    expect(node?.strokes?.[0]?.color).toEqual({ r: 0, g: 0, b: 1 });
+    expect(node?.strokeWeight).toBe(4);
   });
 });

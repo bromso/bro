@@ -91,3 +91,38 @@ export const SetTextContent = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("TEXT") }),
 });
+
+const Channel = z.number().min(0).max(1);
+
+const SolidPaint = z.object({
+  type: z.literal("SOLID"),
+  color: z.object({ r: Channel, g: Channel, b: Channel }).strict(),
+  opacity: Channel.optional(),
+});
+
+export const SetFill = defineTool({
+  name: "set_fill",
+  description: "Set the fill paint(s) on a node. Phase 8 supports a single SOLID paint.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: z.string().min(1),
+      paint: SolidPaint,
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string() }),
+});
+
+export const SetStroke = defineTool({
+  name: "set_stroke",
+  description: "Set the stroke paint and (optional) weight on a node.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: z.string().min(1),
+      paint: SolidPaint,
+      weight: z.number().nonnegative().optional(),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string() }),
+});

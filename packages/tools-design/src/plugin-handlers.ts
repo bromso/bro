@@ -5,6 +5,8 @@ import type {
   CreateLine,
   CreateRectangle,
   CreateText,
+  SetFill,
+  SetStroke,
   SetTextContent,
 } from "./tools";
 
@@ -70,4 +72,18 @@ export const setTextContentPluginHandler: PluginHandler<typeof SetTextContent> =
 ) => {
   await figma.setTextContent({ nodeId: args.nodeId, characters: args.characters });
   return { nodeId: args.nodeId, type: "TEXT" };
+};
+
+export const setFillPluginHandler: PluginHandler<typeof SetFill> = async (args, { figma }) => {
+  await figma.setNodeFill({ nodeId: args.nodeId, paint: args.paint });
+  return { nodeId: args.nodeId };
+};
+
+export const setStrokePluginHandler: PluginHandler<typeof SetStroke> = async (args, { figma }) => {
+  await figma.setNodeStroke({
+    nodeId: args.nodeId,
+    paint: args.paint,
+    weight: args.weight,
+  });
+  return { nodeId: args.nodeId };
 };

@@ -5,6 +5,8 @@ import {
   CreateLine,
   CreateRectangle,
   CreateText,
+  SetFill,
+  SetStroke,
   SetTextContent,
 } from "../tools";
 
@@ -70,5 +72,54 @@ describe("SetTextContent schema", () => {
   it("requires nodeId + characters", () => {
     expect(SetTextContent.input.safeParse({ nodeId: "t1", characters: "x" }).success).toBe(true);
     expect(SetTextContent.input.safeParse({ nodeId: "t1" }).success).toBe(false);
+  });
+});
+
+describe("SetFill schema", () => {
+  it("accepts SOLID paint with rgb in 0..1", () => {
+    const ok = SetFill.input.safeParse({
+      nodeId: "r1",
+      paint: { type: "SOLID", color: { r: 1, g: 0, b: 0 } },
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it("rejects rgb out of range", () => {
+    expect(
+      SetFill.input.safeParse({
+        nodeId: "r1",
+        paint: { type: "SOLID", color: { r: 2, g: 0, b: 0 } },
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts optional opacity (0..1)", () => {
+    const ok = SetFill.input.safeParse({
+      nodeId: "r1",
+      paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 0.5 },
+    });
+    expect(ok.success).toBe(true);
+  });
+});
+
+describe("SetStroke schema", () => {
+  it("accepts an optional positive weight", () => {
+    expect(
+      SetStroke.input.safeParse({
+        nodeId: "r1",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 1 } },
+        weight: 4,
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects negative weight", () => {
+    expect(
+      SetStroke.input.safeParse({
+        nodeId: "r1",
+        paint: { type: "SOLID", color: { r: 0, g: 0, b: 1 } },
+        weight: -1,
+      }).success
+    ).toBe(false);
   });
 });
