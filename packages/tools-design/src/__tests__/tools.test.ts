@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CreateEllipse, CreateFrame, CreateLine, CreateRectangle } from "../tools";
+import {
+  CreateEllipse,
+  CreateFrame,
+  CreateLine,
+  CreateRectangle,
+  CreateText,
+  SetTextContent,
+} from "../tools";
 
 describe("CreateRectangle schema", () => {
   it("accepts width/height with optional x/y", () => {
@@ -39,5 +46,29 @@ describe("CreateLine schema", () => {
   it("requires four endpoint coordinates", () => {
     expect(CreateLine.input.safeParse({ x1: 0, y1: 0, x2: 100, y2: 0 }).success).toBe(true);
     expect(CreateLine.input.safeParse({ x1: 0, y1: 0, x2: 100 }).success).toBe(false);
+  });
+});
+
+describe("CreateText schema", () => {
+  it("requires content (non-empty)", () => {
+    expect(CreateText.input.safeParse({}).success).toBe(false);
+    expect(CreateText.input.safeParse({ content: "" }).success).toBe(false);
+    expect(CreateText.input.safeParse({ content: "hi" }).success).toBe(true);
+  });
+
+  it("fontSize defaults to 16 in the parsed output", () => {
+    const r = CreateText.input.parse({ content: "hi" });
+    expect(r.fontSize).toBe(16);
+  });
+
+  it("output is {nodeId, type: 'TEXT'}", () => {
+    expect(CreateText.output.safeParse({ nodeId: "t1", type: "TEXT" }).success).toBe(true);
+  });
+});
+
+describe("SetTextContent schema", () => {
+  it("requires nodeId + characters", () => {
+    expect(SetTextContent.input.safeParse({ nodeId: "t1", characters: "x" }).success).toBe(true);
+    expect(SetTextContent.input.safeParse({ nodeId: "t1" }).success).toBe(false);
   });
 });

@@ -5,6 +5,8 @@ import {
   createFramePluginHandler,
   createLinePluginHandler,
   createRectanglePluginHandler,
+  createTextPluginHandler,
+  setTextContentPluginHandler,
 } from "../plugin-handlers";
 
 const noopLogger = { debug() {}, info() {}, warn() {}, error() {} };
@@ -56,5 +58,49 @@ describe("createLinePluginHandler", () => {
       { logger: noopLogger, figma }
     );
     expect(out.type).toBe("LINE");
+  });
+});
+
+describe("createTextPluginHandler", () => {
+  it("creates a text node with default fontSize 16", async () => {
+    const figma = new FigmaFake();
+    const out = await createTextPluginHandler(
+      { content: "hi", fontSize: 16 },
+      { logger: noopLogger, figma }
+    );
+    expect(out.type).toBe("TEXT");
+    const node = (await figma.getNodeById({ nodeId: out.nodeId })) as { characters: string };
+    expect(node.characters).toBe("hi");
+  });
+
+  it("uses an explicit fontSize", async () => {
+    const figma = new FigmaFake();
+    const out = await createTextPluginHandler(
+      { content: "hi", fontSize: 24 },
+      { logger: noopLogger, figma }
+    );
+    const node = (await figma.getNodeById({ nodeId: out.nodeId })) as { fontSize: number };
+    expect(node.fontSize).toBe(24);
+  });
+});
+
+describe("setTextContentPluginHandler", () => {
+  it("rewrites the text characters", async () => {
+    const figma = new FigmaFake();
+    const t = await figma.createText({ content: "old" });
+    await setTextContentPluginHandler(
+      { nodeId: t.id, characters: "new" },
+      { logger: noopLogger, figma }
+    );
+    const after = (await figma.getNodeById({ nodeId: t.id })) as { characters: string };
+    expect(after.characters).toBe("new");
+  });
+
+  it("rejects non-text nodes", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    await expect(
+      setTextContentPluginHandler({ nodeId: r.id, characters: "x" }, { logger: noopLogger, figma })
+    ).rejects.toThrow(/text/i);
   });
 });

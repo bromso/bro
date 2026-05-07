@@ -63,3 +63,31 @@ export const CreateLine = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string(), type: z.literal("LINE") }),
 });
+
+export const CreateText = defineTool({
+  name: "create_text",
+  description: "Create a text node with the given characters and (optional) font size.",
+  streaming: false,
+  input: z
+    .object({
+      content: z.string().min(1),
+      fontSize: z.number().positive().default(16),
+      x: z.number().optional(),
+      y: z.number().optional(),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("TEXT") }),
+});
+
+export const SetTextContent = defineTool({
+  name: "set_text_content",
+  description: "Replace the characters of an existing TEXT node.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: z.string().min(1),
+      characters: z.string(),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string(), type: z.literal("TEXT") }),
+});

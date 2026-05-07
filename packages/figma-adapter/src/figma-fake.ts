@@ -491,7 +491,7 @@ export class FigmaFake implements FigmaAdapter {
       strokeWeight: node.strokeWeight,
     };
     if (node.type === "TEXT") {
-      return { ...base, characters: node.characters };
+      return { ...base, characters: node.characters, fontSize: node.fontSize };
     }
     // RECTANGLE | FRAME | ELLIPSE — all have width/height
     const sized = node as MutableRectangleNode | MutableFrameNode | MutableEllipseNode;

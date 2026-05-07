@@ -87,6 +87,7 @@ export interface NodeSnapshot {
   readonly x?: number;
   readonly y?: number;
   readonly characters?: string;
+  readonly fontSize?: number;
   readonly fills?: readonly SolidPaint[];
   readonly strokes?: readonly SolidPaint[];
   readonly strokeWeight?: number;
