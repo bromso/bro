@@ -207,6 +207,7 @@ import {
 import { type IpcTransportPair, pickIpcTransport } from "@repo/transport";
 import { createAiClientConfigsCheck } from "./cli/checks/ai-client-configs";
 import { createDaemonLivenessCheck } from "./cli/checks/daemon-liveness";
+import { createFigmaApiKeyCheck } from "./cli/checks/figma-api-key";
 import { createPluginPairingCheck, type PluginPairingProbe } from "./cli/checks/plugin-pairing";
 import { createRecentErrorsCheck } from "./cli/checks/recent-errors";
 import { createSocketConflictCheck } from "./cli/checks/socket-conflict";
@@ -317,6 +318,7 @@ async function handleDoctor(flags: { json: boolean }): Promise<void> {
       createRecentErrorsCheck(join(homeDir, ".figma-mcp", "daemon.log"), (p) =>
         readFile(p, "utf-8")
       ),
+      createFigmaApiKeyCheck({ env: process.env }),
     ],
   });
   process.stdout.write(
