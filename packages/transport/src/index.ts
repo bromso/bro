@@ -10,6 +10,10 @@
 
 export type { CorrelatorOptions, RequestOptions } from "./correlator";
 export { Correlator, TransportError } from "./correlator";
+export { NamedPipeClientTransport } from "./named-pipe-client";
+export { NamedPipeServerTransport } from "./named-pipe-server";
+export type { IpcPlatform, IpcTransportPair, PickIpcTransportOptions } from "./pick-ipc-transport";
+export { pickIpcTransport } from "./pick-ipc-transport";
 export type { BackoffOptions, ReconnectOptions } from "./reconnect";
 export { computeBackoff, withReconnect } from "./reconnect";
 export type { Transport } from "./transport";
