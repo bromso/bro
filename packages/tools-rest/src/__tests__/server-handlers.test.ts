@@ -292,6 +292,12 @@ describe("get_file_comments server handler", () => {
     expect(r.comments[0].message).toBe("first");
     expect(r.comments[0].userHandle).toBe("fake-user");
   });
+
+  it("propagates E_FIGMA_REST_404 when the file is unseeded", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetFileCommentsServerHandler({ figmaApi });
+    await expect(handler({ fileKey: "MISSING" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
 });
 
 describe("post_file_comment server handler", () => {
@@ -439,6 +445,12 @@ describe("get_team_styles server handler", () => {
     expect(r.styles).toHaveLength(1);
     expect(r.nextCursor).toBe("50");
   });
+
+  it("propagates E_FIGMA_REST_404 when the team is unseeded", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetTeamStylesServerHandler({ figmaApi });
+    await expect(handler({ teamId: "MISSING" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
 });
 
 describe("get_dev_resources server handler", () => {
@@ -461,6 +473,12 @@ describe("get_dev_resources server handler", () => {
       { id: "dr1", fileKey: "ABC", nodeId: "1:2", name: "Story", url: "https://u" },
     ]);
   });
+
+  it("propagates E_FIGMA_REST_404 when the file is unseeded", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetDevResourcesServerHandler({ figmaApi });
+    await expect(handler({ fileKey: "MISSING" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
 });
 
 describe("post_dev_resources server handler", () => {
@@ -481,5 +499,19 @@ describe("post_dev_resources server handler", () => {
     );
     expect(r.devResources).toHaveLength(1);
     expect(r.devResources[0].id).toMatch(/^dr/);
+  });
+
+  it("propagates underlying client errors through mapRestError", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.postDevResources = async () => {
+      throw new Error("boom");
+    };
+    const handler = createPostDevResourcesServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(
+      handler(
+        { resources: [{ fileKey: "ABC", nodeId: "1:2", name: "Story", url: "https://u" }] },
+        ctx
+      )
+    ).rejects.toThrow(/boom/);
   });
 });
