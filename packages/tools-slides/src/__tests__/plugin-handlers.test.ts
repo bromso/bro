@@ -331,6 +331,32 @@ describe("getSlidePluginHandler", () => {
       /expected slide node|not found/i
     );
   });
+
+  it("falls back to empty name and isSkipped=false when the node lacks them", async () => {
+    // Real Figma plugin runtime can return SLIDE nodes that don't expose
+    // every field; we defend with `?? ""` / `?? false`. The FigmaFake
+    // always populates them, so cover the fallback branches with a stub
+    // adapter whose getNodeById returns a minimal {type:"SLIDE"} record.
+    const stub = {
+      editorType: "slides",
+      async getNodeById() {
+        return { id: "sld_x", type: "SLIDE" };
+      },
+      async getSlideTransition() {
+        return { style: "NONE", duration: 0, curve: "LINEAR" };
+      },
+      async getSlideGrid() {
+        return [["sld_x"]];
+      },
+    } as unknown as FigmaFake;
+    const out = await getSlidePluginHandler(
+      { slideId: "sld_x" },
+      { logger: noopLogger, figma: stub }
+    );
+    expect(out.name).toBe("");
+    expect(out.isSkipped).toBe(false);
+    expect(out.isFirst).toBe(true);
+  });
 });
 
 describe("setSlidesViewPluginHandler", () => {
