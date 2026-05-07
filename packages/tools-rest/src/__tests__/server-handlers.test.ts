@@ -2,6 +2,7 @@ import { FigmaApiFake } from "@repo/figma-api-client";
 import { describe, expect, it } from "vitest";
 import {
   createDeleteFileCommentServerHandler,
+  createGetDevResourcesServerHandler,
   createGetFileBranchesServerHandler,
   createGetFileCommentsServerHandler,
   createGetFileComponentSetsServerHandler,
@@ -16,7 +17,9 @@ import {
   createGetProjectFilesServerHandler,
   createGetTeamComponentsServerHandler,
   createGetTeamProjectsServerHandler,
+  createGetTeamStylesServerHandler,
   createGetUserMeServerHandler,
+  createPostDevResourcesServerHandler,
   createPostFileCommentServerHandler,
 } from "../server-handlers";
 
@@ -419,5 +422,64 @@ describe("get_team_components server handler", () => {
     const handler = createGetTeamComponentsServerHandler({ figmaApi });
     const r = await handler({ teamId: "T1" }, ctx);
     expect(r.nextCursor).toBeUndefined();
+  });
+});
+
+describe("get_team_styles server handler", () => {
+  it("forwards cursor + pageSize and surfaces nextCursor", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedTeamStyles("T1", {
+      meta: {
+        styles: [{ key: "s1", name: "Brand", description: "", style_type: "FILL" }],
+        cursor: { after: 50 },
+      },
+    });
+    const handler = createGetTeamStylesServerHandler({ figmaApi });
+    const r = await handler({ teamId: "T1", pageSize: 25 }, ctx);
+    expect(r.styles).toHaveLength(1);
+    expect(r.nextCursor).toBe("50");
+  });
+});
+
+describe("get_dev_resources server handler", () => {
+  it("returns dev resources", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedFile("ABC", {
+      name: "F",
+      lastModified: "x",
+      version: "1",
+      role: "owner",
+      editorType: "figma",
+      document: { id: "0:0", type: "DOCUMENT", children: [] },
+    });
+    figmaApi.__seedDevResources("ABC", [
+      { id: "dr1", file_key: "ABC", node_id: "1:2", name: "Story", url: "https://u" },
+    ]);
+    const handler = createGetDevResourcesServerHandler({ figmaApi });
+    const r = await handler({ fileKey: "ABC" }, ctx);
+    expect(r.devResources).toEqual([
+      { id: "dr1", fileKey: "ABC", nodeId: "1:2", name: "Story", url: "https://u" },
+    ]);
+  });
+});
+
+describe("post_dev_resources server handler", () => {
+  it("E_WRITE_TOOLS_DISABLED when gate is closed", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createPostDevResourcesServerHandler({ figmaApi, enableWriteTools: false });
+    await expect(
+      handler({ resources: [{ fileKey: "ABC", nodeId: "1:2", name: "X", url: "u" }] }, ctx)
+    ).rejects.toThrow(/E_WRITE_TOOLS_DISABLED/);
+  });
+
+  it("posts when gate is open", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createPostDevResourcesServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler(
+      { resources: [{ fileKey: "ABC", nodeId: "1:2", name: "Story", url: "https://u" }] },
+      ctx
+    );
+    expect(r.devResources).toHaveLength(1);
+    expect(r.devResources[0].id).toMatch(/^dr/);
   });
 });

@@ -261,3 +261,68 @@ export const GetTeamComponents = defineTool({
     nextCursor: z.string().optional(),
   }),
 });
+
+const StyleSummaryWithType = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  styleType: z.string(),
+});
+
+export const GetTeamStyles = defineTool({
+  name: "get_team_styles",
+  description: "REST. Return team styles (cursor-paginated).",
+  streaming: false,
+  input: z
+    .object({
+      teamId: z.string().min(1),
+      pageSize: z.number().int().positive().optional(),
+      cursor: z.string().optional(),
+    })
+    .strict(),
+  output: z.object({
+    styles: z.array(StyleSummaryWithType),
+    nextCursor: z.string().optional(),
+  }),
+});
+
+const DevResourceShape = z.object({
+  id: z.string(),
+  fileKey: z.string(),
+  nodeId: z.string(),
+  name: z.string(),
+  url: z.string(),
+});
+
+const DevResourceInputShape = z.object({
+  fileKey: z.string().min(1),
+  nodeId: z.string().min(1),
+  name: z.string().min(1),
+  url: z.string().min(1),
+});
+
+export const GetDevResources = defineTool({
+  name: "get_dev_resources",
+  description: "REST. Return dev resources for the file (optionally filtered by node ids).",
+  streaming: false,
+  input: z
+    .object({
+      fileKey: FileKey,
+      nodeIds: z.array(NodeId).optional(),
+    })
+    .strict(),
+  output: z.object({ devResources: z.array(DevResourceShape) }),
+});
+
+export const PostDevResources = defineTool({
+  name: "post_dev_resources",
+  description:
+    "REST. Create dev resources. WRITE — gated behind --enable-write-tools (default off).",
+  streaming: false,
+  input: z
+    .object({
+      resources: z.array(DevResourceInputShape).min(1),
+    })
+    .strict(),
+  output: z.object({ devResources: z.array(DevResourceShape) }),
+});

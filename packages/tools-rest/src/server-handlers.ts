@@ -3,6 +3,7 @@ import type { ServerHandler } from "@repo/protocol";
 import { mapRestError, requireApiKey, requireWriteEnabled } from "./guards";
 import type {
   DeleteFileComment,
+  GetDevResources,
   GetFileBranches,
   GetFileComments,
   GetFileComponentSets,
@@ -17,7 +18,9 @@ import type {
   GetProjectFiles,
   GetTeamComponents,
   GetTeamProjects,
+  GetTeamStyles,
   GetUserMe,
+  PostDevResources,
   PostFileComment,
 } from "./tools";
 
@@ -376,6 +379,84 @@ export function createGetTeamComponentsServerHandler(
           nodeId: c.node_id,
         })),
         ...(next !== undefined ? { nextCursor: String(next) } : {}),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetTeamStylesServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetTeamStyles> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_team_styles");
+    try {
+      const r = await api.getTeamStyles(args.teamId, {
+        pageSize: args.pageSize,
+        cursor: args.cursor,
+      });
+      const next = r.meta.cursor?.after;
+      return {
+        styles: r.meta.styles.map((s) => ({
+          key: s.key,
+          name: s.name,
+          description: s.description,
+          styleType: s.style_type,
+        })),
+        ...(next !== undefined ? { nextCursor: String(next) } : {}),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetDevResourcesServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetDevResources> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_dev_resources");
+    try {
+      const r = await api.getDevResources(args.fileKey, { node_ids: args.nodeIds });
+      return {
+        devResources: r.dev_resources.map((d) => ({
+          id: d.id,
+          fileKey: d.file_key,
+          nodeId: d.node_id,
+          name: d.name,
+          url: d.url,
+        })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createPostDevResourcesServerHandler(
+  deps: RestWriteDeps
+): ServerHandler<typeof PostDevResources> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "post_dev_resources");
+    requireWriteEnabled(deps, "post_dev_resources");
+    try {
+      const r = await api.postDevResources(
+        args.resources.map((res) => ({
+          file_key: res.fileKey,
+          node_id: res.nodeId,
+          name: res.name,
+          url: res.url,
+        }))
+      );
+      return {
+        devResources: r.dev_resources.map((d) => ({
+          id: d.id,
+          fileKey: d.file_key,
+          nodeId: d.node_id,
+          name: d.name,
+          url: d.url,
+        })),
       };
     } catch (err) {
       mapRestError(err);

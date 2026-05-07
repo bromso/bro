@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DeleteFileComment,
+  GetDevResources,
   GetFileBranches,
   GetFileComments,
   GetFileComponentSets,
@@ -15,7 +16,9 @@ import {
   GetProjectFiles,
   GetTeamComponents,
   GetTeamProjects,
+  GetTeamStyles,
   GetUserMe,
+  PostDevResources,
   PostFileComment,
 } from "../tools";
 
@@ -258,5 +261,56 @@ describe("GetTeamComponents schema", () => {
       }).success
     ).toBe(true);
     expect(GetTeamComponents.output.safeParse({ components: [] }).success).toBe(true);
+  });
+});
+
+describe("GetTeamStyles schema", () => {
+  it("accepts optional pageSize + cursor", () => {
+    expect(
+      GetTeamStyles.input.safeParse({ teamId: "T1", pageSize: 25, cursor: "c1" }).success
+    ).toBe(true);
+  });
+
+  it("output { styles, nextCursor? }", () => {
+    expect(GetTeamStyles.output.safeParse({ styles: [], nextCursor: "200" }).success).toBe(true);
+  });
+});
+
+describe("GetDevResources schema", () => {
+  it("requires fileKey", () => {
+    expect(GetDevResources.input.safeParse({ fileKey: "ABC" }).success).toBe(true);
+  });
+
+  it("accepts optional nodeIds filter", () => {
+    expect(GetDevResources.input.safeParse({ fileKey: "ABC", nodeIds: ["1:2"] }).success).toBe(
+      true
+    );
+  });
+
+  it("output { devResources: [...] }", () => {
+    expect(
+      GetDevResources.output.safeParse({
+        devResources: [{ id: "dr1", fileKey: "ABC", nodeId: "1:2", name: "Story", url: "u" }],
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("PostDevResources schema", () => {
+  it("requires non-empty resources", () => {
+    expect(
+      PostDevResources.input.safeParse({
+        resources: [{ fileKey: "ABC", nodeId: "1:2", name: "Story", url: "https://u" }],
+      }).success
+    ).toBe(true);
+    expect(PostDevResources.input.safeParse({ resources: [] }).success).toBe(false);
+  });
+
+  it("rejects entries with empty url", () => {
+    expect(
+      PostDevResources.input.safeParse({
+        resources: [{ fileKey: "ABC", nodeId: "1:2", name: "X", url: "" }],
+      }).success
+    ).toBe(false);
   });
 });
