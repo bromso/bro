@@ -1,10 +1,14 @@
 import type { PluginHandler } from "@repo/protocol";
 import type {
+  CloneNode,
+  CreateComponent,
   CreateEllipse,
   CreateFrame,
   CreateLine,
   CreateRectangle,
   CreateText,
+  DeleteNode,
+  ResizeNode,
   SetFill,
   SetStroke,
   SetTextContent,
@@ -86,4 +90,33 @@ export const setStrokePluginHandler: PluginHandler<typeof SetStroke> = async (ar
     weight: args.weight,
   });
   return { nodeId: args.nodeId };
+};
+
+export const resizeNodePluginHandler: PluginHandler<typeof ResizeNode> = async (
+  args,
+  { figma }
+) => {
+  await figma.resizeNode(args);
+  return { nodeId: args.nodeId };
+};
+
+export const cloneNodePluginHandler: PluginHandler<typeof CloneNode> = async (args, { figma }) => {
+  const clone = await figma.cloneNode({ nodeId: args.nodeId });
+  return { nodeId: clone.id };
+};
+
+export const deleteNodePluginHandler: PluginHandler<typeof DeleteNode> = async (
+  args,
+  { figma }
+) => {
+  await figma.deleteNode({ nodeId: args.nodeId });
+  return { nodeId: args.nodeId };
+};
+
+export const createComponentPluginHandler: PluginHandler<typeof CreateComponent> = async (
+  args,
+  { figma }
+) => {
+  const comp = await figma.createComponent({ nodeId: args.nodeId });
+  return { componentId: comp.id, key: comp.key };
 };

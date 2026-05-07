@@ -1,11 +1,15 @@
 import { FigmaFake } from "@repo/figma-adapter/testing";
 import { describe, expect, it } from "vitest";
 import {
+  cloneNodePluginHandler,
+  createComponentPluginHandler,
   createEllipsePluginHandler,
   createFramePluginHandler,
   createLinePluginHandler,
   createRectanglePluginHandler,
   createTextPluginHandler,
+  deleteNodePluginHandler,
+  resizeNodePluginHandler,
   setFillPluginHandler,
   setStrokePluginHandler,
   setTextContentPluginHandler,
@@ -154,5 +158,50 @@ describe("setStrokePluginHandler", () => {
     const node = await figma.getNodeById({ nodeId: r.id });
     expect(node?.strokes?.[0]?.color).toEqual({ r: 0, g: 0, b: 1 });
     expect(node?.strokeWeight).toBe(4);
+  });
+});
+
+describe("resizeNodePluginHandler", () => {
+  it("resizes a node via the adapter", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    await resizeNodePluginHandler(
+      { nodeId: r.id, width: 300, height: 250 },
+      { logger: noopLogger, figma }
+    );
+    const node = await figma.getNodeById({ nodeId: r.id });
+    expect(node?.width).toBe(300);
+    expect(node?.height).toBe(250);
+  });
+});
+
+describe("cloneNodePluginHandler", () => {
+  it("returns the new node id of the clone", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    const out = await cloneNodePluginHandler({ nodeId: r.id }, { logger: noopLogger, figma });
+    expect(out.nodeId).not.toBe(r.id);
+    expect((await figma.getNodeById({ nodeId: out.nodeId }))?.type).toBe("RECTANGLE");
+  });
+});
+
+describe("deleteNodePluginHandler", () => {
+  it("deletes the node and reports its id", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    const out = await deleteNodePluginHandler({ nodeId: r.id }, { logger: noopLogger, figma });
+    expect(out.nodeId).toBe(r.id);
+    expect(await figma.getNodeById({ nodeId: r.id })).toBeNull();
+  });
+});
+
+describe("createComponentPluginHandler", () => {
+  it("returns componentId/key and registers the component", async () => {
+    const figma = new FigmaFake();
+    const r = figma.createRectangle();
+    const out = await createComponentPluginHandler({ nodeId: r.id }, { logger: noopLogger, figma });
+    expect(out.componentId).toMatch(/^cmp/);
+    const components = await figma.getLocalComponentsAsync();
+    expect(components.find((c) => c.id === out.componentId)?.key).toBe(out.key);
   });
 });

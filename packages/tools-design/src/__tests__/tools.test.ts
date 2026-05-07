@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  CloneNode,
+  CreateComponent,
   CreateEllipse,
   CreateFrame,
   CreateLine,
   CreateRectangle,
   CreateText,
+  DeleteNode,
+  ResizeNode,
   SetFill,
   SetStroke,
   SetTextContent,
@@ -121,5 +125,33 @@ describe("SetStroke schema", () => {
         weight: -1,
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ResizeNode schema", () => {
+  it("requires positive width/height", () => {
+    expect(ResizeNode.input.safeParse({ nodeId: "r1", width: 100, height: 100 }).success).toBe(
+      true
+    );
+    expect(ResizeNode.input.safeParse({ nodeId: "r1", width: 0, height: 100 }).success).toBe(false);
+  });
+});
+
+describe("CloneNode schema", () => {
+  it("output returns nodeId", () => {
+    expect(CloneNode.output.safeParse({ nodeId: "r2" }).success).toBe(true);
+  });
+});
+
+describe("DeleteNode schema", () => {
+  it("output returns nodeId of deleted node", () => {
+    expect(DeleteNode.output.safeParse({ nodeId: "r1" }).success).toBe(true);
+  });
+});
+
+describe("CreateComponent schema", () => {
+  it("output returns componentId and key", () => {
+    const ok = CreateComponent.output.safeParse({ componentId: "c1", key: "ck1" });
+    expect(ok.success).toBe(true);
   });
 });

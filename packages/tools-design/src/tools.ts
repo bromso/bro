@@ -126,3 +126,41 @@ export const SetStroke = defineTool({
     .strict(),
   output: z.object({ nodeId: z.string() }),
 });
+
+export const ResizeNode = defineTool({
+  name: "resize_node",
+  description: "Resize a node's bounding box.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: z.string().min(1),
+      width: z.number().positive(),
+      height: z.number().positive(),
+    })
+    .strict(),
+  output: z.object({ nodeId: z.string() }),
+});
+
+export const CloneNode = defineTool({
+  name: "clone_node",
+  description: "Clone a node and return the id of the new copy.",
+  streaming: false,
+  input: z.object({ nodeId: z.string().min(1) }).strict(),
+  output: z.object({ nodeId: z.string() }),
+});
+
+export const DeleteNode = defineTool({
+  name: "delete_node",
+  description: "Remove a node from the page.",
+  streaming: false,
+  input: z.object({ nodeId: z.string().min(1) }).strict(),
+  output: z.object({ nodeId: z.string() }),
+});
+
+export const CreateComponent = defineTool({
+  name: "create_component",
+  description: "Wrap an existing node into a reusable component; returns componentId + key.",
+  streaming: false,
+  input: z.object({ nodeId: z.string().min(1) }).strict(),
+  output: z.object({ componentId: z.string(), key: z.string() }),
+});
