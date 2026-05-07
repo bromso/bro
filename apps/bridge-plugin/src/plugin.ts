@@ -63,6 +63,28 @@ import {
   extractLocalVariablesPluginHandler,
   extractStylesPluginHandler,
 } from "@repo/tools-extract";
+import {
+  CreateCodeBlock,
+  CreateConnector,
+  CreateSection,
+  CreateShapeWithText,
+  CreateSticky,
+  CreateTable,
+  createCodeBlockPluginHandler,
+  createConnectorPluginHandler,
+  createSectionPluginHandler,
+  createShapeWithTextPluginHandler,
+  createStickyPluginHandler,
+  createTablePluginHandler,
+  ListSectionChildren,
+  listSectionChildrenPluginHandler,
+  MoveIntoSection,
+  moveIntoSectionPluginHandler,
+  SetSectionName,
+  SetStickyContent,
+  setSectionNamePluginHandler,
+  setStickyContentPluginHandler,
+} from "@repo/tools-figjam";
 import { WebSocketClientTransport } from "@repo/transport";
 import { BridgePluginRuntime } from "./runtime";
 
@@ -113,6 +135,17 @@ export async function start(): Promise<void> {
     runtime.register(CloneNode, cloneNodePluginHandler);
     runtime.register(DeleteNode, deleteNodePluginHandler);
     runtime.register(CreateComponent, createComponentPluginHandler);
+
+    runtime.register(CreateSticky, createStickyPluginHandler);
+    runtime.register(CreateSection, createSectionPluginHandler);
+    runtime.register(CreateConnector, createConnectorPluginHandler);
+    runtime.register(CreateCodeBlock, createCodeBlockPluginHandler);
+    runtime.register(CreateShapeWithText, createShapeWithTextPluginHandler);
+    runtime.register(CreateTable, createTablePluginHandler);
+    runtime.register(SetStickyContent, setStickyContentPluginHandler);
+    runtime.register(SetSectionName, setSectionNamePluginHandler);
+    runtime.register(MoveIntoSection, moveIntoSectionPluginHandler);
+    runtime.register(ListSectionChildren, listSectionChildrenPluginHandler);
 
     runtime.start();
     post("connected");
