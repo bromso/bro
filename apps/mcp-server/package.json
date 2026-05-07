@@ -14,6 +14,8 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@repo/figma-adapter": "workspace:*",
     "@repo/protocol": "workspace:*",
+    "@repo/tools-console": "workspace:*",
+    "@repo/tools-design": "workspace:*",
     "@repo/tools-extract": "workspace:*",
     "@repo/tools-variables": "workspace:*",
     "@repo/transport": "workspace:*",

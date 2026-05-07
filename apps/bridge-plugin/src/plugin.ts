@@ -13,7 +13,48 @@
  * tests import this module without spinning up a real WS connection.
  */
 import { RealFigmaAdapter } from "@repo/figma-adapter";
-import { ConsoleStore, installConsoleCapture } from "@repo/tools-console";
+import {
+  ClearConsole,
+  ConsoleStatusTool,
+  ConsoleStore,
+  clearConsolePluginHandler,
+  consoleStatusPluginHandler,
+  GetConsoleErrors,
+  GetConsoleLogs,
+  GetConsoleWarnings,
+  getConsoleErrorsPluginHandler,
+  getConsoleLogsPluginHandler,
+  getConsoleWarningsPluginHandler,
+  installConsoleCapture,
+  QueryConsole,
+  queryConsolePluginHandler,
+} from "@repo/tools-console";
+import {
+  CloneNode,
+  CreateComponent,
+  CreateEllipse,
+  CreateFrame,
+  CreateLine,
+  CreateRectangle,
+  CreateText,
+  cloneNodePluginHandler,
+  createComponentPluginHandler,
+  createEllipsePluginHandler,
+  createFramePluginHandler,
+  createLinePluginHandler,
+  createRectanglePluginHandler,
+  createTextPluginHandler,
+  DeleteNode,
+  deleteNodePluginHandler,
+  ResizeNode,
+  resizeNodePluginHandler,
+  SetFill,
+  SetStroke,
+  SetTextContent,
+  setFillPluginHandler,
+  setStrokePluginHandler,
+  setTextContentPluginHandler,
+} from "@repo/tools-design";
 import {
   ExtractComponents,
   ExtractLocalVariables,
@@ -52,6 +93,27 @@ export async function start(): Promise<void> {
     runtime.register(ExtractStyles, extractStylesPluginHandler);
     runtime.register(ExtractComponents, extractComponentsPluginHandler);
     runtime.register(ExtractLocalVariables, extractLocalVariablesPluginHandler);
+
+    runtime.register(GetConsoleLogs, getConsoleLogsPluginHandler);
+    runtime.register(ClearConsole, clearConsolePluginHandler);
+    runtime.register(GetConsoleErrors, getConsoleErrorsPluginHandler);
+    runtime.register(GetConsoleWarnings, getConsoleWarningsPluginHandler);
+    runtime.register(QueryConsole, queryConsolePluginHandler);
+    runtime.register(ConsoleStatusTool, consoleStatusPluginHandler);
+
+    runtime.register(CreateRectangle, createRectanglePluginHandler);
+    runtime.register(CreateFrame, createFramePluginHandler);
+    runtime.register(CreateEllipse, createEllipsePluginHandler);
+    runtime.register(CreateLine, createLinePluginHandler);
+    runtime.register(CreateText, createTextPluginHandler);
+    runtime.register(SetTextContent, setTextContentPluginHandler);
+    runtime.register(SetFill, setFillPluginHandler);
+    runtime.register(SetStroke, setStrokePluginHandler);
+    runtime.register(ResizeNode, resizeNodePluginHandler);
+    runtime.register(CloneNode, cloneNodePluginHandler);
+    runtime.register(DeleteNode, deleteNodePluginHandler);
+    runtime.register(CreateComponent, createComponentPluginHandler);
+
     runtime.start();
     post("connected");
   } catch (err) {
