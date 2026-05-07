@@ -155,3 +155,118 @@ describe("simulateColorBlindnessPluginHandler", () => {
     expect(out1.simulatedHex).toBe(out2.simulatedHex);
   });
 });
+
+import {
+  getAltTextPluginHandler,
+  getAriaLabelPluginHandler,
+  setAltTextPluginHandler,
+  setAriaLabelPluginHandler,
+} from "../plugin-handlers";
+
+describe("setAltTextPluginHandler", () => {
+  it("writes the alt text to pluginData", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await setAltTextPluginHandler({ nodeId: frame.id, text: "Hero image" }, ctx);
+    const meta = await ctx.figma.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta.altText).toBe("Hero image");
+  });
+
+  it("ALSO appends an annotation with the same label", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await setAltTextPluginHandler({ nodeId: frame.id, text: "Hero image" }, ctx);
+    const annotations = await ctx.figma.getNodeAnnotations({ nodeId: frame.id });
+    expect(annotations.some((a) => a.label === "Hero image")).toBe(true);
+  });
+
+  it("overwrites existing alt text on a second call (idempotent)", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await setAltTextPluginHandler({ nodeId: frame.id, text: "Old" }, ctx);
+    await setAltTextPluginHandler({ nodeId: frame.id, text: "New" }, ctx);
+    const meta = await ctx.figma.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta.altText).toBe("New");
+  });
+
+  it("works on a FigJam editor", async () => {
+    const ctx = figJamCtx();
+    const sticky = await ctx.figma.createSticky({ content: "x" });
+    await setAltTextPluginHandler({ nodeId: sticky.id, text: "A sticky note" }, ctx);
+    const meta = await ctx.figma.getNodeA11yMeta({ nodeId: sticky.id });
+    expect(meta.altText).toBe("A sticky note");
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const ctx = designCtx();
+    await expect(setAltTextPluginHandler({ nodeId: "missing", text: "x" }, ctx)).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("getAltTextPluginHandler", () => {
+  it("reads pluginData", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "altText",
+      value: "Stored alt",
+    });
+    const out = await getAltTextPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.text).toBe("Stored alt");
+  });
+
+  it("falls back to scanning annotations when pluginData is empty", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "Annotation-only alt" }],
+    });
+    const out = await getAltTextPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.text).toBe("Annotation-only alt");
+  });
+
+  it("returns null when no alt text is set anywhere", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await getAltTextPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.text).toBeNull();
+  });
+});
+
+describe("setAriaLabelPluginHandler", () => {
+  it("writes the aria label to pluginData (no annotation)", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await setAriaLabelPluginHandler({ nodeId: frame.id, label: "Submit form" }, ctx);
+    const meta = await ctx.figma.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta.ariaLabel).toBe("Submit form");
+    // ariaLabel does NOT also write an annotation — just pluginData.
+    const annotations = await ctx.figma.getNodeAnnotations({ nodeId: frame.id });
+    expect(annotations).toEqual([]);
+  });
+});
+
+describe("getAriaLabelPluginHandler", () => {
+  it("reads pluginData", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeA11yMeta({
+      nodeId: frame.id,
+      key: "ariaLabel",
+      value: "Stored label",
+    });
+    const out = await getAriaLabelPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.label).toBe("Stored label");
+  });
+
+  it("returns null when not set", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await getAriaLabelPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.label).toBeNull();
+  });
+});

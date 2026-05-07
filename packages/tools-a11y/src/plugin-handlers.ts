@@ -1,5 +1,13 @@
 import type { PluginHandler } from "@repo/protocol";
-import type { AuditContrast, AuditTargetSize, SimulateColorBlindness } from "./tools";
+import type {
+  AuditContrast,
+  AuditTargetSize,
+  GetAltText,
+  GetAriaLabel,
+  SetAltText,
+  SetAriaLabel,
+  SimulateColorBlindness,
+} from "./tools";
 import {
   hexToRgb,
   passesWCAG_AA,
@@ -96,5 +104,68 @@ export const simulateColorBlindnessPluginHandler: PluginHandler<
     sourceHex,
     simulatedHex,
     type: args.type,
+  };
+};
+
+export const setAltTextPluginHandler: PluginHandler<typeof SetAltText> = async (
+  args,
+  { figma }
+) => {
+  await figma.setNodeA11yMeta({
+    nodeId: args.nodeId,
+    key: "altText",
+    value: args.text,
+  });
+  // Drop any existing categoryless annotations whose label matches a previous
+  // alt text (best-effort idempotence — annotations are array-indexed, no
+  // stable ids), then append the new one.
+  const existing = await figma.getNodeAnnotations({ nodeId: args.nodeId });
+  const filtered = existing.filter((a) => a.categoryId !== undefined);
+  await figma.setNodeAnnotations({
+    nodeId: args.nodeId,
+    annotations: [...filtered, { label: args.text }],
+  });
+  return { nodeId: args.nodeId, text: args.text };
+};
+
+export const getAltTextPluginHandler: PluginHandler<typeof GetAltText> = async (
+  args,
+  { figma }
+) => {
+  const meta = await figma.getNodeA11yMeta({ nodeId: args.nodeId });
+  if (meta.altText !== undefined) {
+    return { nodeId: args.nodeId, text: meta.altText };
+  }
+  // Fallback: scan annotations for a categoryless entry.
+  const annotations = await figma.getNodeAnnotations({ nodeId: args.nodeId });
+  const categoryless = annotations.find(
+    (a) => a.categoryId === undefined && typeof a.label === "string"
+  );
+  if (categoryless?.label) {
+    return { nodeId: args.nodeId, text: categoryless.label };
+  }
+  return { nodeId: args.nodeId, text: null };
+};
+
+export const setAriaLabelPluginHandler: PluginHandler<typeof SetAriaLabel> = async (
+  args,
+  { figma }
+) => {
+  await figma.setNodeA11yMeta({
+    nodeId: args.nodeId,
+    key: "ariaLabel",
+    value: args.label,
+  });
+  return { nodeId: args.nodeId, label: args.label };
+};
+
+export const getAriaLabelPluginHandler: PluginHandler<typeof GetAriaLabel> = async (
+  args,
+  { figma }
+) => {
+  const meta = await figma.getNodeA11yMeta({ nodeId: args.nodeId });
+  return {
+    nodeId: args.nodeId,
+    label: meta.ariaLabel ?? null,
   };
 };

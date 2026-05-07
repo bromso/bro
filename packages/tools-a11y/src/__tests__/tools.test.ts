@@ -115,3 +115,48 @@ describe("SimulateColorBlindness schema", () => {
     ).toBe(true);
   });
 });
+
+import { GetAltText, GetAriaLabel, SetAltText, SetAriaLabel } from "../tools";
+
+describe("SetAltText schema", () => {
+  it("requires nodeId + text", () => {
+    expect(SetAltText.input.safeParse({ nodeId: "n1", text: "Hero" }).success).toBe(true);
+    expect(SetAltText.input.safeParse({ nodeId: "n1" }).success).toBe(false);
+  });
+
+  it("rejects empty text (use clear_alt_text in a follow-up if you need that)", () => {
+    expect(SetAltText.input.safeParse({ nodeId: "n1", text: "" }).success).toBe(false);
+  });
+
+  it("output reports nodeId + the stored text", () => {
+    expect(SetAltText.output.safeParse({ nodeId: "n1", text: "Hero" }).success).toBe(true);
+  });
+});
+
+describe("GetAltText schema", () => {
+  it("requires nodeId", () => {
+    expect(GetAltText.input.safeParse({ nodeId: "n1" }).success).toBe(true);
+  });
+
+  it("output allows null text", () => {
+    expect(GetAltText.output.safeParse({ nodeId: "n1", text: null }).success).toBe(true);
+    expect(GetAltText.output.safeParse({ nodeId: "n1", text: "Hero" }).success).toBe(true);
+  });
+});
+
+describe("SetAriaLabel schema", () => {
+  it("requires nodeId + label", () => {
+    expect(SetAriaLabel.input.safeParse({ nodeId: "n1", label: "Submit" }).success).toBe(true);
+    expect(SetAriaLabel.input.safeParse({ nodeId: "n1" }).success).toBe(false);
+  });
+});
+
+describe("GetAriaLabel schema", () => {
+  it("requires nodeId", () => {
+    expect(GetAriaLabel.input.safeParse({ nodeId: "n1" }).success).toBe(true);
+  });
+
+  it("output allows null label", () => {
+    expect(GetAriaLabel.output.safeParse({ nodeId: "n1", label: null }).success).toBe(true);
+  });
+});

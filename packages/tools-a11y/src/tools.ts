@@ -57,3 +57,60 @@ export const SimulateColorBlindness = defineTool({
     type: ColorBlindnessType,
   }),
 });
+
+export const SetAltText = defineTool({
+  name: "set_alt_text",
+  description:
+    "Write alt text for a node. Stored in pluginData under `a11y/altText` AND attached as an annotation (categoryless) so the alt text is visible in Figma's annotation panel. Overwrites any existing alt text. Idempotent — calling again with a new value replaces both the pluginData entry and the existing annotation.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: NodeId,
+      text: z.string().min(1),
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    text: z.string(),
+  }),
+});
+
+export const GetAltText = defineTool({
+  name: "get_alt_text",
+  description:
+    "Read alt text for a node. First checks pluginData (`a11y/altText`); if absent, falls back to the first annotation whose category is the alt-text category (or, in this implementation, the first categoryless annotation). Returns null if neither source has a value.",
+  streaming: false,
+  input: z.object({ nodeId: NodeId }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    text: z.string().nullable(),
+  }),
+});
+
+export const SetAriaLabel = defineTool({
+  name: "set_aria_label",
+  description:
+    "Write an ARIA label for a node. Stored in pluginData under `a11y/ariaLabel`. Does NOT attach an annotation (ARIA labels are usually shorter than alt text and clutter the annotation panel; designers can still surface them via `audit_a11y_summary`).",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: NodeId,
+      label: z.string().min(1),
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    label: z.string(),
+  }),
+});
+
+export const GetAriaLabel = defineTool({
+  name: "get_aria_label",
+  description: "Read the ARIA label for a node. Returns null if not set.",
+  streaming: false,
+  input: z.object({ nodeId: NodeId }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    label: z.string().nullable(),
+  }),
+});
