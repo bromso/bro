@@ -19,6 +19,7 @@
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
+        "@repo/tools-a11y": "workspace:*",
         "@repo/tools-console": "workspace:*",
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
@@ -83,6 +84,7 @@
         "@repo/figma-adapter": "workspace:*",
         "@repo/figma-api-client": "workspace:*",
         "@repo/protocol": "workspace:*",
+        "@repo/tools-a11y": "workspace:*",
         "@repo/tools-console": "workspace:*",
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",

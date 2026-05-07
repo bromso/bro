@@ -14,6 +14,34 @@
  */
 import { RealFigmaAdapter } from "@repo/figma-adapter";
 import {
+  AddAnnotation,
+  AuditA11ySummary,
+  AuditContrast,
+  AuditTargetSize,
+  addAnnotationPluginHandler,
+  auditA11ySummaryPluginHandler,
+  auditContrastPluginHandler,
+  auditTargetSizePluginHandler,
+  GetAltText,
+  GetAriaLabel,
+  GetLandmarkRole,
+  getAltTextPluginHandler,
+  getAriaLabelPluginHandler,
+  getLandmarkRolePluginHandler,
+  ListAnnotations,
+  listAnnotationsPluginHandler,
+  RemoveAnnotation,
+  removeAnnotationPluginHandler,
+  SetAltText,
+  SetAriaLabel,
+  SetLandmarkRole,
+  SimulateColorBlindness,
+  setAltTextPluginHandler,
+  setAriaLabelPluginHandler,
+  setLandmarkRolePluginHandler,
+  simulateColorBlindnessPluginHandler,
+} from "@repo/tools-a11y";
+import {
   ClearConsole,
   ConsoleStatusTool,
   ConsoleStore,
@@ -194,6 +222,20 @@ export async function start(): Promise<void> {
     runtime.register(GetSlide, getSlidePluginHandler);
     runtime.register(SetSlidesView, setSlidesViewPluginHandler);
     runtime.register(GetSlideGrid, getSlideGridPluginHandler);
+
+    runtime.register(AuditContrast, auditContrastPluginHandler);
+    runtime.register(AuditTargetSize, auditTargetSizePluginHandler);
+    runtime.register(SimulateColorBlindness, simulateColorBlindnessPluginHandler);
+    runtime.register(SetAltText, setAltTextPluginHandler);
+    runtime.register(GetAltText, getAltTextPluginHandler);
+    runtime.register(SetAriaLabel, setAriaLabelPluginHandler);
+    runtime.register(GetAriaLabel, getAriaLabelPluginHandler);
+    runtime.register(SetLandmarkRole, setLandmarkRolePluginHandler);
+    runtime.register(GetLandmarkRole, getLandmarkRolePluginHandler);
+    runtime.register(ListAnnotations, listAnnotationsPluginHandler);
+    runtime.register(AddAnnotation, addAnnotationPluginHandler);
+    runtime.register(RemoveAnnotation, removeAnnotationPluginHandler);
+    runtime.register(AuditA11ySummary, auditA11ySummaryPluginHandler);
 
     runtime.start();
     post("connected");

@@ -22,6 +22,34 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { FigmaFake } from "@repo/figma-adapter/testing";
 import { FigmaApiClient } from "@repo/figma-api-client";
 import {
+  AddAnnotation,
+  AuditA11ySummary,
+  AuditContrast,
+  AuditTargetSize,
+  addAnnotationPluginHandler,
+  auditA11ySummaryPluginHandler,
+  auditContrastPluginHandler,
+  auditTargetSizePluginHandler,
+  GetAltText,
+  GetAriaLabel,
+  GetLandmarkRole,
+  getAltTextPluginHandler,
+  getAriaLabelPluginHandler,
+  getLandmarkRolePluginHandler,
+  ListAnnotations,
+  listAnnotationsPluginHandler,
+  RemoveAnnotation,
+  removeAnnotationPluginHandler,
+  SetAltText,
+  SetAriaLabel,
+  SetLandmarkRole,
+  SimulateColorBlindness,
+  setAltTextPluginHandler,
+  setAriaLabelPluginHandler,
+  setLandmarkRolePluginHandler,
+  simulateColorBlindnessPluginHandler,
+} from "@repo/tools-a11y";
+import {
   ClearConsole,
   ConsoleStatusTool,
   clearConsolePluginHandler,
@@ -577,6 +605,39 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
           },
         },
         {
+          name: "tools-a11y",
+          tools: [
+            AuditContrast,
+            AuditTargetSize,
+            SimulateColorBlindness,
+            SetAltText,
+            GetAltText,
+            SetAriaLabel,
+            GetAriaLabel,
+            SetLandmarkRole,
+            GetLandmarkRole,
+            ListAnnotations,
+            AddAnnotation,
+            RemoveAnnotation,
+            AuditA11ySummary,
+          ],
+          registerPlugin: (reg) => {
+            reg.register(AuditContrast, auditContrastPluginHandler);
+            reg.register(AuditTargetSize, auditTargetSizePluginHandler);
+            reg.register(SimulateColorBlindness, simulateColorBlindnessPluginHandler);
+            reg.register(SetAltText, setAltTextPluginHandler);
+            reg.register(GetAltText, getAltTextPluginHandler);
+            reg.register(SetAriaLabel, setAriaLabelPluginHandler);
+            reg.register(GetAriaLabel, getAriaLabelPluginHandler);
+            reg.register(SetLandmarkRole, setLandmarkRolePluginHandler);
+            reg.register(GetLandmarkRole, getLandmarkRolePluginHandler);
+            reg.register(ListAnnotations, listAnnotationsPluginHandler);
+            reg.register(AddAnnotation, addAnnotationPluginHandler);
+            reg.register(RemoveAnnotation, removeAnnotationPluginHandler);
+            reg.register(AuditA11ySummary, auditA11ySummaryPluginHandler);
+          },
+        },
+        {
           name: "tools-rest",
           tools: [
             GetFileMetadata,
@@ -731,6 +792,19 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
       GetTeamStyles,
       GetDevResources,
       PostDevResources,
+      AuditContrast,
+      AuditTargetSize,
+      SimulateColorBlindness,
+      SetAltText,
+      GetAltText,
+      SetAriaLabel,
+      GetAriaLabel,
+      SetLandmarkRole,
+      GetLandmarkRole,
+      ListAnnotations,
+      AddAnnotation,
+      RemoveAnnotation,
+      AuditA11ySummary,
     ],
     mcpServerInfo: { name: "figma-mcp", version: VERSION },
   });
