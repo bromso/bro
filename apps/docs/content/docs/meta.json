@@ -1,4 +1,11 @@
 {
   "title": "Documentation",
-  "pages": ["---Get Started---", "getting-started/index", "---Per-client install---", "clients"]
+  "pages": [
+    "---Get Started---",
+    "getting-started/index",
+    "---Per-client install---",
+    "clients",
+    "---Reference---",
+    "architecture"
+  ]
 }

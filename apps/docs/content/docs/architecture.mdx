@@ -1,0 +1,73 @@
+---
+title: Architecture
+description: Shim, daemon, bridge plugin, and optional cloud relay. How figma-mcp connects your AI client to Figma.
+---
+
+## The four moving parts
+
+1. **Stdio shim.** What your AI client launches via `npx @bromso/figma-mcp`. Lightweight; speaks MCP stdio to the AI client, IPC to the daemon.
+2. **Per-user daemon.** Auto-spawned by the first shim. Owns the WebSocket pairing slot for the bridge plugin. Multiple shims (one per AI client) connect to the same daemon.
+3. **Bridge plugin.** Drag-imported into Figma Desktop. Runs in Figma's plugin sandbox. Connects to the daemon over loopback WebSocket. Owns all `figma.*` API calls.
+4. **(Optional) Cloud relay.** Cloudflare Worker that mediates pairing for environments where local IPC is unavailable (corp laptops, sandboxed dev containers). Used only when `setup --cloud` is invoked.
+
+## Local-mode wiring (default)
+
+```
++------------------+      stdio MCP       +-------------------+
+|   AI client      | <------------------> |   Stdio shim      |
+| (Claude Code,    |                      | (npx ...)         |
+|  Cursor, etc.)   |                      +---------+---------+
++------------------+                                | Unix socket /
+                                                    | named pipe
+                                                    v
+                                          +-------------------+
+                                          |   Daemon          |
+                                          | (per-user, single |
+                                          |  WS server slot)  |
+                                          +---------+---------+
+                                                    | loopback WebSocket
+                                                    v
+                                          +-------------------+
+                                          |   Bridge plugin   |
+                                          | (Figma Desktop)   |
+                                          +-------------------+
+```
+
+Reading top-to-bottom: the AI client speaks MCP stdio to the shim, the shim speaks IPC (Unix socket on macOS/Linux, named pipe on Windows) to the per-user daemon, and the daemon speaks loopback WebSocket to the bridge plugin running inside Figma Desktop. The daemon's lifecycle (lockfile, lazy-spawn, auto-shutdown) is detailed in the [Phase 7 plan](https://github.com/bromso/bro/blob/master/docs/plans/2026-05-06-figma-mcp-phase-7.md).
+
+## Cloud-mode wiring
+
+In cloud mode the AI client speaks Streamable HTTP to a hosted Cloudflare Worker relay; the relay forwards traffic to a paired bridge plugin that initiates a WebSocket UPSTREAM to the relay during pairing. There is no daemon — the relay owns the single pairing slot per user. See the [Phase 6 plan](https://github.com/bromso/bro/blob/master/docs/plans/2026-05-06-figma-mcp-phase-6.md) for the pairing handshake and TTL semantics.
+
+## The MCP protocol surface
+
+`figma-mcp` speaks the standard MCP protocol — `initialize`, `tools/list`, `tools/call` — and nothing else. There is no custom RPC; any MCP-compliant client can drive it. The catalog is roughly 25 tools as of v1, grouped into packs that are loaded together at startup.
+
+## Tool packs
+
+| Pack                | What it does                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `tools-extract`     | Read selection, page, and node properties.                                                    |
+| `tools-variables`   | Read/write Figma variables (color, number, string, boolean).                                  |
+| `tools-console`     | Capture and query the bridge plugin's console output. Surfaces the AI's debugging context.    |
+| `tools-design`      | Mutate the canvas — create rectangles, frames, text, components; set fills, strokes, layout.  |
+
+Each pack is internal to the binary; they share the protocol, transport, and figma-adapter layers and only differ in which handlers they register.
+
+## Where things run
+
+- **Daemon process:** `figma-adapter` (placeholder), `transport` server, the four packs' server-handlers (REST-API-backed read tools).
+- **Bridge plugin process:** `figma-adapter` (real), `transport` client, the four packs' plugin-handlers (the canvas-touching tools).
+- **Stdio shim process:** just `transport` client and an MCP server adapter — no Figma logic.
+
+## Decision: why a daemon and not just an in-shim WebSocket server?
+
+Multiple AI clients may run in parallel — Claude Code in one terminal, Cursor in another. Each AI client launches its own shim process. They need to share the SAME WebSocket pairing with the SAME bridge plugin, because Figma Desktop only runs one bridge plugin at a time. Centralizing the WebSocket server in a per-user daemon is the simplest correct solution: every shim talks IPC to the daemon, and the daemon owns the single WS slot.
+
+The trade-off is that the daemon's lifecycle (lockfile, lazy-spawn, auto-shutdown after the last shim disconnects) becomes its own complexity surface. We pay that cost once in Phase 4 and surface failures via the Phase 7 doctor checks rather than asking each shim to coordinate independently.
+
+## Further reading
+
+- [Design doc](https://github.com/bromso/bro/blob/master/docs/plans/2026-05-06-figma-mcp-rewrite-design.md) — full architectural rationale.
+- [Phase 7 plan](https://github.com/bromso/bro/blob/master/docs/plans/2026-05-06-figma-mcp-phase-7.md) — setup CLI + diagnostics.
+- [Phase 6 plan](https://github.com/bromso/bro/blob/master/docs/plans/2026-05-06-figma-mcp-phase-6.md) — cloud relay.
