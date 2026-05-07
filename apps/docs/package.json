@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "regen-tools": "bun scripts/generate-tool-reference.mjs",
+    "build": "bun scripts/generate-tool-reference.mjs && next build",
     "start": "next start",
     "lint": "biome check .",
     "test": "vitest run"
