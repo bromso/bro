@@ -1,5 +1,7 @@
 import type {
+  CodeBlockNode,
   Component,
+  ConnectorNode,
   EditorType,
   EffectStyle,
   EllipseNode,
@@ -10,7 +12,12 @@ import type {
   PageSelection,
   PaintStyle,
   RectangleNode,
+  SectionNode,
+  ShapeWithTextNode,
+  ShapeWithTextShape,
   SolidPaint,
+  StickyNode,
+  TableNode,
   TextNode,
   TextStyle,
   Variable,
@@ -78,12 +85,80 @@ interface MutableLineNode {
   strokeWeight: number;
 }
 
+interface MutableStickyNode {
+  id: string;
+  type: "STICKY";
+  content: string;
+  authorName?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface MutableSectionNode {
+  id: string;
+  type: "SECTION";
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  children: string[];
+}
+
+interface MutableConnectorNode {
+  id: string;
+  type: "CONNECTOR";
+  startNodeId: string;
+  endNodeId: string;
+}
+
+interface MutableCodeBlockNode {
+  id: string;
+  type: "CODE_BLOCK";
+  code: string;
+  language: string;
+  x: number;
+  y: number;
+}
+
+interface MutableShapeWithTextNode {
+  id: string;
+  type: "SHAPE_WITH_TEXT";
+  shape: ShapeWithTextShape;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface MutableTableNode {
+  id: string;
+  type: "TABLE";
+  rows: number;
+  columns: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 type AnyMutableNode =
   | MutableRectangleNode
   | MutableFrameNode
   | MutableTextNode
   | MutableEllipseNode
-  | MutableLineNode;
+  | MutableLineNode
+  | MutableStickyNode
+  | MutableSectionNode
+  | MutableConnectorNode
+  | MutableCodeBlockNode
+  | MutableShapeWithTextNode
+  | MutableTableNode;
+
+const DEFAULT_STICKY_SIZE = 200;
 
 export interface FigmaFakeOptions {
   readonly editorType?: EditorType;
@@ -112,6 +187,12 @@ export class FigmaFake implements FigmaAdapter {
   private ellipseCounter = 0;
   private lineCounter = 0;
   private componentCounter = 0;
+  private stickyCounter = 0;
+  private sectionCounter = 0;
+  private connectorCounter = 0;
+  private codeBlockCounter = 0;
+  private shapeWithTextCounter = 0;
+  private tableCounter = 0;
 
   constructor(options: FigmaFakeOptions = {}) {
     this._editorType = options.editorType ?? "figma";
@@ -334,7 +415,12 @@ export class FigmaFake implements FigmaAdapter {
   async setNodeFill(args: { nodeId: string; paint: SolidPaint }): Promise<void> {
     const node = this.allNodes.get(args.nodeId);
     if (!node) throw new Error(`node not found: ${args.nodeId}`);
-    if (node.type === "LINE") {
+    if (
+      node.type !== "RECTANGLE" &&
+      node.type !== "FRAME" &&
+      node.type !== "TEXT" &&
+      node.type !== "ELLIPSE"
+    ) {
       throw new Error(`node is not paintable: ${args.nodeId}`);
     }
     node.fills = [args.paint];
@@ -343,6 +429,15 @@ export class FigmaFake implements FigmaAdapter {
   async setNodeStroke(args: { nodeId: string; paint: SolidPaint; weight?: number }): Promise<void> {
     const node = this.allNodes.get(args.nodeId);
     if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (
+      node.type !== "RECTANGLE" &&
+      node.type !== "FRAME" &&
+      node.type !== "TEXT" &&
+      node.type !== "ELLIPSE" &&
+      node.type !== "LINE"
+    ) {
+      throw new Error(`node is not strokable: ${args.nodeId}`);
+    }
     node.strokes = [args.paint];
     node.strokeWeight = args.weight ?? 1;
   }
@@ -359,7 +454,10 @@ export class FigmaFake implements FigmaAdapter {
   async resizeNode(args: { nodeId: string; width: number; height: number }): Promise<void> {
     const node = this.allNodes.get(args.nodeId);
     if (!node) throw new Error(`node not found: ${args.nodeId}`);
-    if (node.type === "LINE" || node.type === "TEXT") {
+    if (node.type === "LINE" || node.type === "TEXT" || node.type === "CONNECTOR") {
+      throw new Error(`node is not resizable via width/height: ${args.nodeId}`);
+    }
+    if (node.type === "CODE_BLOCK") {
       throw new Error(`node is not resizable via width/height: ${args.nodeId}`);
     }
     node.width = args.width;
@@ -398,6 +496,189 @@ export class FigmaFake implements FigmaAdapter {
     const node = this.allNodes.get(args.nodeId);
     if (!node) return null;
     return this.snapshot(node);
+  }
+
+  // ---- Phase 10: FigJam node creation and mutation ----
+
+  async createSticky(args: {
+    content: string;
+    authorName?: string;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+  }): Promise<StickyNode> {
+    const id = `stk${++this.stickyCounter}`;
+    const mutable: MutableStickyNode = {
+      id,
+      type: "STICKY",
+      content: args.content,
+      authorName: args.authorName,
+      x: args.x ?? 0,
+      y: args.y ?? 0,
+      width: args.width ?? DEFAULT_STICKY_SIZE,
+      height: args.height ?? DEFAULT_STICKY_SIZE,
+    };
+    this.allNodes.set(id, mutable);
+    return { ...mutable };
+  }
+
+  async createSection(args: {
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Promise<SectionNode> {
+    const id = `sec${++this.sectionCounter}`;
+    const mutable: MutableSectionNode = {
+      id,
+      type: "SECTION",
+      name: args.name,
+      x: args.x,
+      y: args.y,
+      width: args.width,
+      height: args.height,
+      children: [],
+    };
+    this.allNodes.set(id, mutable);
+    return {
+      id,
+      type: "SECTION",
+      name: mutable.name,
+      x: mutable.x,
+      y: mutable.y,
+      width: mutable.width,
+      height: mutable.height,
+    };
+  }
+
+  async createConnector(args: { startNodeId: string; endNodeId: string }): Promise<ConnectorNode> {
+    if (!this.allNodes.has(args.startNodeId)) {
+      throw new Error(`startNode not found: ${args.startNodeId}`);
+    }
+    if (!this.allNodes.has(args.endNodeId)) {
+      throw new Error(`endNode not found: ${args.endNodeId}`);
+    }
+    const id = `cn${++this.connectorCounter}`;
+    const mutable: MutableConnectorNode = {
+      id,
+      type: "CONNECTOR",
+      startNodeId: args.startNodeId,
+      endNodeId: args.endNodeId,
+    };
+    this.allNodes.set(id, mutable);
+    return { ...mutable };
+  }
+
+  async createCodeBlock(args: {
+    code: string;
+    language?: string;
+    x?: number;
+    y?: number;
+  }): Promise<CodeBlockNode> {
+    const id = `cb${++this.codeBlockCounter}`;
+    const mutable: MutableCodeBlockNode = {
+      id,
+      type: "CODE_BLOCK",
+      code: args.code,
+      language: args.language ?? "plaintext",
+      x: args.x ?? 0,
+      y: args.y ?? 0,
+    };
+    this.allNodes.set(id, mutable);
+    return { ...mutable };
+  }
+
+  async createShapeWithText(args: {
+    shape: ShapeWithTextShape;
+    content: string;
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+  }): Promise<ShapeWithTextNode> {
+    const id = `swt${++this.shapeWithTextCounter}`;
+    const mutable: MutableShapeWithTextNode = {
+      id,
+      type: "SHAPE_WITH_TEXT",
+      shape: args.shape,
+      content: args.content,
+      x: args.x ?? 0,
+      y: args.y ?? 0,
+      width: args.width,
+      height: args.height,
+    };
+    this.allNodes.set(id, mutable);
+    return { ...mutable };
+  }
+
+  async createTable(args: {
+    rows: number;
+    columns: number;
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+  }): Promise<TableNode> {
+    const id = `tbl${++this.tableCounter}`;
+    const mutable: MutableTableNode = {
+      id,
+      type: "TABLE",
+      rows: args.rows,
+      columns: args.columns,
+      x: args.x ?? 0,
+      y: args.y ?? 0,
+      width: args.width,
+      height: args.height,
+    };
+    this.allNodes.set(id, mutable);
+    return { ...mutable };
+  }
+
+  async setStickyContent(args: { nodeId: string; content: string }): Promise<void> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (node.type !== "STICKY") {
+      throw new Error(`expected STICKY node: ${args.nodeId}`);
+    }
+    node.content = args.content;
+  }
+
+  async setSectionName(args: { nodeId: string; name: string }): Promise<void> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (node.type !== "SECTION") {
+      throw new Error(`expected SECTION node: ${args.nodeId}`);
+    }
+    node.name = args.name;
+  }
+
+  async moveIntoSection(args: { sectionId: string; nodeIds: readonly string[] }): Promise<void> {
+    const section = this.allNodes.get(args.sectionId);
+    if (!section) throw new Error(`section not found: ${args.sectionId}`);
+    if (section.type !== "SECTION") {
+      throw new Error(`expected SECTION node: ${args.sectionId}`);
+    }
+    for (const id of args.nodeIds) {
+      if (!this.allNodes.has(id)) {
+        throw new Error(`node not found: ${id}`);
+      }
+    }
+    for (const id of args.nodeIds) {
+      if (!section.children.includes(id)) {
+        section.children.push(id);
+      }
+    }
+  }
+
+  async listSectionChildren(args: { sectionId: string }): Promise<readonly string[]> {
+    const section = this.allNodes.get(args.sectionId);
+    if (!section) throw new Error(`section not found: ${args.sectionId}`);
+    if (section.type !== "SECTION") {
+      throw new Error(`expected SECTION node: ${args.sectionId}`);
+    }
+    return [...section.children];
   }
 
   // ---- Test seeding API ----
@@ -481,6 +762,71 @@ export class FigmaFake implements FigmaAdapter {
         strokeWeight: node.strokeWeight,
       };
     }
+    if (node.type === "STICKY") {
+      return {
+        id: node.id,
+        type: node.type,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        content: node.content,
+        authorName: node.authorName,
+      };
+    }
+    if (node.type === "SECTION") {
+      return {
+        id: node.id,
+        type: node.type,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        name: node.name,
+      };
+    }
+    if (node.type === "CONNECTOR") {
+      return {
+        id: node.id,
+        type: node.type,
+        startNodeId: node.startNodeId,
+        endNodeId: node.endNodeId,
+      };
+    }
+    if (node.type === "CODE_BLOCK") {
+      return {
+        id: node.id,
+        type: node.type,
+        x: node.x,
+        y: node.y,
+        code: node.code,
+        language: node.language,
+      };
+    }
+    if (node.type === "SHAPE_WITH_TEXT") {
+      return {
+        id: node.id,
+        type: node.type,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        shape: node.shape,
+        content: node.content,
+      };
+    }
+    if (node.type === "TABLE") {
+      return {
+        id: node.id,
+        type: node.type,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        rows: node.rows,
+        columns: node.columns,
+      };
+    }
     const base: NodeSnapshot = {
       id: node.id,
       type: node.type,
@@ -519,6 +865,30 @@ export class FigmaFake implements FigmaAdapter {
       case "LINE": {
         const id = `ln${++this.lineCounter}`;
         return { ...node, id, strokes: [...node.strokes] };
+      }
+      case "STICKY": {
+        const id = `stk${++this.stickyCounter}`;
+        return { ...node, id };
+      }
+      case "SECTION": {
+        const id = `sec${++this.sectionCounter}`;
+        return { ...node, id, children: [...node.children] };
+      }
+      case "CONNECTOR": {
+        const id = `cn${++this.connectorCounter}`;
+        return { ...node, id };
+      }
+      case "CODE_BLOCK": {
+        const id = `cb${++this.codeBlockCounter}`;
+        return { ...node, id };
+      }
+      case "SHAPE_WITH_TEXT": {
+        const id = `swt${++this.shapeWithTextCounter}`;
+        return { ...node, id };
+      }
+      case "TABLE": {
+        const id = `tbl${++this.tableCounter}`;
+        return { ...node, id };
       }
     }
   }

@@ -1,6 +1,8 @@
 /// <reference types="@figma/plugin-typings" />
 import type {
+  CodeBlockNode,
   Component,
+  ConnectorNode,
   EditorType,
   EffectStyle,
   EllipseNode,
@@ -11,12 +13,53 @@ import type {
   PageSelection,
   PaintStyle,
   RectangleNode,
+  SectionNode,
+  ShapeWithTextNode,
+  ShapeWithTextShape,
   SolidPaint,
+  StickyNode,
+  TableNode,
   TextNode,
   TextStyle,
   Variable,
   VariableCollection,
 } from "./adapter";
+
+/**
+ * Map our lowercase shape variants to the Figma runtime's uppercase
+ * `ShapeType` enum. Unknown values fall back to "SQUARE" — the
+ * runtime would otherwise throw at assignment.
+ */
+const SHAPE_TYPE_MAP: Readonly<Record<ShapeWithTextShape, string>> = {
+  square: "SQUARE",
+  ellipse: "ELLIPSE",
+  rounded_rectangle: "ROUNDED_RECTANGLE",
+  diamond: "DIAMOND",
+  triangle_up: "TRIANGLE_UP",
+  triangle_down: "TRIANGLE_DOWN",
+  parallelogram_right: "PARALLELOGRAM_RIGHT",
+  parallelogram_left: "PARALLELOGRAM_LEFT",
+};
+
+const SUPPORTED_CODE_LANGUAGES = new Set([
+  "PLAINTEXT",
+  "TYPESCRIPT",
+  "CPP",
+  "CSS",
+  "GO",
+  "GRAPHQL",
+  "HTML",
+  "JAVASCRIPT",
+  "JSON",
+  "KOTLIN",
+  "PHP",
+  "PYTHON",
+  "RUBY",
+  "RUST",
+  "SQL",
+  "SWIFT",
+  "BASH",
+]);
 
 /**
  * Production `FigmaAdapter` backed by the `figma` global injected by
@@ -327,5 +370,267 @@ export class RealFigmaAdapter implements FigmaAdapter {
     if (Array.isArray(snap.strokes)) out.strokes = snap.strokes;
     if (typeof snap.strokeWeight === "number") out.strokeWeight = snap.strokeWeight;
     return out as unknown as NodeSnapshot;
+  }
+
+  // ---- Phase 10: FigJam-specific node creation and mutation ----
+
+  async createSticky(args: {
+    content: string;
+    authorName?: string;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+  }): Promise<StickyNode> {
+    const node = (
+      figma as unknown as {
+        createSticky: () => {
+          id: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          authorName?: string;
+          text: { fontName: FontName; characters: string };
+        };
+      }
+    ).createSticky();
+    await figma.loadFontAsync(node.text.fontName as FontName);
+    node.text.characters = args.content;
+    if (args.authorName !== undefined) node.authorName = args.authorName;
+    if (args.x !== undefined) node.x = args.x;
+    if (args.y !== undefined) node.y = args.y;
+    if (args.width !== undefined && args.height !== undefined) {
+      (node as unknown as LayoutMixin).resize(args.width, args.height);
+    }
+    return {
+      id: node.id,
+      type: "STICKY",
+      content: node.text.characters,
+      authorName: node.authorName,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+    };
+  }
+
+  async createSection(args: {
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Promise<SectionNode> {
+    const node = (
+      figma as unknown as {
+        createSection: () => {
+          id: string;
+          name: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          resizeWithoutConstraints: (w: number, h: number) => void;
+        };
+      }
+    ).createSection();
+    node.name = args.name;
+    node.x = args.x;
+    node.y = args.y;
+    node.resizeWithoutConstraints(args.width, args.height);
+    return {
+      id: node.id,
+      type: "SECTION",
+      name: node.name,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+    };
+  }
+
+  async createConnector(args: { startNodeId: string; endNodeId: string }): Promise<ConnectorNode> {
+    const start = await figma.getNodeByIdAsync(args.startNodeId);
+    if (!start) throw new Error(`startNode not found: ${args.startNodeId}`);
+    const end = await figma.getNodeByIdAsync(args.endNodeId);
+    if (!end) throw new Error(`endNode not found: ${args.endNodeId}`);
+    const node = (
+      figma as unknown as {
+        createConnector: () => {
+          id: string;
+          connectorStart: { endpointNodeId: string; magnet: string };
+          connectorEnd: { endpointNodeId: string; magnet: string };
+        };
+      }
+    ).createConnector();
+    node.connectorStart = { endpointNodeId: args.startNodeId, magnet: "AUTO" };
+    node.connectorEnd = { endpointNodeId: args.endNodeId, magnet: "AUTO" };
+    return {
+      id: node.id,
+      type: "CONNECTOR",
+      startNodeId: args.startNodeId,
+      endNodeId: args.endNodeId,
+    };
+  }
+
+  async createCodeBlock(args: {
+    code: string;
+    language?: string;
+    x?: number;
+    y?: number;
+  }): Promise<CodeBlockNode> {
+    const node = (
+      figma as unknown as {
+        createCodeBlock: () => {
+          id: string;
+          x: number;
+          y: number;
+          code: string;
+          codeLanguage: string;
+        };
+      }
+    ).createCodeBlock();
+    node.code = args.code;
+    const requested = (args.language ?? "plaintext").toUpperCase();
+    node.codeLanguage = SUPPORTED_CODE_LANGUAGES.has(requested) ? requested : "PLAINTEXT";
+    if (args.x !== undefined) node.x = args.x;
+    if (args.y !== undefined) node.y = args.y;
+    return {
+      id: node.id,
+      type: "CODE_BLOCK",
+      code: node.code,
+      language: args.language ?? "plaintext",
+      x: node.x,
+      y: node.y,
+    };
+  }
+
+  async createShapeWithText(args: {
+    shape: ShapeWithTextShape;
+    content: string;
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+  }): Promise<ShapeWithTextNode> {
+    const node = (
+      figma as unknown as {
+        createShapeWithText: () => {
+          id: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          shapeType: string;
+          text: { fontName: FontName; characters: string };
+        };
+      }
+    ).createShapeWithText();
+    node.shapeType = SHAPE_TYPE_MAP[args.shape] ?? "SQUARE";
+    await figma.loadFontAsync(node.text.fontName as FontName);
+    node.text.characters = args.content;
+    if (args.x !== undefined) node.x = args.x;
+    if (args.y !== undefined) node.y = args.y;
+    (node as unknown as LayoutMixin).resize(args.width, args.height);
+    return {
+      id: node.id,
+      type: "SHAPE_WITH_TEXT",
+      shape: args.shape,
+      content: node.text.characters,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+    };
+  }
+
+  async createTable(args: {
+    rows: number;
+    columns: number;
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+  }): Promise<TableNode> {
+    const node = (
+      figma as unknown as {
+        createTable: (
+          rows: number,
+          columns: number
+        ) => {
+          id: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          numRows: number;
+          numColumns: number;
+        };
+      }
+    ).createTable(args.rows, args.columns);
+    if (args.x !== undefined) node.x = args.x;
+    if (args.y !== undefined) node.y = args.y;
+    (node as unknown as LayoutMixin).resize(args.width, args.height);
+    return {
+      id: node.id,
+      type: "TABLE",
+      rows: args.rows,
+      columns: args.columns,
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+    };
+  }
+
+  async setStickyContent(args: { nodeId: string; content: string }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (node.type !== "STICKY") {
+      throw new Error(`expected STICKY node: ${args.nodeId}`);
+    }
+    const sticky = node as unknown as {
+      text: { fontName: FontName; characters: string };
+    };
+    await figma.loadFontAsync(sticky.text.fontName as FontName);
+    sticky.text.characters = args.content;
+  }
+
+  async setSectionName(args: { nodeId: string; name: string }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (node.type !== "SECTION") {
+      throw new Error(`expected SECTION node: ${args.nodeId}`);
+    }
+    (node as unknown as { name: string }).name = args.name;
+  }
+
+  async moveIntoSection(args: { sectionId: string; nodeIds: readonly string[] }): Promise<void> {
+    const section = await figma.getNodeByIdAsync(args.sectionId);
+    if (!section) throw new Error(`section not found: ${args.sectionId}`);
+    if (section.type !== "SECTION") {
+      throw new Error(`expected SECTION node: ${args.sectionId}`);
+    }
+    const sectionWithChildren = section as unknown as {
+      appendChild: (n: BaseNode) => void;
+    };
+    for (const id of args.nodeIds) {
+      const child = await figma.getNodeByIdAsync(id);
+      if (!child) throw new Error(`node not found: ${id}`);
+      sectionWithChildren.appendChild(child);
+    }
+  }
+
+  async listSectionChildren(args: { sectionId: string }): Promise<readonly string[]> {
+    const section = await figma.getNodeByIdAsync(args.sectionId);
+    if (!section) throw new Error(`section not found: ${args.sectionId}`);
+    if (section.type !== "SECTION") {
+      throw new Error(`expected SECTION node: ${args.sectionId}`);
+    }
+    const sectionWithChildren = section as unknown as {
+      children: readonly { id: string }[];
+    };
+    return sectionWithChildren.children.map((c) => c.id);
   }
 }

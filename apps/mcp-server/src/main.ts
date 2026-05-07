@@ -71,6 +71,28 @@ import {
   extractStylesPluginHandler,
 } from "@repo/tools-extract";
 import {
+  CreateCodeBlock,
+  CreateConnector,
+  CreateSection,
+  CreateShapeWithText,
+  CreateSticky,
+  CreateTable,
+  createCodeBlockPluginHandler,
+  createConnectorPluginHandler,
+  createSectionPluginHandler,
+  createShapeWithTextPluginHandler,
+  createStickyPluginHandler,
+  createTablePluginHandler,
+  ListSectionChildren,
+  listSectionChildrenPluginHandler,
+  MoveIntoSection,
+  moveIntoSectionPluginHandler,
+  SetSectionName,
+  SetStickyContent,
+  setSectionNamePluginHandler,
+  setStickyContentPluginHandler,
+} from "@repo/tools-figjam";
+import {
   createStreamStatusPluginHandler,
   ExportVariables,
   exportVariablesPluginHandler,
@@ -409,6 +431,33 @@ async function runRuntime(): Promise<void> {
             reg.register(CreateComponent, createComponentPluginHandler);
           },
         },
+        {
+          name: "tools-figjam",
+          tools: [
+            CreateSticky,
+            CreateSection,
+            CreateConnector,
+            CreateCodeBlock,
+            CreateShapeWithText,
+            CreateTable,
+            SetStickyContent,
+            SetSectionName,
+            MoveIntoSection,
+            ListSectionChildren,
+          ],
+          registerPlugin: (reg) => {
+            reg.register(CreateSticky, createStickyPluginHandler);
+            reg.register(CreateSection, createSectionPluginHandler);
+            reg.register(CreateConnector, createConnectorPluginHandler);
+            reg.register(CreateCodeBlock, createCodeBlockPluginHandler);
+            reg.register(CreateShapeWithText, createShapeWithTextPluginHandler);
+            reg.register(CreateTable, createTablePluginHandler);
+            reg.register(SetStickyContent, setStickyContentPluginHandler);
+            reg.register(SetSectionName, setSectionNamePluginHandler);
+            reg.register(MoveIntoSection, moveIntoSectionPluginHandler);
+            reg.register(ListSectionChildren, listSectionChildrenPluginHandler);
+          },
+        },
       ],
     });
     daemonRef = daemon;
@@ -451,6 +500,16 @@ async function runRuntime(): Promise<void> {
       CloneNode,
       DeleteNode,
       CreateComponent,
+      CreateSticky,
+      CreateSection,
+      CreateConnector,
+      CreateCodeBlock,
+      CreateShapeWithText,
+      CreateTable,
+      SetStickyContent,
+      SetSectionName,
+      MoveIntoSection,
+      ListSectionChildren,
     ],
     mcpServerInfo: { name: "figma-mcp", version: VERSION },
   });

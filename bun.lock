@@ -22,6 +22,7 @@
         "@repo/tools-console": "workspace:*",
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
+        "@repo/tools-figjam": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "@repo/ui": "workspace:*",
@@ -72,7 +73,7 @@
     },
     "apps/mcp-server": {
       "name": "@bromso/figma-mcp",
-      "version": "0.0.0",
+      "version": "1.0.0",
       "bin": {
         "figma-mcp": "./dist/main.js",
       },
@@ -83,6 +84,7 @@
         "@repo/tools-console": "workspace:*",
         "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
+        "@repo/tools-figjam": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
         "zod": "^3.23.8",
@@ -152,7 +154,7 @@
     },
     "packages/figma-adapter": {
       "name": "@repo/figma-adapter",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "devDependencies": {
         "@figma/plugin-typings": "^1.111.0",
         "@vitest/coverage-v8": "4.1.4",
@@ -162,7 +164,7 @@
     },
     "packages/protocol": {
       "name": "@repo/protocol",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "zod": "^3.23.8",
@@ -176,7 +178,7 @@
     },
     "packages/tools-console": {
       "name": "@repo/tools-console",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -190,7 +192,7 @@
     },
     "packages/tools-design": {
       "name": "@repo/tools-design",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -204,6 +206,20 @@
     },
     "packages/tools-extract": {
       "name": "@repo/tools-extract",
+      "version": "0.1.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/tools-figjam": {
+      "name": "@repo/tools-figjam",
       "version": "0.0.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
@@ -218,7 +234,7 @@
     },
     "packages/tools-variables": {
       "name": "@repo/tools-variables",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -233,7 +249,7 @@
     },
     "packages/transport": {
       "name": "@repo/transport",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@repo/protocol": "workspace:*",
         "ws": "^8.18.0",
@@ -961,6 +977,8 @@
     "@repo/tools-design": ["@repo/tools-design@workspace:packages/tools-design"],
 
     "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
+
+    "@repo/tools-figjam": ["@repo/tools-figjam@workspace:packages/tools-figjam"],
 
     "@repo/tools-variables": ["@repo/tools-variables@workspace:packages/tools-variables"],
 

@@ -5,7 +5,9 @@
  * - REST API client (lands in Phase 8 with `@repo/tools-rest`).
  */
 export type {
+  CodeBlockNode,
   Component,
+  ConnectorNode,
   EditorType,
   EffectStyle,
   EllipseNode,
@@ -16,8 +18,13 @@ export type {
   PageSelection,
   PaintStyle,
   RectangleNode,
+  SectionNode,
+  ShapeWithTextNode,
+  ShapeWithTextShape,
   SolidPaint,
+  StickyNode,
   StyleBase,
+  TableNode,
   TextNode,
   TextStyle,
   Variable,
