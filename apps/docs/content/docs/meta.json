@@ -2,11 +2,14 @@
   "title": "Documentation",
   "pages": [
     "---Get Started---",
-    "getting-started/index",
-    "---Per-client install---",
+    "index",
+    "get-started",
     "clients",
+    "---Tools---",
+    "tools",
+    "tools-reference",
+    "recipes",
     "---Reference---",
-    "architecture",
-    "troubleshooting"
+    "reference"
   ]
 }
