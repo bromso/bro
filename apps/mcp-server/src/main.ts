@@ -21,6 +21,46 @@ import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { FigmaFake } from "@repo/figma-adapter/testing";
 import {
+  ClearConsole,
+  ConsoleStatusTool,
+  clearConsolePluginHandler,
+  consoleStatusPluginHandler,
+  GetConsoleErrors,
+  GetConsoleLogs,
+  GetConsoleWarnings,
+  getConsoleErrorsPluginHandler,
+  getConsoleLogsPluginHandler,
+  getConsoleWarningsPluginHandler,
+  QueryConsole,
+  queryConsolePluginHandler,
+} from "@repo/tools-console";
+import {
+  CloneNode,
+  CreateComponent,
+  CreateEllipse,
+  CreateFrame,
+  CreateLine,
+  CreateRectangle,
+  CreateText,
+  cloneNodePluginHandler,
+  createComponentPluginHandler,
+  createEllipsePluginHandler,
+  createFramePluginHandler,
+  createLinePluginHandler,
+  createRectanglePluginHandler,
+  createTextPluginHandler,
+  DeleteNode,
+  deleteNodePluginHandler,
+  ResizeNode,
+  resizeNodePluginHandler,
+  SetFill,
+  SetStroke,
+  SetTextContent,
+  setFillPluginHandler,
+  setStrokePluginHandler,
+  setTextContentPluginHandler,
+} from "@repo/tools-design";
+import {
   BridgeStatus,
   createBridgeStatusServerHandler,
   ExtractComponents,
@@ -319,6 +359,56 @@ async function runRuntime(): Promise<void> {
             );
           },
         },
+        {
+          name: "tools-console",
+          tools: [
+            GetConsoleLogs,
+            ClearConsole,
+            GetConsoleErrors,
+            GetConsoleWarnings,
+            QueryConsole,
+            ConsoleStatusTool,
+          ],
+          registerPlugin: (reg) => {
+            reg.register(GetConsoleLogs, getConsoleLogsPluginHandler);
+            reg.register(ClearConsole, clearConsolePluginHandler);
+            reg.register(GetConsoleErrors, getConsoleErrorsPluginHandler);
+            reg.register(GetConsoleWarnings, getConsoleWarningsPluginHandler);
+            reg.register(QueryConsole, queryConsolePluginHandler);
+            reg.register(ConsoleStatusTool, consoleStatusPluginHandler);
+          },
+        },
+        {
+          name: "tools-design",
+          tools: [
+            CreateRectangle,
+            CreateFrame,
+            CreateEllipse,
+            CreateLine,
+            CreateText,
+            SetTextContent,
+            SetFill,
+            SetStroke,
+            ResizeNode,
+            CloneNode,
+            DeleteNode,
+            CreateComponent,
+          ],
+          registerPlugin: (reg) => {
+            reg.register(CreateRectangle, createRectanglePluginHandler);
+            reg.register(CreateFrame, createFramePluginHandler);
+            reg.register(CreateEllipse, createEllipsePluginHandler);
+            reg.register(CreateLine, createLinePluginHandler);
+            reg.register(CreateText, createTextPluginHandler);
+            reg.register(SetTextContent, setTextContentPluginHandler);
+            reg.register(SetFill, setFillPluginHandler);
+            reg.register(SetStroke, setStrokePluginHandler);
+            reg.register(ResizeNode, resizeNodePluginHandler);
+            reg.register(CloneNode, cloneNodePluginHandler);
+            reg.register(DeleteNode, deleteNodePluginHandler);
+            reg.register(CreateComponent, createComponentPluginHandler);
+          },
+        },
       ],
     });
     daemonRef = daemon;
@@ -338,7 +428,30 @@ async function runRuntime(): Promise<void> {
   const shim = await createStdioShim({
     socketPath: startup.socketPath,
     sourceClientId: `shim-${process.pid}`,
-    tools: [ExtractStyles, ExtractComponents, ExtractLocalVariables, BridgeStatus],
+    tools: [
+      ExtractStyles,
+      ExtractComponents,
+      ExtractLocalVariables,
+      BridgeStatus,
+      GetConsoleLogs,
+      ClearConsole,
+      GetConsoleErrors,
+      GetConsoleWarnings,
+      QueryConsole,
+      ConsoleStatusTool,
+      CreateRectangle,
+      CreateFrame,
+      CreateEllipse,
+      CreateLine,
+      CreateText,
+      SetTextContent,
+      SetFill,
+      SetStroke,
+      ResizeNode,
+      CloneNode,
+      DeleteNode,
+      CreateComponent,
+    ],
     mcpServerInfo: { name: "figma-mcp", version: VERSION },
   });
   await shim.connectMcp(new StdioServerTransport());

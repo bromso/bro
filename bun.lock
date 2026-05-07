@@ -19,6 +19,8 @@
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
+        "@repo/tools-console": "workspace:*",
+        "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
@@ -75,6 +77,8 @@
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
+        "@repo/tools-console": "workspace:*",
+        "@repo/tools-design": "workspace:*",
         "@repo/tools-extract": "workspace:*",
         "@repo/tools-variables": "workspace:*",
         "@repo/transport": "workspace:*",
@@ -163,6 +167,34 @@
       "devDependencies": {
         "@vitest/coverage-v8": "4.1.4",
         "fast-check": "^3.23.0",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/tools-console": {
+      "name": "@repo/tools-console",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
+    "packages/tools-design": {
+      "name": "@repo/tools-design",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
         "typescript": "^6.0.0",
         "vitest": "4.1.4",
       },
@@ -920,6 +952,10 @@
     "@repo/relay": ["@repo/relay@workspace:apps/relay"],
 
     "@repo/storybook": ["@repo/storybook@workspace:apps/storybook"],
+
+    "@repo/tools-console": ["@repo/tools-console@workspace:packages/tools-console"],
+
+    "@repo/tools-design": ["@repo/tools-design@workspace:packages/tools-design"],
 
     "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
 

@@ -36,6 +36,63 @@ export interface RectangleNode {
   readonly height: number;
 }
 
+export interface FrameNode {
+  readonly id: string;
+  readonly type: "FRAME";
+  readonly width: number;
+  readonly height: number;
+  readonly x: number;
+  readonly y: number;
+  readonly name: string;
+}
+
+export interface TextNode {
+  readonly id: string;
+  readonly type: "TEXT";
+  readonly characters: string;
+  readonly fontSize: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface EllipseNode {
+  readonly id: string;
+  readonly type: "ELLIPSE";
+  readonly width: number;
+  readonly height: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface LineNode {
+  readonly id: string;
+  readonly type: "LINE";
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+}
+
+export type SolidPaint = {
+  readonly type: "SOLID";
+  readonly color: { readonly r: number; readonly g: number; readonly b: number };
+  readonly opacity?: number;
+};
+
+export interface NodeSnapshot {
+  readonly id: string;
+  readonly type: string;
+  readonly width?: number;
+  readonly height?: number;
+  readonly x?: number;
+  readonly y?: number;
+  readonly characters?: string;
+  readonly fontSize?: number;
+  readonly fills?: readonly SolidPaint[];
+  readonly strokes?: readonly SolidPaint[];
+  readonly strokeWeight?: number;
+}
+
 export interface PageSelection {
   readonly nodeIds: readonly string[];
 }
@@ -115,4 +172,44 @@ export interface FigmaAdapter {
   }): Promise<Variable>;
 
   deleteVariableAsync(id: string): Promise<void>;
+
+  createFrame(args: {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+    name?: string;
+  }): Promise<FrameNode>;
+
+  createText(args: {
+    content: string;
+    fontSize?: number;
+    x?: number;
+    y?: number;
+  }): Promise<TextNode>;
+
+  createEllipse(args: {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+  }): Promise<EllipseNode>;
+
+  createLine(args: { x1: number; y1: number; x2: number; y2: number }): Promise<LineNode>;
+
+  setNodeFill(args: { nodeId: string; paint: SolidPaint }): Promise<void>;
+
+  setNodeStroke(args: { nodeId: string; paint: SolidPaint; weight?: number }): Promise<void>;
+
+  setTextContent(args: { nodeId: string; characters: string }): Promise<void>;
+
+  resizeNode(args: { nodeId: string; width: number; height: number }): Promise<void>;
+
+  cloneNode(args: { nodeId: string }): Promise<{ id: string }>;
+
+  deleteNode(args: { nodeId: string }): Promise<void>;
+
+  createComponent(args: { nodeId: string }): Promise<Component>;
+
+  getNodeById(args: { nodeId: string }): Promise<NodeSnapshot | null>;
 }
