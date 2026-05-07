@@ -153,3 +153,60 @@ export const GetLandmarkRole = defineTool({
     role: LandmarkRole.nullable(),
   }),
 });
+
+const NonNegativeInt = z.number().int().nonnegative();
+
+const AnnotationSummary = z.object({
+  index: NonNegativeInt,
+  label: z.string().optional(),
+  categoryId: z.string().optional(),
+});
+
+export const ListAnnotations = defineTool({
+  name: "list_annotations",
+  description:
+    "Return every annotation attached to a node, with each entry's array index (annotations have no stable ids in the plugin API; the index is the addressing scheme).",
+  streaming: false,
+  input: z.object({ nodeId: NodeId }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    annotations: z.array(AnnotationSummary),
+    count: NonNegativeInt,
+  }),
+});
+
+export const AddAnnotation = defineTool({
+  name: "add_annotation",
+  description:
+    "Append an annotation to a node. The annotation appears in Figma's annotation panel attached to the node. `categoryId` ties it to a category (see `figma.annotations.categories`); omit for a categoryless annotation. Returns the new entry's array index.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: NodeId,
+      label: z.string().min(1),
+      categoryId: z.string().min(1).optional(),
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    index: NonNegativeInt,
+    count: NonNegativeInt,
+  }),
+});
+
+export const RemoveAnnotation = defineTool({
+  name: "remove_annotation",
+  description:
+    "Remove the annotation at the given array index. Indices shift after removal — re-list before removing more than one. Throws if `annotationIndex` is out of range.",
+  streaming: false,
+  input: z
+    .object({
+      nodeId: NodeId,
+      annotationIndex: NonNegativeInt,
+    })
+    .strict(),
+  output: z.object({
+    nodeId: z.string(),
+    count: NonNegativeInt,
+  }),
+});

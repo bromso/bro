@@ -1,11 +1,14 @@
 import type { A11yMetaKey } from "@repo/figma-adapter";
 import type { PluginHandler } from "@repo/protocol";
 import type {
+  AddAnnotation,
   AuditContrast,
   AuditTargetSize,
   GetAltText,
   GetAriaLabel,
   GetLandmarkRole,
+  ListAnnotations,
+  RemoveAnnotation,
   SetAltText,
   SetAriaLabel,
   SetLandmarkRole,
@@ -208,4 +211,64 @@ export const getLandmarkRolePluginHandler: PluginHandler<typeof GetLandmarkRole>
     ? (role as (typeof allowed)[number])
     : null;
   return { nodeId: args.nodeId, role: normalized };
+};
+
+export const listAnnotationsPluginHandler: PluginHandler<typeof ListAnnotations> = async (
+  args,
+  { figma }
+) => {
+  const list = await figma.getNodeAnnotations({ nodeId: args.nodeId });
+  return {
+    nodeId: args.nodeId,
+    annotations: list.map((a, index) => ({
+      index,
+      label: a.label,
+      categoryId: a.categoryId,
+    })),
+    count: list.length,
+  };
+};
+
+export const addAnnotationPluginHandler: PluginHandler<typeof AddAnnotation> = async (
+  args,
+  { figma }
+) => {
+  const existing = await figma.getNodeAnnotations({ nodeId: args.nodeId });
+  const next = [
+    ...existing,
+    {
+      label: args.label,
+      ...(args.categoryId !== undefined ? { categoryId: args.categoryId } : {}),
+    },
+  ];
+  await figma.setNodeAnnotations({
+    nodeId: args.nodeId,
+    annotations: next,
+  });
+  return {
+    nodeId: args.nodeId,
+    index: existing.length,
+    count: next.length,
+  };
+};
+
+export const removeAnnotationPluginHandler: PluginHandler<typeof RemoveAnnotation> = async (
+  args,
+  { figma }
+) => {
+  const existing = await figma.getNodeAnnotations({ nodeId: args.nodeId });
+  if (args.annotationIndex >= existing.length) {
+    throw new Error(
+      `annotation index out of range: ${args.annotationIndex} (have ${existing.length})`
+    );
+  }
+  const next = [
+    ...existing.slice(0, args.annotationIndex),
+    ...existing.slice(args.annotationIndex + 1),
+  ];
+  await figma.setNodeAnnotations({
+    nodeId: args.nodeId,
+    annotations: next,
+  });
+  return { nodeId: args.nodeId, count: next.length };
 };

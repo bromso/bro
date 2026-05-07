@@ -312,3 +312,110 @@ describe("getLandmarkRolePluginHandler", () => {
     expect(out.role).toBeNull();
   });
 });
+
+import {
+  addAnnotationPluginHandler,
+  listAnnotationsPluginHandler,
+  removeAnnotationPluginHandler,
+} from "../plugin-handlers";
+
+describe("listAnnotationsPluginHandler", () => {
+  it("returns an empty array when no annotations are set", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await listAnnotationsPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.annotations).toEqual([]);
+    expect(out.count).toBe(0);
+  });
+
+  it("returns each annotation with its index", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "Hero" }, { label: "Variant", categoryId: "design-review" }],
+    });
+    const out = await listAnnotationsPluginHandler({ nodeId: frame.id }, ctx);
+    expect(out.annotations).toEqual([
+      { index: 0, label: "Hero" },
+      { index: 1, label: "Variant", categoryId: "design-review" },
+    ]);
+    expect(out.count).toBe(2);
+  });
+});
+
+describe("addAnnotationPluginHandler", () => {
+  it("appends a new annotation and returns its index", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    const out = await addAnnotationPluginHandler({ nodeId: frame.id, label: "Hero" }, ctx);
+    expect(out.index).toBe(0);
+    expect(out.count).toBe(1);
+    const list = await ctx.figma.getNodeAnnotations({ nodeId: frame.id });
+    expect(list[0]).toEqual({ label: "Hero" });
+  });
+
+  it("appends with a categoryId when supplied", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await addAnnotationPluginHandler(
+      {
+        nodeId: frame.id,
+        label: "Reviewed",
+        categoryId: "design-review",
+      },
+      ctx
+    );
+    const list = await ctx.figma.getNodeAnnotations({ nodeId: frame.id });
+    expect(list[0]).toEqual({ label: "Reviewed", categoryId: "design-review" });
+  });
+
+  it("preserves prior annotations", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "First" }],
+    });
+    const out = await addAnnotationPluginHandler({ nodeId: frame.id, label: "Second" }, ctx);
+    expect(out.index).toBe(1);
+    expect(out.count).toBe(2);
+    const list = await ctx.figma.getNodeAnnotations({ nodeId: frame.id });
+    expect(list.map((a) => a.label)).toEqual(["First", "Second"]);
+  });
+});
+
+describe("removeAnnotationPluginHandler", () => {
+  it("drops the Nth annotation by index", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "First" }, { label: "Second" }, { label: "Third" }],
+    });
+    const out = await removeAnnotationPluginHandler({ nodeId: frame.id, annotationIndex: 1 }, ctx);
+    expect(out.count).toBe(2);
+    const list = await ctx.figma.getNodeAnnotations({ nodeId: frame.id });
+    expect(list.map((a) => a.label)).toEqual(["First", "Third"]);
+  });
+
+  it("rejects out-of-range indices", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await ctx.figma.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "First" }],
+    });
+    await expect(
+      removeAnnotationPluginHandler({ nodeId: frame.id, annotationIndex: 5 }, ctx)
+    ).rejects.toThrow(/index/i);
+  });
+
+  it("rejects when there are no annotations", async () => {
+    const ctx = designCtx();
+    const frame = await ctx.figma.createFrame({ width: 100, height: 100 });
+    await expect(
+      removeAnnotationPluginHandler({ nodeId: frame.id, annotationIndex: 0 }, ctx)
+    ).rejects.toThrow(/index/i);
+  });
+});

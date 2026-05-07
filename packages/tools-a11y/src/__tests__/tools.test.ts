@@ -195,3 +195,83 @@ describe("GetLandmarkRole schema", () => {
     expect(GetLandmarkRole.output.safeParse({ nodeId: "n1", role: "main" }).success).toBe(true);
   });
 });
+
+import { AddAnnotation, ListAnnotations, RemoveAnnotation } from "../tools";
+
+describe("ListAnnotations schema", () => {
+  it("requires nodeId", () => {
+    expect(ListAnnotations.input.safeParse({ nodeId: "n1" }).success).toBe(true);
+    expect(ListAnnotations.input.safeParse({}).success).toBe(false);
+  });
+
+  it("output is annotations: [{index, label?, categoryId?}]", () => {
+    expect(
+      ListAnnotations.output.safeParse({
+        nodeId: "n1",
+        annotations: [
+          { index: 0, label: "Hero" },
+          { index: 1, label: "Variant", categoryId: "design-review" },
+        ],
+        count: 2,
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("AddAnnotation schema", () => {
+  it("requires nodeId + label; categoryId optional", () => {
+    expect(AddAnnotation.input.safeParse({ nodeId: "n1", label: "Hero" }).success).toBe(true);
+    expect(
+      AddAnnotation.input.safeParse({
+        nodeId: "n1",
+        label: "Hero",
+        categoryId: "design-review",
+      }).success
+    ).toBe(true);
+    expect(AddAnnotation.input.safeParse({ nodeId: "n1" }).success).toBe(false);
+  });
+
+  it("rejects empty label", () => {
+    expect(AddAnnotation.input.safeParse({ nodeId: "n1", label: "" }).success).toBe(false);
+  });
+
+  it("output reports the new index + total count", () => {
+    expect(
+      AddAnnotation.output.safeParse({
+        nodeId: "n1",
+        index: 0,
+        count: 1,
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("RemoveAnnotation schema", () => {
+  it("requires nodeId + annotationIndex", () => {
+    expect(
+      RemoveAnnotation.input.safeParse({
+        nodeId: "n1",
+        annotationIndex: 0,
+      }).success
+    ).toBe(true);
+    expect(RemoveAnnotation.input.safeParse({ nodeId: "n1" }).success).toBe(false);
+  });
+
+  it("rejects negative index", () => {
+    expect(
+      RemoveAnnotation.input.safeParse({
+        nodeId: "n1",
+        annotationIndex: -1,
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-integer index", () => {
+    expect(
+      RemoveAnnotation.input.safeParse({
+        nodeId: "n1",
+        annotationIndex: 1.5,
+      }).success
+    ).toBe(false);
+  });
+});
