@@ -241,6 +241,20 @@
         "vitest": "4.1.4",
       },
     },
+    "packages/tools-rest": {
+      "name": "@repo/tools-rest",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-api-client": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/tools-variables": {
       "name": "@repo/tools-variables",
       "version": "0.1.0",
@@ -990,6 +1004,8 @@
     "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
 
     "@repo/tools-figjam": ["@repo/tools-figjam@workspace:packages/tools-figjam"],
+
+    "@repo/tools-rest": ["@repo/tools-rest@workspace:packages/tools-rest"],
 
     "@repo/tools-variables": ["@repo/tools-variables@workspace:packages/tools-variables"],
 
