@@ -1,2 +1,73 @@
-// Phase 11.5-11.10 add 20 tool definitions here.
-export {};
+import { defineTool } from "@repo/protocol";
+import { z } from "zod";
+
+const FileKey = z.string().min(1);
+const NodeId = z.string().min(1);
+
+export const GetFileMetadata = defineTool({
+  name: "get_file_metadata",
+  description:
+    "REST. Return narrowed metadata for a Figma file: name, lastModified, version, role, editorType.",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({
+    name: z.string(),
+    lastModified: z.string(),
+    version: z.string(),
+    role: z.string(),
+    editorType: z.string(),
+  }),
+});
+
+export const GetFilePages = defineTool({
+  name: "get_file_pages",
+  description: "REST. Return the page list (CANVAS children) of a Figma file.",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({
+    pages: z.array(z.object({ id: z.string(), name: z.string() })),
+  }),
+});
+
+export const GetNodeById = defineTool({
+  name: "get_node_by_id",
+  description:
+    "REST. Return the type/name of a node by id (returns found: false when the node does not exist).",
+  streaming: false,
+  input: z.object({ fileKey: FileKey, nodeId: NodeId }).strict(),
+  output: z.object({
+    id: z.string(),
+    type: z.string(),
+    name: z.string().optional(),
+    found: z.boolean(),
+  }),
+});
+
+export const GetFileVersions = defineTool({
+  name: "get_file_versions",
+  description: "REST. Return the version history of a Figma file (paginated via before/after).",
+  streaming: false,
+  input: z
+    .object({
+      fileKey: FileKey,
+      pageSize: z.number().int().positive().optional(),
+      before: z.string().optional(),
+      after: z.string().optional(),
+    })
+    .strict(),
+  output: z.object({
+    versions: z.array(
+      z.object({
+        id: z.string(),
+        createdAt: z.string(),
+        label: z.string(),
+        description: z.string(),
+        userHandle: z.string(),
+      })
+    ),
+    pagination: z.object({
+      prevPage: z.string().optional(),
+      nextPage: z.string().optional(),
+    }),
+  }),
+});
