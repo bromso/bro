@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { getMDXComponents } from "@/components/mdx";
 import { source } from "@/lib/source";
 
-const SITE_URL = "https://bromso.github.io/figma-plugin-template";
-const REPO_URL = "https://github.com/bromso/figma-plugin-template";
+const SITE_URL = "https://bromso.github.io/bro";
+const REPO_URL = "https://github.com/bromso/bro";
 
 interface PageProps {
   params: Promise<{ slug?: string[] }>;
@@ -27,15 +27,14 @@ export default async function Page(props: PageProps) {
     headline: page.data.title,
     description: page.data.description,
     url,
-    image: `${SITE_URL}/figma-plugi-template.webp`,
     publisher: {
       "@type": "Organization",
-      name: "Figma Plugin Template",
+      name: "figma-mcp",
       url: REPO_URL,
     },
     isPartOf: {
       "@type": "WebSite",
-      name: "Figma Plugin Template Docs",
+      name: "figma-mcp Docs",
       url: SITE_URL,
     },
   });
@@ -49,7 +48,7 @@ export default async function Page(props: PageProps) {
         tableOfContent={{ style: "normal" }}
         editOnGithub={{
           owner: "bromso",
-          repo: "figma-plugin-template",
+          repo: "bro",
           sha: "master",
           path: `apps/docs/content/docs/${page.file.path}`,
         }}
@@ -85,17 +84,13 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: page.data.title,
       description: page.data.description,
       url,
-      siteName: "Figma Plugin Template",
+      siteName: "figma-mcp",
       type: "article",
-      images: [
-        { url: "/figma-plugi-template.webp", width: 1200, height: 630, alt: page.data.title },
-      ],
     },
     twitter: {
       card: "summary_large_image",
       title: page.data.title,
       description: page.data.description,
-      images: ["/figma-plugi-template.webp"],
     },
   };
 }

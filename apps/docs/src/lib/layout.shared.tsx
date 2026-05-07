@@ -1,6 +1,6 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
-const BASE = process.env.GITHUB_PAGES === "true" ? "/figma-plugin-template" : "";
+const BASE = process.env.GITHUB_PAGES === "true" ? "/bro" : "";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -8,15 +8,15 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <>
           <img src={`${BASE}/Favicon.svg`} alt="" width={20} height={20} />
-          <span>Figma Plugin Template</span>
+          <span>figma-mcp</span>
         </>
       ),
     },
-    githubUrl: "https://github.com/bromso/figma-plugin-template",
+    githubUrl: "https://github.com/bromso/bro",
     links: [
       {
         text: "Storybook",
-        url: "https://bromso.github.io/figma-plugin-template/storybook",
+        url: "https://bromso.github.io/bro/storybook",
       },
     ],
   };

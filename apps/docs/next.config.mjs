@@ -21,7 +21,7 @@ const config = {
   images: { unoptimized: true },
   ...(isGitHubPages && {
     output: "export",
-    basePath: "/figma-plugin-template",
+    basePath: "/bro",
   }),
 };
 
