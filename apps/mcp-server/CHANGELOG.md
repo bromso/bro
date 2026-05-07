@@ -1,5 +1,107 @@
 # @bromso/figma-mcp
 
+## 1.1.0
+
+### Minor Changes
+
+- [#15](https://github.com/bromso/bro/pull/15) [`38b52a2`](https://github.com/bromso/bro/commit/38b52a2a907c387f9fa6f6f8b1f20b3ee9f1d66f) Thanks [@bromso](https://github.com/bromso)! - Phase 10: tools-figjam pack.
+
+  A new tool pack ships, bringing the registry from ~23 to ~33 tools.
+
+  `@repo/tools-figjam` (new): 10 tools for FigJam files. Every tool is
+  gated on `figma.editorType === "figjam"`; calling on a Figma or Slides
+  editor returns `E_FIGMA_EDITOR_TYPE_MISMATCH` from the plugin handler.
+
+  - Node creation: `create_sticky`, `create_section`, `create_connector`,
+    `create_code_block`, `create_shape_with_text`, `create_table`.
+  - Mutators: `set_sticky_content`, `set_section_name`.
+  - Section membership: `move_into_section`, `list_section_children`.
+
+  The `requireFigJam(figma, toolName)` guard helper is exported from
+  the package for downstream reuse.
+
+  `@repo/figma-adapter` (extended): adds the `StickyNode`, `SectionNode`,
+  `ConnectorNode`, `CodeBlockNode`, `ShapeWithTextNode`, `TableNode` types
+  plus 10 new methods (`createSticky`, `createSection`, `createConnector`,
+  `createCodeBlock`, `createShapeWithText`, `createTable`,
+  `setStickyContent`, `setSectionName`, `moveIntoSection`,
+  `listSectionChildren`). `FigmaFake` mirrors all methods with
+  deterministic id generation (`stk1`, `sec1`, `cn1`, `cb1`, `swt1`,
+  `tbl1`); `RealFigmaAdapter` wraps the matching `figma.*` calls.
+
+  The adapter methods themselves do NOT enforce the editor-type
+  discriminator — that's the tool handler's responsibility, so the
+  adapter remains testable on any editor.
+
+  Out of scope: `@repo/tools-slides`, `@repo/tools-a11y`,
+  `@repo/tools-rest` (each becomes its own follow-up phase). FigJam
+  widgets, timer/voting/cursor-chat, multi-board support, connector
+  geometry/labels, sticky styling beyond `content` + `authorName`. A
+  real-figma golden test for FigJam (Task 10.10 ships a skipped stub
+  documenting why; the REST API's FigJam coverage is too thin for the
+  Phase 9 round-trip pattern).
+
+- [#17](https://github.com/bromso/bro/pull/17) [`dfd5950`](https://github.com/bromso/bro/commit/dfd595027015a8eed33cdf20fda5ba40aacf8f79) Thanks [@bromso](https://github.com/bromso)! - Phase 11: tools-rest pack (cloud-mode-without-plugin reads).
+
+  A new server-side-only tool pack ships, bringing the registry from ~33 to ~53 tools.
+
+  `@repo/figma-api-client` (new): a typed Figma REST client wrapping native
+  `fetch` against `https://api.figma.com/v1/`. Constructor takes
+  `{apiKey, fetchFn?, baseUrl?}` for testability. Throws `FigmaApiError`
+  on non-2xx with codes `E_FIGMA_REST_AUTH` (401/403), `E_FIGMA_REST_404`,
+  `E_FIGMA_REST_429`, `E_FIGMA_REST_UNKNOWN`. Ships `FigmaApiFake` for
+  in-memory tests.
+
+  `@repo/tools-rest` (new): 20 server-handler tools backed by REST. No
+  plugin handlers — these tools work whenever `FIGMA_API_KEY` is in env,
+  even without a paired bridge plugin.
+
+  - File metadata: `get_file_metadata`, `get_file_pages`, `get_node_by_id`,
+    `get_file_versions`.
+  - File catalog: `get_file_styles`, `get_file_components`,
+    `get_file_component_sets`, `get_file_branches`.
+  - Assets + identity: `get_image_renders`, `get_image_fills`, `get_user_me`.
+  - Comments: `get_file_comments`, `post_file_comment` (write-gated),
+    `delete_file_comment` (write-gated).
+  - Team / project: `get_team_projects`, `get_project_files`,
+    `get_team_components` (cursor-paginated).
+  - Team catalog + dev resources: `get_team_styles` (cursor-paginated),
+    `get_dev_resources`, `post_dev_resources` (write-gated).
+
+  `@bromso/figma-mcp`: reads `FIGMA_API_KEY` from env on startup. New
+  `--enable-write-tools` flag (default off) gates the three mutating tools
+  behind an explicit opt-in to prevent prompt-driven mass commenting / spam
+  dev resources. With the flag off, write tools surface
+  `E_WRITE_TOOLS_DISABLED` immediately on call. With no `FIGMA_API_KEY`,
+  all 20 REST tools surface `E_FIGMA_API_KEY_MISSING` — the daemon boots
+  fine.
+
+  Protocol surface: `ServerHandlerContext.figmaApi?: FigmaApi | null` is
+  the new typed seam. The Phase 1 `figmaApiKey` placeholder remains
+  `@deprecated` for one more phase as a migration window.
+
+  Out of scope: `@repo/tools-slides`, `@repo/tools-a11y`. Webhook tools.
+  OAuth-based auth (env-only for now). Plugin runtime tools (those are
+  tools-extract / tools-design / tools-figjam). REST writes beyond comments
+
+  - dev resources (Figma's REST API does not support file content updates).
+    WebSocket-based real-time subscriptions. Real-Figma golden tests for the
+    REST pack. Caching. Rate-limit auto-retry.
+
+### Patch Changes
+
+- Updated dependencies [[`38b52a2`](https://github.com/bromso/bro/commit/38b52a2a907c387f9fa6f6f8b1f20b3ee9f1d66f), [`dfd5950`](https://github.com/bromso/bro/commit/dfd595027015a8eed33cdf20fda5ba40aacf8f79)]:
+  - @repo/tools-figjam@0.1.0
+  - @repo/figma-adapter@0.2.0
+  - @repo/tools-rest@0.1.0
+  - @repo/figma-api-client@0.2.0
+  - @repo/protocol@0.1.1
+  - @repo/tools-console@0.1.1
+  - @repo/tools-design@0.1.1
+  - @repo/tools-extract@0.1.1
+  - @repo/tools-variables@0.1.1
+  - @repo/transport@0.1.1
+
 ## 1.0.0
 
 ### Major Changes
