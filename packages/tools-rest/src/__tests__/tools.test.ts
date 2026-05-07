@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { GetFileMetadata, GetFilePages, GetFileVersions, GetNodeById } from "../tools";
+import {
+  GetFileBranches,
+  GetFileComponentSets,
+  GetFileComponents,
+  GetFileMetadata,
+  GetFilePages,
+  GetFileStyles,
+  GetFileVersions,
+  GetNodeById,
+} from "../tools";
 
 describe("GetFileMetadata schema", () => {
   it("requires fileKey", () => {
@@ -63,5 +72,48 @@ describe("GetFileVersions schema", () => {
 
   it("rejects non-positive pageSize", () => {
     expect(GetFileVersions.input.safeParse({ fileKey: "ABC", pageSize: 0 }).success).toBe(false);
+  });
+});
+
+describe("GetFileStyles schema", () => {
+  it("input requires fileKey", () => {
+    expect(GetFileStyles.input.safeParse({ fileKey: "ABC" }).success).toBe(true);
+  });
+
+  it("output is bucketed by style_type", () => {
+    expect(
+      GetFileStyles.output.safeParse({ paint: [], text: [], effect: [], grid: [] }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetFileComponents schema", () => {
+  it("output is { components: [...] }", () => {
+    expect(
+      GetFileComponents.output.safeParse({
+        components: [{ key: "k", name: "n", description: "" }],
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetFileComponentSets schema", () => {
+  it("output is { componentSets: [...] }", () => {
+    expect(
+      GetFileComponentSets.output.safeParse({
+        componentSets: [{ key: "k", name: "n", description: "" }],
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetFileBranches schema", () => {
+  it("output is { mainFileKey, branches: [...] }", () => {
+    expect(
+      GetFileBranches.output.safeParse({
+        mainFileKey: "ABC",
+        branches: [],
+      }).success
+    ).toBe(true);
   });
 });

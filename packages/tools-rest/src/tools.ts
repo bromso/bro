@@ -71,3 +71,63 @@ export const GetFileVersions = defineTool({
     }),
   }),
 });
+
+const StyleSummary = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  nodeId: z.string().optional(),
+});
+
+export const GetFileStyles = defineTool({
+  name: "get_file_styles",
+  description: "REST. Return the file's local styles bucketed by type (paint/text/effect/grid).",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({
+    paint: z.array(StyleSummary),
+    text: z.array(StyleSummary),
+    effect: z.array(StyleSummary),
+    grid: z.array(StyleSummary),
+  }),
+});
+
+const ComponentSummary = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  nodeId: z.string().optional(),
+});
+
+export const GetFileComponents = defineTool({
+  name: "get_file_components",
+  description: "REST. Return the file's published components.",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({ components: z.array(ComponentSummary) }),
+});
+
+export const GetFileComponentSets = defineTool({
+  name: "get_file_component_sets",
+  description: "REST. Return the file's published component sets (variants).",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({ componentSets: z.array(ComponentSummary) }),
+});
+
+export const GetFileBranches = defineTool({
+  name: "get_file_branches",
+  description: "REST. Return the file's branches.",
+  streaming: false,
+  input: z.object({ fileKey: FileKey }).strict(),
+  output: z.object({
+    mainFileKey: z.string(),
+    branches: z.array(
+      z.object({
+        key: z.string(),
+        name: z.string(),
+        lastModified: z.string(),
+      })
+    ),
+  }),
+});

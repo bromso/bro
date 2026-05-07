@@ -1,7 +1,16 @@
 import type { FigmaApi } from "@repo/figma-api-client";
 import type { ServerHandler } from "@repo/protocol";
 import { mapRestError, requireApiKey } from "./guards";
-import type { GetFileMetadata, GetFilePages, GetFileVersions, GetNodeById } from "./tools";
+import type {
+  GetFileBranches,
+  GetFileComponentSets,
+  GetFileComponents,
+  GetFileMetadata,
+  GetFilePages,
+  GetFileStyles,
+  GetFileVersions,
+  GetNodeById,
+} from "./tools";
 
 export interface RestDeps {
   readonly figmaApi: FigmaApi | null;
@@ -83,6 +92,101 @@ export function createGetFileVersionsServerHandler(
           prevPage: r.pagination.prev_page,
           nextPage: r.pagination.next_page,
         },
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetFileStylesServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetFileStyles> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_file_styles");
+    try {
+      const r = await api.getFileStyles(args.fileKey);
+      const out = {
+        paint: [] as unknown[],
+        text: [] as unknown[],
+        effect: [] as unknown[],
+        grid: [] as unknown[],
+      };
+      for (const s of r.meta.styles) {
+        const summary = {
+          key: s.key,
+          name: s.name,
+          description: s.description,
+          nodeId: s.node_id,
+        };
+        if (s.style_type === "FILL") out.paint.push(summary);
+        else if (s.style_type === "TEXT") out.text.push(summary);
+        else if (s.style_type === "EFFECT") out.effect.push(summary);
+        else if (s.style_type === "GRID") out.grid.push(summary);
+      }
+      return out as never;
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetFileComponentsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetFileComponents> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_file_components");
+    try {
+      const r = await api.getFileComponents(args.fileKey);
+      return {
+        components: r.meta.components.map((c) => ({
+          key: c.key,
+          name: c.name,
+          description: c.description,
+          nodeId: c.node_id,
+        })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetFileComponentSetsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetFileComponentSets> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_file_component_sets");
+    try {
+      const r = await api.getFileComponentSets(args.fileKey);
+      return {
+        componentSets: r.meta.component_sets.map((c) => ({
+          key: c.key,
+          name: c.name,
+          description: c.description,
+          nodeId: c.node_id,
+        })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetFileBranchesServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetFileBranches> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_file_branches");
+    try {
+      const r = await api.getFileBranches(args.fileKey);
+      return {
+        mainFileKey: r.main_file_key,
+        branches: r.branches.map((b) => ({
+          key: b.key,
+          name: b.name,
+          lastModified: b.last_modified,
+        })),
       };
     } catch (err) {
       mapRestError(err);
