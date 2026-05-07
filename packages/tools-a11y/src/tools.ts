@@ -1,2 +1,39 @@
-// Phase 13.4-13.9 add 13 tool definitions here.
-export {};
+import { defineTool } from "@repo/protocol";
+import { z } from "zod";
+
+const NodeId = z.string().min(1);
+const HexColor = z.string().regex(/^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/);
+
+export const AuditContrast = defineTool({
+  name: "audit_contrast",
+  description:
+    "WCAG 2.x contrast audit. Computes the contrast ratio between the node's first SOLID text fill and the first SOLID fill on its ancestors (resolved background). Returns AA / AAA pass/fail flags. Returns null ratio when fill or background is unresolvable (e.g. mixed fills, gradient background, no parent with a solid fill).",
+  streaming: false,
+  input: z.object({ nodeId: NodeId }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    ratio: z.number().nullable(),
+    passesAA: z.boolean().nullable(),
+    passesAAA: z.boolean().nullable(),
+    isLargeText: z.boolean(),
+    foreground: HexColor.nullable(),
+    background: HexColor.nullable(),
+    reason: z.string().optional(),
+  }),
+});
+
+export const AuditTargetSize = defineTool({
+  name: "audit_target_size",
+  description:
+    "WCAG 2.2 target-size audit (Success Criterion 2.5.5). Reads node.absoluteBoundingBox and reports whether min(width, height) is ≥ 24 (passesMinimum) and ≥ 44 (passesEnhanced).",
+  streaming: false,
+  input: z.object({ nodeId: NodeId }).strict(),
+  output: z.object({
+    nodeId: z.string(),
+    width: z.number().nullable(),
+    height: z.number().nullable(),
+    passesMinimum: z.boolean().nullable(),
+    passesEnhanced: z.boolean().nullable(),
+    reason: z.string().optional(),
+  }),
+});
