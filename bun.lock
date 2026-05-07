@@ -167,6 +167,20 @@
         "vitest": "4.1.4",
       },
     },
+    "packages/tools-console": {
+      "name": "@repo/tools-console",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/figma-adapter": "workspace:*",
+        "@repo/protocol": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@vitest/coverage-v8": "4.1.4",
+        "typescript": "^6.0.0",
+        "vitest": "4.1.4",
+      },
+    },
     "packages/tools-extract": {
       "name": "@repo/tools-extract",
       "version": "0.0.0",
@@ -920,6 +934,8 @@
     "@repo/relay": ["@repo/relay@workspace:apps/relay"],
 
     "@repo/storybook": ["@repo/storybook@workspace:apps/storybook"],
+
+    "@repo/tools-console": ["@repo/tools-console@workspace:packages/tools-console"],
 
     "@repo/tools-extract": ["@repo/tools-extract@workspace:packages/tools-extract"],
 
