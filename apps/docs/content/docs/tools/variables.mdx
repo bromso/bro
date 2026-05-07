@@ -1,6 +1,39 @@
 ---
-title: variables
-description: variables pack overview — content lands in Task 7.
+title: variables pack
+description: Read and write Figma variables; bulk-import via streamed pagination.
 ---
 
-(Content lands in Task 7 — see implementation plan.)
+The `variables` pack handles design-token operations: read collections and individual variables, mutate values across modes, bulk-import from JSON, and stream large imports back as progress events.
+
+## When to use
+
+- Your design system stores tokens as Figma variables and you want them in code.
+- You're migrating tokens between files.
+- You need to set a variable value across multiple modes in one call.
+
+## Editor
+
+Universal.
+
+## Tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| [export_variables](/docs/tools-reference/variables/export_variables) | Cursor-paginated read of every variable + collection. |
+| [update_variables_batch](/docs/tools-reference/variables/update_variables_batch) | Set value-per-mode across N variables in one call. |
+| [import_variables](/docs/tools-reference/variables/import_variables) | Bulk-create variables and collections from a JSON spec; streams progress. |
+| [stream_status](/docs/tools-reference/variables/stream_status) | Inspect a streaming import's progress / cancel. |
+
+## Streaming behavior
+
+`import_variables` is a streaming tool — it emits `notifications/progress` envelopes as it processes batches. Tool clients that don't support progress notifications still get the final result; clients that do (Claude Code, Cursor) render a progress bar.
+
+## Quick example
+
+```text
+Import these design tokens into the Figma file's variables. Replace existing values where names match.
+```
+
+## Recipes using this pack
+
+- [Extract design tokens](/docs/recipes/extract-design-tokens)

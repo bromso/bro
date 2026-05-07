@@ -1,6 +1,38 @@
 ---
-title: extract
-description: extract pack overview — content lands in Task 7.
+title: extract pack
+description: Read selection, page, components, variables, and styles from the active Figma file.
 ---
 
-(Content lands in Task 7 — see implementation plan.)
+The `extract` pack surfaces the document state your AI client needs to reason about a design. Every tool is read-only and runs against the bridge plugin's view of the current file.
+
+## When to use
+
+- Your AI is generating code from a Figma component and needs the component's metadata.
+- A workflow needs the file's variables (design tokens) or styles to ground its output.
+- A diagnostic prompt asks "what's on this page?".
+
+## Editor
+
+Universal — works in Figma, FigJam, and Slides files (limited to the surface each editor exposes).
+
+## Tools
+
+| Tool | What it returns |
+| ---- | --------------- |
+| [extract_styles](/docs/tools-reference/extract/extract_styles) | All local paint/text/effect styles. |
+| [extract_components](/docs/tools-reference/extract/extract_components) | All local components. |
+| [extract_local_variables](/docs/tools-reference/extract/extract_local_variables) | All local variables on the file. |
+| [bridge_status](/docs/tools-reference/extract/bridge_status) | Daemon liveness + plugin pairing status. |
+
+## Quick example
+
+```text
+Using figma-mcp, list every paint style and emit a JSON snapshot.
+```
+
+The AI calls `extract_styles`, gets back a list of paint styles with id/name/description, and renders the requested JSON.
+
+## Recipes using this pack
+
+- [Extract design tokens](/docs/recipes/extract-design-tokens)
+- [Document components](/docs/recipes/document-components)

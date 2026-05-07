@@ -1,6 +1,35 @@
 ---
-title: console
-description: console pack overview — content lands in Task 7.
+title: console pack
+description: Capture and query the bridge plugin's console output. Useful for debugging during plugin development.
 ---
 
-(Content lands in Task 7 — see implementation plan.)
+The `console` pack exposes a 1000-entry ring buffer of every `console.{log,warn,error,info}` call inside the bridge plugin's sandbox. Tools query the buffer; the bridge plugin patches the global `console` at boot.
+
+## When to use
+
+- A plugin you're developing is throwing errors and you want the AI to surface them.
+- You want a digest of recent warnings without scrolling Figma's console.
+- You're writing code that depends on plugin runtime state and want a feedback loop.
+
+## Editor
+
+Universal — runs in any editor where the bridge plugin is paired.
+
+## Tools
+
+| Tool | What it returns |
+| ---- | --------------- |
+| [get_console_logs](/docs/tools-reference/console/get_console_logs) | Recent entries (any level), optional limit. |
+| [get_console_errors](/docs/tools-reference/console/get_console_errors) | Recent error-level entries only. |
+| [get_console_warnings](/docs/tools-reference/console/get_console_warnings) | Recent warn-level entries only. |
+| [query_console](/docs/tools-reference/console/query_console) | Regex filter over message text. |
+| [console_status](/docs/tools-reference/console/console_status) | Buffer counts (total, per-level, dropped). |
+| [clear_console](/docs/tools-reference/console/clear_console) | Empty the buffer. |
+
+## DoS guard
+
+`query_console` caps the regex pattern at 200 chars and truncates each message to the first 1000 chars before testing. Pathological backtracking patterns finish in ms-scale time even against large messages.
+
+## Recipes using this pack
+
+- [Capture plugin console errors](/docs/recipes/debug-plugin-console)

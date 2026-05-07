@@ -1,6 +1,29 @@
 ---
 title: Tool packs
-description: Overview of bro's tool packs — content lands in Task 7.
+description: figma-mcp ships ~85 tools across 8 packs. Browse by pack to see what each one covers.
 ---
 
-(Content lands in Task 7 — see implementation plan.)
+The figma-mcp registry groups tools into eight packs. Each pack targets a specific surface — extracting state, mutating the canvas, capturing logs, hitting the REST API. This page lists every pack with its scope; click into a pack page for the tool list and a short example.
+
+| Pack | Scope | Editor | Tools |
+| ---- | ----- | ------ | ----- |
+| [extract](/docs/tools/extract) | Read selection, page, components, variables, styles | Universal | 4 |
+| [variables](/docs/tools/variables) | Read/write Figma variables; streamed import | Universal | 5 |
+| [console](/docs/tools/console) | Capture and query the bridge plugin's console output | Universal (plugin sandbox) | 6 |
+| [design](/docs/tools/design) | Mutate the canvas — shapes, text, fills, components | Figma Design only | 12 |
+| [figjam](/docs/tools/figjam) | Sticky notes, sections, connectors, code blocks, tables | FigJam only | 10 |
+| [slides](/docs/tools/slides) | Slide creation, layout, transitions, presentation grid | Slides only | 15 |
+| [a11y](/docs/tools/a11y) | WCAG audits, color-blindness simulation, alt-text and ARIA | Universal | 13 |
+| [rest](/docs/tools/rest) | REST-API-backed reads — works without a paired plugin | Universal (cloud-mode) | 20 |
+
+## Editor-type discriminator
+
+Some packs only work in a specific Figma editor — figjam tools require `editorType === "figjam"`, slides tools require `"slides"`. Calling a gated tool from the wrong editor returns `E_FIGMA_EDITOR_TYPE_MISMATCH` from the plugin handler. The remaining packs (extract, variables, console, a11y, rest) are universal.
+
+## Cloud-mode-without-plugin
+
+The `rest` pack is special: its tools call the Figma REST API directly via `FIGMA_API_KEY` in the daemon's environment. They work even when no bridge plugin is paired, which is the entire point of the cloud-mode setup path. See [Cloud mode](/docs/get-started/cloud).
+
+## Tool reference
+
+Every tool also has a generated reference page with its full input/output schema — see [Tool reference](/docs/tools-reference) for the alphabetical index.
