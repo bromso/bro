@@ -1,5 +1,7 @@
 /// <reference types="@figma/plugin-typings" />
 import type {
+  A11yMetaKey,
+  Annotation,
   CodeBlockNode,
   Component,
   ConnectorNode,
@@ -9,10 +11,13 @@ import type {
   FigmaAdapter,
   FrameNode,
   LineNode,
+  NodeA11yMeta,
+  NodeBoundingBox,
   NodeSnapshot,
   PageSelection,
   PaintStyle,
   RectangleNode,
+  ResolvedFill,
   SectionNode,
   ShapeWithTextNode,
   ShapeWithTextShape,
@@ -882,6 +887,125 @@ export class RealFigmaAdapter implements FigmaAdapter {
     const grid = (figma as unknown as { getSlideGrid: () => SlideRT[][] }).getSlideGrid();
     return grid.map((row) => row.map((s) => s.id));
   }
+
+  // ---- Phase 13: a11y metadata, annotations, computed properties ----
+
+  async getNodeA11yMeta(args: { nodeId: string }): Promise<NodeA11yMeta> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const out: { altText?: string; ariaLabel?: string; landmarkRole?: string } = {};
+    for (const key of ["altText", "ariaLabel", "landmarkRole"] as const) {
+      const v = (node as unknown as { getPluginData: (k: string) => string }).getPluginData(
+        `a11y/${key}`
+      );
+      if (v !== "") out[key] = v;
+    }
+    return out;
+  }
+
+  async setNodeA11yMeta(args: {
+    nodeId: string;
+    key: A11yMetaKey;
+    value: string | null;
+  }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (args.key !== "altText" && args.key !== "ariaLabel" && args.key !== "landmarkRole") {
+      throw new Error(`unknown a11y key: ${args.key}`);
+    }
+    const stored = args.value ?? "";
+    (node as unknown as { setPluginData: (k: string, v: string) => void }).setPluginData(
+      `a11y/${args.key}`,
+      stored
+    );
+  }
+
+  async getNodeAnnotations(args: { nodeId: string }): Promise<readonly Annotation[]> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const list =
+      (
+        node as unknown as {
+          annotations?: readonly { label?: string; categoryId?: string }[];
+        }
+      ).annotations ?? [];
+    return list.map((a) => ({ label: a.label, categoryId: a.categoryId }));
+  }
+
+  async setNodeAnnotations(args: {
+    nodeId: string;
+    annotations: readonly Annotation[];
+  }): Promise<void> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    (node as unknown as { annotations: readonly Annotation[] }).annotations = args.annotations.map(
+      (a) => ({ label: a.label, categoryId: a.categoryId })
+    );
+  }
+
+  async getResolvedTextFill(args: { nodeId: string }): Promise<ResolvedFill | null> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const fills = (
+      node as unknown as {
+        fills?: readonly {
+          type: string;
+          color?: { r: number; g: number; b: number };
+          opacity?: number;
+        }[];
+      }
+    ).fills;
+    if (!fills || fills.length === 0) return null;
+    const solid = fills.find((p) => p.type === "SOLID");
+    if (!solid?.color) return null;
+    return { hex: rgbToHex(solid.color), opacity: solid.opacity ?? 1 };
+  }
+
+  async getResolvedBackground(args: { nodeId: string }): Promise<ResolvedFill | null> {
+    const start = await figma.getNodeByIdAsync(args.nodeId);
+    if (!start) throw new Error(`node not found: ${args.nodeId}`);
+    let cursor: unknown = start;
+    while (cursor) {
+      const parent = (cursor as { parent?: unknown }).parent as
+        | {
+            fills?: readonly {
+              type: string;
+              color?: { r: number; g: number; b: number };
+              opacity?: number;
+            }[];
+          }
+        | null
+        | undefined;
+      if (!parent) break;
+      const fills = parent.fills;
+      const solid = fills?.find((p) => p.type === "SOLID");
+      if (solid?.color) {
+        return { hex: rgbToHex(solid.color), opacity: solid.opacity ?? 1 };
+      }
+      cursor = parent;
+    }
+    return null;
+  }
+
+  async listNodeChildren(args: { nodeId: string }): Promise<readonly string[]> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const children = (node as { children?: ReadonlyArray<{ id: string }> }).children;
+    if (!children) return [];
+    return children.map((c) => c.id);
+  }
+
+  async getNodeBoundingBox(args: { nodeId: string }): Promise<NodeBoundingBox | null> {
+    const node = await figma.getNodeByIdAsync(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const bbox = (
+      node as unknown as {
+        absoluteBoundingBox?: { x: number; y: number; width: number; height: number } | null;
+      }
+    ).absoluteBoundingBox;
+    if (!bbox) return null;
+    return { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height };
+  }
 }
 
 /**
@@ -917,4 +1041,17 @@ function solidPaintsFrom(paints: readonly Paint[]): SolidPaint[] {
     }
   }
   return out;
+}
+
+/**
+ * Format a normalized RGB color (0..1 channels) as `#RRGGBB`. Used by
+ * Phase 13's contrast-related computed properties.
+ */
+function rgbToHex(color: { r: number; g: number; b: number }): string {
+  const toByte = (c: number): string =>
+    Math.max(0, Math.min(255, Math.round((c ?? 0) * 255)))
+      .toString(16)
+      .padStart(2, "0")
+      .toUpperCase();
+  return `#${toByte(color.r)}${toByte(color.g)}${toByte(color.b)}`;
 }

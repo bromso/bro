@@ -5,6 +5,8 @@
  * - REST API client (lands in Phase 8 with `@repo/tools-rest`).
  */
 export type {
+  A11yMetaKey,
+  Annotation,
   CodeBlockNode,
   Component,
   ConnectorNode,
@@ -14,10 +16,13 @@ export type {
   FigmaAdapter,
   FrameNode,
   LineNode,
+  NodeA11yMeta,
+  NodeBoundingBox,
   NodeSnapshot,
   PageSelection,
   PaintStyle,
   RectangleNode,
+  ResolvedFill,
   SectionNode,
   ShapeWithTextNode,
   ShapeWithTextShape,

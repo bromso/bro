@@ -285,6 +285,41 @@ export interface Component {
   readonly description?: string;
 }
 
+// ---- Phase 13 (a11y) ----
+
+/**
+ * A node-level annotation as exposed by the Figma plugin API.
+ * `label` is the displayed text; `categoryId` ties the annotation
+ * to a category from `figma.annotations.categories`.
+ *
+ * Plugin API note: per-annotation stable ids are not exposed.
+ * Our tools address annotations by array index in `node.annotations`.
+ */
+export interface Annotation {
+  readonly label?: string;
+  readonly categoryId?: string;
+}
+
+export type A11yMetaKey = "altText" | "ariaLabel" | "landmarkRole";
+
+export interface NodeA11yMeta {
+  readonly altText?: string;
+  readonly ariaLabel?: string;
+  readonly landmarkRole?: string;
+}
+
+export interface ResolvedFill {
+  readonly hex: string;
+  readonly opacity: number;
+}
+
+export interface NodeBoundingBox {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /**
  * The Phase 2 surface. Every plugin-side tool handler ultimately
  * depends on this interface — the `RealFigmaAdapter` (lands in
@@ -458,4 +493,54 @@ export interface FigmaAdapter {
   getSlidesView(): Promise<SlidesView>;
 
   getSlideGrid(): Promise<readonly (readonly string[])[]>;
+
+  // ---- Phase 13: Accessibility metadata + computed properties ----
+
+  /** Read all `a11y/*` plugin-data keys for a node. */
+  getNodeA11yMeta(args: { nodeId: string }): Promise<NodeA11yMeta>;
+
+  /**
+   * Write a single `a11y/<key>` plugin-data entry. Pass `value: null`
+   * to delete the key (writes the empty string under the hood — Figma's
+   * plugin-data API uses "" as the absent value).
+   */
+  setNodeA11yMeta(args: { nodeId: string; key: A11yMetaKey; value: string | null }): Promise<void>;
+
+  /** Read the current annotation array for a node. */
+  getNodeAnnotations(args: { nodeId: string }): Promise<readonly Annotation[]>;
+
+  /** Replace the annotation array for a node. */
+  setNodeAnnotations(args: { nodeId: string; annotations: readonly Annotation[] }): Promise<void>;
+
+  /**
+   * Return the first SOLID paint on the node as `{hex, opacity}`,
+   * or `null` if the node has no solid fill (or fills are mixed /
+   * not solid). For text contrast, callers want the text node's
+   * own fill — not its ancestors'. (Use `getResolvedBackground`
+   * for the ancestor walk.)
+   */
+  getResolvedTextFill(args: { nodeId: string }): Promise<ResolvedFill | null>;
+
+  /**
+   * Walk up the parent chain to the first ancestor with a SOLID
+   * paint, returning `{hex, opacity}`. Returns `null` if no
+   * ancestor has a solid fill. Skips nodes whose fills are
+   * gradients / images / mixed (those can't be auto-graded for
+   * contrast).
+   */
+  getResolvedBackground(args: { nodeId: string }): Promise<ResolvedFill | null>;
+
+  /**
+   * Return the node's `absoluteBoundingBox` in page-space CSS pixels.
+   * Returns `null` when the node has no positional dimensions
+   * (e.g. the document / page node).
+   */
+  getNodeBoundingBox(args: { nodeId: string }): Promise<NodeBoundingBox | null>;
+
+  /**
+   * Return the immediate child node ids for a node. Returns an empty
+   * array for leaf nodes (text, rect, etc.). Throws if the node id
+   * is unknown.
+   */
+  listNodeChildren(args: { nodeId: string }): Promise<readonly string[]>;
 }

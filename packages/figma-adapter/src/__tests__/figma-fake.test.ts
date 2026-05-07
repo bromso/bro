@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SolidPaint } from "../adapter";
+import type { Annotation, SolidPaint } from "../adapter";
 import { FigmaFake } from "../figma-fake";
 
 describe("FigmaFake.getLocalVariablesAsync", () => {
@@ -1204,5 +1204,230 @@ describe("FigmaFake.getSlideGrid", () => {
     (grid as string[][])[0].length = 0;
     const fresh = await fake.getSlideGrid();
     expect(fresh.flat()).toContain(a.id);
+  });
+});
+
+// ---- Phase 13: a11y metadata + annotations + computed properties ----
+
+describe("FigmaFake.getNodeA11yMeta + setNodeA11yMeta", () => {
+  it("returns an empty object when no a11y data is set", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    const meta = await fake.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta).toEqual({});
+  });
+
+  it("round-trips altText / ariaLabel / landmarkRole", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    await fake.setNodeA11yMeta({ nodeId: frame.id, key: "altText", value: "Hero image" });
+    await fake.setNodeA11yMeta({ nodeId: frame.id, key: "ariaLabel", value: "Submit form" });
+    await fake.setNodeA11yMeta({ nodeId: frame.id, key: "landmarkRole", value: "main" });
+    const meta = await fake.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta).toEqual({
+      altText: "Hero image",
+      ariaLabel: "Submit form",
+      landmarkRole: "main",
+    });
+  });
+
+  it("clears a key when value is null", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    await fake.setNodeA11yMeta({ nodeId: frame.id, key: "altText", value: "old" });
+    await fake.setNodeA11yMeta({ nodeId: frame.id, key: "altText", value: null });
+    const meta = await fake.getNodeA11yMeta({ nodeId: frame.id });
+    expect(meta.altText).toBeUndefined();
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.getNodeA11yMeta({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+    await expect(
+      fake.setNodeA11yMeta({ nodeId: "missing", key: "altText", value: "x" })
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects unknown key", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    await expect(
+      fake.setNodeA11yMeta({
+        nodeId: frame.id,
+        key: "bogus" as never,
+        value: "x",
+      })
+    ).rejects.toThrow(/key/i);
+  });
+});
+
+describe("FigmaFake.getNodeAnnotations + setNodeAnnotations", () => {
+  it("returns an empty array when no annotations are set", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    const list = await fake.getNodeAnnotations({ nodeId: frame.id });
+    expect(list).toEqual([]);
+  });
+
+  it("round-trips annotations via setNodeAnnotations", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    await fake.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "Hero" }, { label: "Variant", categoryId: "design-review" }],
+    });
+    const list = await fake.getNodeAnnotations({ nodeId: frame.id });
+    expect(list).toHaveLength(2);
+    expect(list[0]).toMatchObject({ label: "Hero" });
+    expect(list[1]).toMatchObject({ label: "Variant", categoryId: "design-review" });
+  });
+
+  it("returned array is a fresh copy (mutations don't leak)", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    await fake.setNodeAnnotations({
+      nodeId: frame.id,
+      annotations: [{ label: "Hero" }],
+    });
+    const list = (await fake.getNodeAnnotations({ nodeId: frame.id })) as Annotation[];
+    list.push({ label: "Mutated" });
+    const fresh = await fake.getNodeAnnotations({ nodeId: frame.id });
+    expect(fresh).toHaveLength(1);
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.getNodeAnnotations({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+    await expect(
+      fake.setNodeAnnotations({
+        nodeId: "missing",
+        annotations: [{ label: "x" }],
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("FigmaFake.getResolvedTextFill", () => {
+  it("returns null for a node without a fills array", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 100, height: 40 });
+    expect(await fake.getResolvedTextFill({ nodeId: frame.id })).toBeNull();
+  });
+
+  it("returns the first SOLID paint as {hex, opacity}", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const text = await fake.createText({ content: "hello" });
+    await fake.setNodeFill({
+      nodeId: text.id,
+      paint: { type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 1 },
+    });
+    const fill = await fake.getResolvedTextFill({ nodeId: text.id });
+    expect(fill).toEqual({ hex: "#000000", opacity: 1 });
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.getResolvedTextFill({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("FigmaFake.getResolvedBackground", () => {
+  it("walks up parents to find the first solid fill", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const outer = await fake.createFrame({ width: 200, height: 100 });
+    await fake.setNodeFill({
+      nodeId: outer.id,
+      paint: { type: "SOLID", color: { r: 1, g: 1, b: 1 }, opacity: 1 },
+    });
+    const child = await fake.createTextInFrame({
+      parentId: outer.id,
+      content: "hi",
+    });
+    const bg = await fake.getResolvedBackground({ nodeId: child.id });
+    expect(bg).toEqual({ hex: "#FFFFFF", opacity: 1 });
+  });
+
+  it("returns null when no ancestor has a solid fill", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const text = await fake.createText({ content: "hi" });
+    expect(await fake.getResolvedBackground({ nodeId: text.id })).toBeNull();
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.getResolvedBackground({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+  });
+
+  it("returns null when an ancestor has only non-solid fills", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const outer = await fake.createFrame({ width: 200, height: 100 });
+    // No fill set on outer; child has no parent paint to inherit from.
+    const child = await fake.createTextInFrame({
+      parentId: outer.id,
+      content: "hi",
+    });
+    expect(await fake.getResolvedBackground({ nodeId: child.id })).toBeNull();
+  });
+});
+
+describe("FigmaFake.getNodeBoundingBox", () => {
+  it("returns the node's bounding box", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 200, height: 80, x: 10, y: 20 });
+    const box = await fake.getNodeBoundingBox({ nodeId: frame.id });
+    expect(box).toEqual({ x: 10, y: 20, width: 200, height: 80 });
+  });
+
+  it("returns null when the node has no positional dimensions", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    fake.__seedBboxlessNode("bbox1");
+    const box = await fake.getNodeBoundingBox({ nodeId: "bbox1" });
+    expect(box).toBeNull();
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.getNodeBoundingBox({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("FigmaFake.listNodeChildren", () => {
+  it("returns the immediate children of a frame", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const frame = await fake.createFrame({ width: 200, height: 100 });
+    const text = await fake.createTextInFrame({
+      parentId: frame.id,
+      content: "hi",
+    });
+    const children = await fake.listNodeChildren({ nodeId: frame.id });
+    expect(children).toEqual([text.id]);
+  });
+
+  it("returns an empty array for a leaf node", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const text = await fake.createText({ content: "hi" });
+    expect(await fake.listNodeChildren({ nodeId: text.id })).toEqual([]);
+  });
+
+  it("rejects unknown nodeId", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    await expect(fake.listNodeChildren({ nodeId: "missing" })).rejects.toThrow(/not found/i);
+  });
+
+  it("returns nested children created via createFrameInFrame", async () => {
+    const fake = new FigmaFake({ editorType: "figma" });
+    const root = await fake.createFrame({ width: 200, height: 200 });
+    const child1 = await fake.createFrameInFrame({
+      parentId: root.id,
+      width: 50,
+      height: 50,
+    });
+    const child2 = await fake.createFrameInFrame({
+      parentId: root.id,
+      width: 60,
+      height: 60,
+    });
+    const children = await fake.listNodeChildren({ nodeId: root.id });
+    expect(children).toEqual([child1.id, child2.id]);
   });
 });
