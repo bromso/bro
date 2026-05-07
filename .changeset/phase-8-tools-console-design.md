@@ -2,7 +2,7 @@
 "@repo/tools-console": minor
 "@repo/tools-design": minor
 "@repo/figma-adapter": minor
-"@repo/mcp-server": minor
+"@bromso/figma-mcp": minor
 "@repo/bridge-plugin": minor
 ---
 

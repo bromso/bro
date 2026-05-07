@@ -1,5 +1,5 @@
 {
-  "name": "@repo/mcp-server",
+  "name": "@bromso/figma-mcp",
   "version": "0.0.0",
   "private": true,
   "description": "Bridge between AI MCP clients and Figma. Stdio shim + daemon + bundled bridge plugin.",
@@ -27,12 +27,23 @@
     "node": ">=20.10.0"
   },
   "type": "module",
+  "main": "./dist/main.js",
+  "bin": {
+    "figma-mcp": "./dist/main.js"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "types": "tsc --noEmit",
     "lint": "biome check .",
-    "start": "bun src/main.ts"
+    "start": "bun src/main.ts",
+    "build": "bun build src/main.ts --target=node --outdir=dist --external:* && bun run build:plugin",
+    "build:plugin": "cd ../bridge-plugin && bun run build && cp -r dist/. ../mcp-server/dist/plugin/"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
