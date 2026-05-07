@@ -1,6 +1,6 @@
 {
   "name": "@bromso/figma-mcp",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Bridge between AI MCP clients and Figma. Stdio shim + daemon + bundled bridge plugin.",
   "homepage": "https://bromso.github.io/bro",
