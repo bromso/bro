@@ -1789,3 +1789,300 @@ describe("RealFigmaAdapter.getSlideGrid", () => {
     expect(r).toEqual([["sld1", "sld2"], ["sld3"]]);
   });
 });
+
+// ---- Phase 13: a11y metadata, annotations, computed properties ----
+
+describe("RealFigmaAdapter.setNodeA11yMeta", () => {
+  it("calls setPluginData with the a11y/<key> namespace", async () => {
+    const setPluginData = vi.fn();
+    const node = { id: "n1", getPluginData: vi.fn().mockReturnValue(""), setPluginData };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    await new RealFigmaAdapter().setNodeA11yMeta({
+      nodeId: "n1",
+      key: "altText",
+      value: "Hero image",
+    });
+    expect(setPluginData).toHaveBeenCalledWith("a11y/altText", "Hero image");
+  });
+
+  it("clears the entry when value is null", async () => {
+    const setPluginData = vi.fn();
+    const node = { id: "n1", getPluginData: vi.fn(), setPluginData };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    await new RealFigmaAdapter().setNodeA11yMeta({
+      nodeId: "n1",
+      key: "altText",
+      value: null,
+    });
+    expect(setPluginData).toHaveBeenCalledWith("a11y/altText", "");
+  });
+
+  it("supports the ariaLabel and landmarkRole keys", async () => {
+    const setPluginData = vi.fn();
+    const node = { id: "n1", getPluginData: vi.fn(), setPluginData };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    await new RealFigmaAdapter().setNodeA11yMeta({
+      nodeId: "n1",
+      key: "ariaLabel",
+      value: "Submit",
+    });
+    expect(setPluginData).toHaveBeenCalledWith("a11y/ariaLabel", "Submit");
+    await new RealFigmaAdapter().setNodeA11yMeta({
+      nodeId: "n1",
+      key: "landmarkRole",
+      value: "main",
+    });
+    expect(setPluginData).toHaveBeenCalledWith("a11y/landmarkRole", "main");
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setNodeA11yMeta({
+        nodeId: "missing",
+        key: "altText",
+        value: "x",
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects unknown key", async () => {
+    const node = { id: "n1", getPluginData: vi.fn(), setPluginData: vi.fn() };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setNodeA11yMeta({
+        nodeId: "n1",
+        key: "bogus" as never,
+        value: "x",
+      })
+    ).rejects.toThrow(/key/i);
+  });
+});
+
+describe("RealFigmaAdapter.getNodeA11yMeta", () => {
+  it("reads each a11y/<key> via getPluginData and skips empty strings", async () => {
+    const getPluginData = vi.fn((k: string) => {
+      if (k === "a11y/altText") return "Hero";
+      if (k === "a11y/ariaLabel") return "";
+      if (k === "a11y/landmarkRole") return "main";
+      return "";
+    });
+    vi.stubGlobal(
+      "figma",
+      stubFigma({
+        getNodeByIdAsync: vi.fn().mockResolvedValue({ id: "n1", getPluginData }),
+      } as never)
+    );
+    const meta = await new RealFigmaAdapter().getNodeA11yMeta({ nodeId: "n1" });
+    expect(meta).toEqual({ altText: "Hero", landmarkRole: "main" });
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().getNodeA11yMeta({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.getNodeAnnotations", () => {
+  it("returns the mapped {label, categoryId} array", async () => {
+    const node = {
+      id: "n1",
+      annotations: [
+        { label: "Hero", categoryId: "design-review", labelMarkdown: "_extra_" },
+        { label: "Variant" },
+      ],
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    const list = await new RealFigmaAdapter().getNodeAnnotations({ nodeId: "n1" });
+    expect(list).toEqual([
+      { label: "Hero", categoryId: "design-review" },
+      { label: "Variant", categoryId: undefined },
+    ]);
+  });
+
+  it("returns an empty array when annotations are absent", async () => {
+    const node = { id: "n1" };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().getNodeAnnotations({ nodeId: "n1" })).toEqual([]);
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().getNodeAnnotations({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.setNodeAnnotations", () => {
+  it("assigns node.annotations as a fresh mapped array", async () => {
+    const node: { id: string; annotations?: readonly { label?: string; categoryId?: string }[] } = {
+      id: "n1",
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    await new RealFigmaAdapter().setNodeAnnotations({
+      nodeId: "n1",
+      annotations: [{ label: "Hero", categoryId: "design-review" }],
+    });
+    expect(node.annotations).toEqual([{ label: "Hero", categoryId: "design-review" }]);
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().setNodeAnnotations({
+        nodeId: "missing",
+        annotations: [{ label: "x" }],
+      })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.getResolvedTextFill", () => {
+  it("returns the first SOLID paint as {hex, opacity}", async () => {
+    const node = {
+      fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 1 }],
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    const fill = await new RealFigmaAdapter().getResolvedTextFill({ nodeId: "n1" });
+    expect(fill).toEqual({ hex: "#000000", opacity: 1 });
+  });
+
+  it("returns null when fills are empty", async () => {
+    const node = { fills: [] };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().getResolvedTextFill({ nodeId: "n1" })).toBeNull();
+  });
+
+  it("returns null when the only paint is non-solid", async () => {
+    const node = { fills: [{ type: "GRADIENT_LINEAR" }] };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().getResolvedTextFill({ nodeId: "n1" })).toBeNull();
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().getResolvedTextFill({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("RealFigmaAdapter.getResolvedBackground", () => {
+  it("walks up the parent chain to the first solid fill", async () => {
+    const grandparent = {
+      fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 }, opacity: 1 }],
+    };
+    const parent = { parent: grandparent, fills: [] };
+    const node = { parent, fills: [] };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    const bg = await new RealFigmaAdapter().getResolvedBackground({ nodeId: "n1" });
+    expect(bg).toEqual({ hex: "#FFFFFF", opacity: 1 });
+  });
+
+  it("returns null when no ancestor has a solid fill", async () => {
+    const node = { parent: null };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().getResolvedBackground({ nodeId: "n1" })).toBeNull();
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(
+      new RealFigmaAdapter().getResolvedBackground({ nodeId: "missing" })
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe("RealFigmaAdapter.getNodeBoundingBox", () => {
+  it("reads node.absoluteBoundingBox", async () => {
+    const node = {
+      absoluteBoundingBox: { x: 10, y: 20, width: 200, height: 80 },
+    };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().getNodeBoundingBox({ nodeId: "n1" })).toEqual({
+      x: 10,
+      y: 20,
+      width: 200,
+      height: 80,
+    });
+  });
+
+  it("returns null when absoluteBoundingBox is null", async () => {
+    const node = { absoluteBoundingBox: null };
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(node) } as never)
+    );
+    expect(await new RealFigmaAdapter().getNodeBoundingBox({ nodeId: "n1" })).toBeNull();
+  });
+
+  it("rejects unknown nodeId", async () => {
+    vi.stubGlobal(
+      "figma",
+      stubFigma({ getNodeByIdAsync: vi.fn().mockResolvedValue(null) } as never)
+    );
+    await expect(new RealFigmaAdapter().getNodeBoundingBox({ nodeId: "missing" })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});

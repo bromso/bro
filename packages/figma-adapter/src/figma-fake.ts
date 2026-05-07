@@ -1,4 +1,6 @@
 import type {
+  A11yMetaKey,
+  Annotation,
   CodeBlockNode,
   Component,
   ConnectorNode,
@@ -8,10 +10,13 @@ import type {
   FigmaAdapter,
   FrameNode,
   LineNode,
+  NodeA11yMeta,
+  NodeBoundingBox,
   NodeSnapshot,
   PageSelection,
   PaintStyle,
   RectangleNode,
+  ResolvedFill,
   SectionNode,
   ShapeWithTextNode,
   ShapeWithTextShape,
@@ -184,6 +189,19 @@ type AnyMutableNode =
   | MutableSlideNode
   | MutableSlideRowNode;
 
+/**
+ * Format a normalized RGB color (0..1 channels) as `#RRGGBB`. Mirrors
+ * Phase 8's variable-mode hex serializer.
+ */
+function solidColorToHex(color: { r: number; g: number; b: number }): string {
+  const toByte = (c: number): string =>
+    Math.max(0, Math.min(255, Math.round((c ?? 0) * 255)))
+      .toString(16)
+      .padStart(2, "0")
+      .toUpperCase();
+  return `#${toByte(color.r)}${toByte(color.g)}${toByte(color.b)}`;
+}
+
 const DEFAULT_STICKY_SIZE = 200;
 const DEFAULT_SLIDE_WIDTH = 1920;
 const DEFAULT_SLIDE_HEIGHT = 1080;
@@ -235,6 +253,11 @@ export class FigmaFake implements FigmaAdapter {
   private readonly slideRowIds: string[] = [];
   private focusedSlideId: string | null = null;
   private slidesView: SlidesView = "grid";
+  // Phase 13: a11y metadata, annotations, parent-tracking, and bbox-less seeds.
+  private readonly a11yMeta = new Map<string, Map<A11yMetaKey, string>>();
+  private readonly nodeAnnotations = new Map<string, Annotation[]>();
+  private readonly parentByChild = new Map<string, string>();
+  private readonly bboxlessNodes = new Set<string>();
 
   constructor(options: FigmaFakeOptions = {}) {
     this._editorType = options.editorType ?? "figma";
@@ -978,6 +1001,140 @@ export class FigmaFake implements FigmaAdapter {
       width: node.width,
       height: node.height,
     };
+  }
+
+  // ---- Phase 13: a11y metadata, annotations, computed properties ----
+
+  async getNodeA11yMeta(args: { nodeId: string }): Promise<NodeA11yMeta> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const map = this.a11yMeta.get(args.nodeId);
+    if (!map) return {};
+    const out: { altText?: string; ariaLabel?: string; landmarkRole?: string } = {};
+    const altText = map.get("altText");
+    if (altText) out.altText = altText;
+    const ariaLabel = map.get("ariaLabel");
+    if (ariaLabel) out.ariaLabel = ariaLabel;
+    const landmarkRole = map.get("landmarkRole");
+    if (landmarkRole) out.landmarkRole = landmarkRole;
+    return out;
+  }
+
+  async setNodeA11yMeta(args: {
+    nodeId: string;
+    key: A11yMetaKey;
+    value: string | null;
+  }): Promise<void> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (args.key !== "altText" && args.key !== "ariaLabel" && args.key !== "landmarkRole") {
+      throw new Error(`unknown a11y key: ${args.key}`);
+    }
+    let map = this.a11yMeta.get(args.nodeId);
+    if (!map) {
+      map = new Map();
+      this.a11yMeta.set(args.nodeId, map);
+    }
+    if (args.value === null) {
+      map.delete(args.key);
+    } else {
+      map.set(args.key, args.value);
+    }
+  }
+
+  async getNodeAnnotations(args: { nodeId: string }): Promise<readonly Annotation[]> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const list = this.nodeAnnotations.get(args.nodeId) ?? [];
+    return list.map((a) => ({ ...a }));
+  }
+
+  async setNodeAnnotations(args: {
+    nodeId: string;
+    annotations: readonly Annotation[];
+  }): Promise<void> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    this.nodeAnnotations.set(
+      args.nodeId,
+      args.annotations.map((a) => ({ ...a }))
+    );
+  }
+
+  async getResolvedTextFill(args: { nodeId: string }): Promise<ResolvedFill | null> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    const fills = (node as { fills?: readonly SolidPaint[] }).fills;
+    if (!fills || fills.length === 0) return null;
+    const solid = fills.find((p) => p.type === "SOLID");
+    if (!solid) return null;
+    return {
+      hex: solidColorToHex(solid.color),
+      opacity: solid.opacity ?? 1,
+    };
+  }
+
+  async getResolvedBackground(args: { nodeId: string }): Promise<ResolvedFill | null> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    let cursorId: string | undefined = this.parentByChild.get(args.nodeId);
+    while (cursorId) {
+      const parent = this.allNodes.get(cursorId);
+      if (!parent) break;
+      const fills = (parent as { fills?: readonly SolidPaint[] }).fills;
+      const solid = fills?.find((p) => p.type === "SOLID");
+      if (solid) {
+        return {
+          hex: solidColorToHex(solid.color),
+          opacity: solid.opacity ?? 1,
+        };
+      }
+      cursorId = this.parentByChild.get(cursorId);
+    }
+    return null;
+  }
+
+  async getNodeBoundingBox(args: { nodeId: string }): Promise<NodeBoundingBox | null> {
+    const node = this.allNodes.get(args.nodeId);
+    if (!node) throw new Error(`node not found: ${args.nodeId}`);
+    if (this.bboxlessNodes.has(args.nodeId)) return null;
+    const w = (node as { width?: number }).width;
+    const h = (node as { height?: number }).height;
+    const x = (node as { x?: number }).x ?? 0;
+    const y = (node as { y?: number }).y ?? 0;
+    if (typeof w !== "number" || typeof h !== "number") return null;
+    return { x, y, width: w, height: h };
+  }
+
+  /**
+   * Test-only convenience: create a TEXT node and parent it under
+   * `parentId`. The created child's `parentId` link enables
+   * `getResolvedBackground` ancestor walks.
+   */
+  async createTextInFrame(args: {
+    parentId: string;
+    content: string;
+    fontSize?: number;
+    x?: number;
+    y?: number;
+  }): Promise<TextNode> {
+    if (!this.allNodes.has(args.parentId)) {
+      throw new Error(`parent not found: ${args.parentId}`);
+    }
+    const child = await this.createText({
+      content: args.content,
+      fontSize: args.fontSize,
+      x: args.x,
+      y: args.y,
+    });
+    this.parentByChild.set(child.id, args.parentId);
+    return child;
+  }
+
+  /** Test-only seeder for nodes without a positional dimension. */
+  __seedBboxlessNode(id: string): void {
+    this.allNodes.set(id, { id, type: "PAGE" } as never);
+    this.bboxlessNodes.add(id);
   }
 
   // ---- Test seeding API ----
