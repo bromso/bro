@@ -1,6 +1,64 @@
 ---
-title: Cloud mode (relay-based)
-description: Get started with cloud mode — content lands in Task 13.
+title: Cloud mode
+description: Pair figma-mcp with the relay or run REST-only with a Figma personal access token. Works without local Figma Desktop.
 ---
 
-(Content lands in Task 13 — see implementation plan.)
+Cloud mode is for setups where the AI client and Figma Desktop aren't on the same machine. Two flavors:
+
+- **Relay-based pairing** — the bridge plugin connects to a Cloudflare Worker relay; the AI client speaks Streamable HTTP to the relay. Useful for sandboxed dev containers and corp laptops where local IPC is locked down.
+- **REST-only** — set `FIGMA_API_KEY`, run the daemon. The 20 tools in the [rest pack](/docs/tools/rest) work; the rest of the packs are gated behind a paired bridge plugin.
+
+You can use either or both — they're independent.
+
+## REST-only setup
+
+This is the simplest cloud path. No relay, no plugin, just the daemon + an API token.
+
+### 1. Generate a Figma personal access token
+
+Go to [figma.com/settings](https://www.figma.com/settings) → "Personal access tokens" → "Create new token". Give it the scopes your tools need (most REST tools just need `file_content:read`).
+
+### 2. Export the token
+
+```bash
+export FIGMA_API_KEY=figd_…
+```
+
+Add the line to your shell profile so the env var sticks across sessions.
+
+### 3. Verify
+
+```bash
+figma-mcp doctor
+```
+
+The `figma-api-key` check should report `ok`. You're done — the [rest pack's 20 tools](/docs/tools/rest) are now callable from your AI client.
+
+## Relay-based setup (full pairing)
+
+The relay is for when you also want bridge-plugin-based tools (everything except the REST pack) to work without local IPC. This setup involves a 6-digit pairing code, similar to Cast/AirPlay.
+
+```bash
+figma-mcp setup --cloud
+```
+
+The CLI:
+
+1. POSTs to the relay's `/pair` endpoint, gets a `{code, sessionId, expiresAt}` response.
+2. Prints a banner with the 6-digit code and a 5-minute expiry timer.
+3. Writes the AI client config with a Streamable HTTP entry pointing at `https://relay/mcp/{sessionId}`.
+
+You then enter the code in the bridge plugin's "Pair via cloud" prompt; the plugin opens a WebSocket to the relay; the AI's Streamable HTTP request arrives at the relay, gets forwarded to the plugin, and the response streams back as SSE.
+
+### Variations
+
+- `--relay-url <url>` overrides the relay base URL (useful for self-hosted relays).
+- `--client <id>` writes only the named client's config (`claude-code`, `cursor`, etc.).
+
+## Troubleshooting
+
+- `E_FIGMA_API_KEY_MISSING` from a REST tool — the env var isn't visible to the daemon. Restart the daemon after exporting it.
+- `E_RELAY_PAIR_FAILED` from `setup --cloud` — the relay returned a non-2xx. Check the relay's status, or override the URL.
+- "Pairing code expired" in the bridge plugin — codes have a 5-minute TTL. Rerun `setup --cloud`.
+
+See also: [error-codes reference](/docs/reference/error-codes).

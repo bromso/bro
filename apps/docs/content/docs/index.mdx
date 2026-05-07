@@ -1,13 +1,9 @@
 ---
 title: figma-mcp
-description: MCP server that bridges AI clients to Figma. One command to install.
+description: MCP server that lets your AI design in Figma.
 ---
 
-## What is figma-mcp?
-
-`figma-mcp` is a Model Context Protocol (MCP) server that pairs your AI client to Figma. It runs as an `npx`-installable binary that any MCP-aware client (Claude Code, Claude Desktop, Cursor, Windsurf, VS Code Copilot) can launch on demand. The pairing happens through a small bridge plugin that you drag-import into Figma Desktop once — after that, the AI can read your selection, query variables, and mutate the canvas.
-
-The server ships with roughly 25 tools today, grouped into packs for extracting node data, reading and writing variables, capturing the bridge plugin's console output, and mutating the canvas. The catalog grows over time; your AI client discovers tools via the standard `tools/list` handshake, so there's nothing to memorize.
+`figma-mcp` is a Model Context Protocol server that bridges any MCP-aware AI client — Claude Code, Claude Desktop, Cursor, Windsurf, VS Code Copilot — to a running Figma instance. Through a bundled Figma plugin, it exposes ~85 tools across 8 packs: extracting state, mutating the canvas, capturing logs, hitting the REST API.
 
 ## Install
 
@@ -15,7 +11,7 @@ The server ships with roughly 25 tools today, grouped into packs for extracting 
 npx @bromso/figma-mcp setup
 ```
 
-`setup` auto-detects the AI clients installed on your machine, prints a table of the config files it will write, and writes them atomically. Re-running is idempotent — sibling MCP entries are preserved. See the [Quickstart](/docs/getting-started) for the full first-run flow.
+`setup` auto-detects installed AI clients, writes their MCP config entries, and prints a verification command. See [Quickstart](/docs/get-started) for the full walkthrough.
 
 ## Verify
 
@@ -23,11 +19,22 @@ npx @bromso/figma-mcp setup
 figma-mcp doctor
 ```
 
-`doctor` reports daemon liveness, plugin pairing, AI-client config drift, recent daemon errors, and IPC socket conflicts. A clean run prints all five checks as `ok`.
+Reports daemon liveness, plugin pairing, AI-client config drift, recent errors, socket conflicts, and FIGMA_API_KEY presence (six parallel checks).
+
+## What's in the box
+
+- 8 tool packs, ~85 tools total — see [Tools](/docs/tools).
+- A bundled bridge plugin you drag-import once.
+- An optional cloud relay for environments without local IPC — see [Cloud mode](/docs/get-started/cloud).
+- A diagnostic CLI (`figma-mcp doctor`) and a per-client setup writer.
 
 ## Quick links
 
-- [Quickstart](/docs/getting-started) — full first-run flow.
-- [Per-client install](/docs/clients) — config paths, verification commands.
-- [Architecture](/docs/architecture) — how it works.
-- [Troubleshooting](/docs/troubleshooting) — what doctor catches and how to fix it.
+- [Quickstart](/docs/get-started) — full first-run flow, ~3 minutes.
+- [Per-client install](/docs/clients) — config paths and verification per AI client.
+- [Tools](/docs/tools) — browse the 8 packs.
+- [Tool reference](/docs/tools-reference) — every tool's input / output schema.
+- [Recipes](/docs/recipes) — copy-paste prompts for common workflows.
+- [Architecture](/docs/reference/architecture) — how it works.
+- [Troubleshooting](/docs/reference/troubleshooting) — what doctor catches and how to fix.
+- [Error codes](/docs/reference/error-codes) — alphabetical E_* reference.
