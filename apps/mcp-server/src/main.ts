@@ -232,6 +232,7 @@ import { type Fixer, formatDoctorJson, formatDoctorText, runDoctor } from "./cli
 import { createAiClientConfigsFixer } from "./cli/fixers/ai-client-configs";
 import { createStaleLockfileFixer } from "./cli/fixers/stale-lockfile";
 import { runOAuthFlow } from "./cli/oauth-flow";
+import { createOAuthProvider } from "./cli/oauth-provider";
 import { runOpenFigma } from "./cli/open-figma";
 import { resolveManifestPath } from "./cli/print-path";
 import { formatSetupTable, runSetup } from "./cli/setup";
@@ -456,10 +457,26 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
   const ipc = pickIpcTransport({ platform });
   const lockfile = new LockfileManager({ path: LOCK_PATH, isPidAlive: isPidAliveDefault });
 
-  // Phase 11: build the typed REST client once. `null` when FIGMA_API_KEY is
-  // unset — REST handlers surface E_FIGMA_API_KEY_MISSING via requireApiKey.
+  // Phase 11: build the typed REST client once. `null` when neither auth mode
+  // is configured — REST handlers surface E_FIGMA_API_KEY_MISSING via
+  // requireApiKey.
+  // Phase 22: if `~/.figma-mcp/oauth.json` exists, prefer OAuth via the
+  // dynamic `getOauthToken` provider (lazy refresh on expiry, 60s file cache).
+  // Otherwise fall back to FIGMA_API_KEY (Phase 11). When both are set,
+  // OAuth wins by construction — `getOauthToken` is checked first inside
+  // FigmaApiClient.
   const figmaApiKey = process.env.FIGMA_API_KEY;
-  const figmaApi = figmaApiKey ? new FigmaApiClient({ apiKey: figmaApiKey }) : null;
+  const oauthTokenPath = join(DEFAULT_DIR, "oauth.json");
+  const oauthFileExists = existsSync(oauthTokenPath);
+  let figmaApi: FigmaApiClient | null = null;
+  if (oauthFileExists) {
+    figmaApi = new FigmaApiClient({
+      apiKey: figmaApiKey,
+      getOauthToken: createOAuthProvider({ tokenPath: oauthTokenPath }),
+    });
+  } else if (figmaApiKey) {
+    figmaApi = new FigmaApiClient({ apiKey: figmaApiKey });
+  }
 
   const startup = await resolveStartup({
     argv: process.argv,
