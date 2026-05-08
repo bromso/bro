@@ -6,6 +6,8 @@ export { FigmaApiClient } from "./client";
 export type { FigmaApiErrorCode } from "./errors";
 export { FigmaApiError, mapStatusToCode } from "./errors";
 export { FigmaApiFake } from "./fake";
+export type { OAuthTokenSet } from "./oauth";
+export { isExpired, loadOAuthTokens, saveOAuthTokens } from "./oauth";
 export type * from "./types";
 
 /**

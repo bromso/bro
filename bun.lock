@@ -90,7 +90,7 @@
     },
     "apps/mcp-server": {
       "name": "@bromso/figma-mcp",
-      "version": "1.2.0",
+      "version": "1.5.0",
       "bin": {
         "figma-mcp": "./dist/main.js",
       },
@@ -175,7 +175,7 @@
     },
     "packages/figma-adapter": {
       "name": "@repo/figma-adapter",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "devDependencies": {
         "@figma/plugin-typings": "^1.111.0",
         "@vitest/coverage-v8": "4.1.4",
@@ -185,8 +185,9 @@
     },
     "packages/figma-api-client": {
       "name": "@repo/figma-api-client",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "devDependencies": {
+        "@types/node": "^25.0.0",
         "@vitest/coverage-v8": "4.1.4",
         "typescript": "^6.0.0",
         "vitest": "4.1.4",
@@ -194,7 +195,7 @@
     },
     "packages/protocol": {
       "name": "@repo/protocol",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "zod": "^3.23.8",
@@ -209,7 +210,7 @@
     },
     "packages/tools-a11y": {
       "name": "@repo/tools-a11y",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -223,7 +224,7 @@
     },
     "packages/tools-console": {
       "name": "@repo/tools-console",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -237,7 +238,7 @@
     },
     "packages/tools-design": {
       "name": "@repo/tools-design",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -251,7 +252,7 @@
     },
     "packages/tools-extract": {
       "name": "@repo/tools-extract",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -265,7 +266,7 @@
     },
     "packages/tools-figjam": {
       "name": "@repo/tools-figjam",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -279,7 +280,7 @@
     },
     "packages/tools-rest": {
       "name": "@repo/tools-rest",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "@repo/figma-api-client": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -293,7 +294,7 @@
     },
     "packages/tools-slides": {
       "name": "@repo/tools-slides",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -307,7 +308,7 @@
     },
     "packages/tools-variables": {
       "name": "@repo/tools-variables",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@repo/figma-adapter": "workspace:*",
         "@repo/protocol": "workspace:*",
@@ -322,7 +323,7 @@
     },
     "packages/transport": {
       "name": "@repo/transport",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "dependencies": {
         "@repo/protocol": "workspace:*",
         "ws": "^8.18.0",
