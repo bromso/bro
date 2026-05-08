@@ -1,0 +1,47 @@
+---
+title: Audit a Figma file via cloud mode
+description: Read-only audit of a remote Figma file with no Figma Desktop and no paired plugin.
+---
+
+## The prompt
+
+```text
+Using figma-mcp, audit the Figma file at https://www.figma.com/file/ABC123XYZ via the REST API. Return a summary of: page count, top-level frame count, total component count, and any styles whose name doesn't match our convention "[component]/[token]".
+```
+
+## What happens
+
+The AI extracts the file key from the URL (`ABC123XYZ`), then runs:
+
+1. `get_file_metadata` — name, lastModified, role.
+2. `get_file_pages` — page list.
+3. `get_file_components` — published components.
+4. `get_file_styles` — bucketed paint/text/effect.
+
+All four are REST calls — no bridge plugin involved. Total round-trip: 4-5 seconds.
+
+## Prerequisites
+
+- `FIGMA_API_KEY` in the daemon's environment. See [Cloud mode](/docs/get-started/cloud).
+- The token's user has read access to the file.
+- The figma-mcp daemon is running. Check with `figma-mcp doctor`.
+
+## Tools used
+
+- [get_file_metadata](/docs/tools-reference/rest/get_file_metadata)
+- [get_file_pages](/docs/tools-reference/rest/get_file_pages)
+- [get_file_components](/docs/tools-reference/rest/get_file_components)
+- [get_file_styles](/docs/tools-reference/rest/get_file_styles)
+
+## Variations
+
+- "…also list every variable." There's no REST endpoint for variables (yet); fall back to opening the file in Figma + the [extract pack](/docs/tools/extract) for that.
+- "…audit every file in this team's project." Loop with [get_team_projects](/docs/tools-reference/rest/get_team_projects) and [get_project_files](/docs/tools-reference/rest/get_project_files).
+- "…also fetch a thumbnail of the cover frame." Add [get_image_renders](/docs/tools-reference/rest/get_image_renders).
+
+## Troubleshooting
+
+- `E_FIGMA_API_KEY_MISSING`. Set the env var and restart the daemon: `FIGMA_API_KEY=figd_… && figma-mcp doctor`.
+- `E_FIGMA_REST_404`. The file key is wrong, or the token's user doesn't have access.
+- `E_FIGMA_REST_AUTH`. The token is invalid or revoked.
+- `E_FIGMA_REST_429`. You've hit Figma's rate limit. Wait, or add a delay between calls.

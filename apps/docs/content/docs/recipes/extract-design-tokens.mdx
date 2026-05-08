@@ -1,0 +1,29 @@
+---
+title: Extract design tokens
+description: Snapshot every variable and style as JSON for handoff or migration.
+---
+
+## The prompt
+
+```text
+Using figma-mcp, list every variable and every paint/text/effect style on the current Figma file. Format the result as JSON with two keys: "variables" (one entry per variable with id, name, type, valuesByMode) and "styles" (bucketed by paint/text/effect).
+```
+
+## What happens
+
+The AI invokes `extract_local_variables` and `extract_styles` in parallel, merges the responses, and emits the JSON. On a typical design-system file this produces a few KB of output — small enough to drop into a handoff doc or a migration script.
+
+## Tools used
+
+- [extract_local_variables](/docs/tools-reference/extract/extract_local_variables)
+- [extract_styles](/docs/tools-reference/extract/extract_styles)
+
+## Variations
+
+- "…limit variables to the `Color` collection only." Adds a filter to the prompt; the AI post-filters the response.
+- "…also include component metadata." Adds [extract_components](/docs/tools-reference/extract/extract_components) to the flow.
+- "…format as TypeScript const exports instead of JSON." The AI just transforms its output.
+
+## Troubleshooting
+
+- "The variables list is empty." Ensure you have local variables on the file (not just team-library references). [Pair the bridge plugin](/docs/get-started) before running the prompt.

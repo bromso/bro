@@ -1,0 +1,23 @@
+---
+title: set_stroke
+description: "Set the stroke paint and (optional) weight on a node."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="set_stroke"
+  description="Set the stroke paint and (optional) weight on a node."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"paint":{"type":"object","properties":{"type":{"type":"string","enum":["SOLID"]},"color":{"type":"object","properties":{"r":{"type":"number","minimum":0,"maximum":1},"g":{"$ref":"#/properties/paint/properties/color/properties/r"},"b":{"$ref":"#/properties/paint/properties/color/properties/r"}},"required":["r","g","b"],"additionalProperties":false},"opacity":{"$ref":"#/properties/paint/properties/color/properties/r"}},"required":["type","color"],"additionalProperties":false},"weight":{"type":"number","minimum":0}},"required":["nodeId","paint"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"}},"required":["nodeId"],"additionalProperties":false}}
+/>
+
+## Description
+
+Set the stroke paint and (optional) weight on a node.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

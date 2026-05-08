@@ -1,0 +1,23 @@
+---
+title: list_annotations
+description: "Return every annotation attached to a node, with each entry's array index (annotations have no stable ids in the plugin API; the index is the addressing scheme)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="list_annotations"
+  description="Return every annotation attached to a node, with each entry's array index (annotations have no stable ids in the plugin API; the index is the addressing scheme)."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"annotations":{"type":"array","items":{"type":"object","properties":{"index":{"type":"integer","minimum":0},"label":{"type":"string"},"categoryId":{"type":"string"}},"required":["index"],"additionalProperties":false}},"count":{"$ref":"#/properties/annotations/items/properties/index"}},"required":["nodeId","annotations","count"],"additionalProperties":false}}
+/>
+
+## Description
+
+Return every annotation attached to a node, with each entry's array index (annotations have no stable ids in the plugin API; the index is the addressing scheme).
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

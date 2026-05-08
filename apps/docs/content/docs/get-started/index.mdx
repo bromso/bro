@@ -17,6 +17,8 @@ npx @bromso/figma-mcp setup
 
 `setup` auto-detects the AI clients on your machine, prints a table of the configs it will write, and writes them atomically. Use `--dry-run` to preview without touching anything, `--client <id>` to scope to a single client (useful when you only want to wire one of several detected clients), and `--cloud` to use the hosted relay instead of local IPC.
 
+> If your AI client is on a different machine than Figma Desktop, see [Cloud mode](/docs/get-started/cloud) instead.
+
 ## Step 2: Open Figma and import the bridge plugin
 
 ```bash
@@ -35,16 +37,18 @@ Open any Figma file and run **Plugins → Development → Bridge** from the menu
 figma-mcp doctor
 ```
 
-`doctor` reports daemon liveness, plugin pairing, AI-client config drift, recent daemon errors, and IPC socket conflicts. A clean run prints all five checks as `ok`.
+`doctor` reports daemon liveness, plugin pairing, AI-client config drift, recent daemon errors, IPC socket conflicts, and FIGMA_API_KEY presence.
+
+A clean run prints all six checks as `ok`. The sixth check (`figma-api-key`) is a `warn` if you haven't set `FIGMA_API_KEY` — that's fine for local-mode. See [troubleshooting](/docs/reference/troubleshooting) for any non-`ok` checks.
 
 ## Step 5: Issue your first tool call
 
-Open your AI client and prompt: *"Using figma-mcp, list the variables on the current page."* The client invokes the `list_variables` tool over MCP; the bridge plugin reads the variables in your open Figma file and the result streams back as JSON.
+Open your AI client and prompt: *"Using figma-mcp, call `bridge_status` and tell me whether the bridge plugin is paired."* The client invokes the `bridge_status` tool over MCP; the daemon reports daemon liveness and plugin pairing as a small JSON object.
 
 If your client surfaces tool transcripts (Claude Code does, in the inline tool-use block), inspect the request and response there. From here, ask for selection details, mutate fills, or any other tool the catalog exposes — your AI client discovers them via `tools/list`.
 
 ## Next steps
 
 - Browse the [per-client config notes](/docs/clients).
-- Skim the [architecture page](/docs/architecture).
-- If anything fails, jump to [troubleshooting](/docs/troubleshooting).
+- Skim the [architecture page](/docs/reference/architecture).
+- If anything fails, jump to [troubleshooting](/docs/reference/troubleshooting).

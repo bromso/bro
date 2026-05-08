@@ -1,0 +1,23 @@
+---
+title: list_slide_rows
+description: "Slides-only. Enumerate slide row ids in grid order."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="list_slide_rows"
+  description="Slides-only. Enumerate slide row ids in grid order."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"rowIds":{"type":"array","items":{"type":"string"}},"count":{"type":"integer","minimum":0}},"required":["rowIds","count"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Enumerate slide row ids in grid order.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

@@ -1,0 +1,23 @@
+---
+title: get_team_projects
+description: "REST. Return all projects in a team."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_team_projects"
+  description="REST. Return all projects in a team."
+  streaming={false}
+  input={{"type":"object","properties":{"teamId":{"type":"string","minLength":1}},"required":["teamId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"name":{"type":"string"},"projects":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"}},"required":["id","name"],"additionalProperties":false}}},"required":["name","projects"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return all projects in a team.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

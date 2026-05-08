@@ -1,0 +1,29 @@
+---
+title: Audit a frame's accessibility
+description: Walk a frame and report contrast / target-size / alt-text gaps.
+---
+
+## The prompt
+
+```text
+Using figma-mcp, run audit_a11y_summary on the currently selected frame (recursive). Summarize the results: how many checks passed/warned/errored, which nodes are the worst offenders, and three concrete fixes I can apply.
+```
+
+## What happens
+
+The AI calls `audit_a11y_summary` with `recursive: true` on the selected node. The composite audit walks the frame, runs `audit_contrast` + `audit_target_size` + alt-text / aria-label / landmark-role checks per descendant, and returns a structured report. The AI then summarizes.
+
+## Tools used
+
+- [audit_a11y_summary](/docs/tools-reference/a11y/audit_a11y_summary)
+- (Internally: [audit_contrast](/docs/tools-reference/a11y/audit_contrast), [audit_target_size](/docs/tools-reference/a11y/audit_target_size), and the get-alt-text / get-aria-label / get-landmark-role primitives.)
+
+## Variations
+
+- "…non-recursive — only audit the frame itself." Pass `recursive: false`.
+- "…also simulate the frame's primary brand color under deuteranopia." Adds [simulate_color_blindness](/docs/tools-reference/a11y/simulate_color_blindness) for one extra call.
+- "…fix the alt-text issues by writing the missing alt strings yourself." The AI loops [set_alt_text](/docs/tools-reference/a11y/set_alt_text) per gap.
+
+## Troubleshooting
+
+- The contrast check returns null with "no resolvable background fill on ancestors." Add a SOLID fill to the frame's parent, or move the node into a parent that has one. Gradients and translucent fills are intentionally not auto-evaluated.

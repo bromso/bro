@@ -1,0 +1,18 @@
+{
+  "title": "Tools",
+  "pages": [
+    "index",
+    "---Universal---",
+    "extract",
+    "variables",
+    "a11y",
+    "rest",
+    "---Figma Design---",
+    "design",
+    "console",
+    "---FigJam---",
+    "figjam",
+    "---Slides---",
+    "slides"
+  ]
+}

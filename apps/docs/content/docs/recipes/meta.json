@@ -1,0 +1,13 @@
+{
+  "title": "Recipes",
+  "pages": [
+    "index",
+    "extract-design-tokens",
+    "audit-accessibility",
+    "slides-from-outline",
+    "ui-from-description",
+    "audit-via-cloud",
+    "debug-plugin-console",
+    "document-components"
+  ]
+}

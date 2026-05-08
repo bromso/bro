@@ -1,0 +1,23 @@
+---
+title: duplicate_slide
+description: "Slides-only. Clone a slide. The duplicate is appended after the source in the same row."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="duplicate_slide"
+  description="Slides-only. Clone a slide. The duplicate is appended after the source in the same row."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1}},"required":["slideId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Clone a slide. The duplicate is appended after the source in the same row.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

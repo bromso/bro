@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./global.css";
 
-const SITE_URL = "https://bromso.github.io/figma-plugin-template";
-const BASE = process.env.GITHUB_PAGES === "true" ? "/figma-plugin-template" : "";
+const SITE_URL = "https://bromso.github.io/bro";
+const BASE = process.env.GITHUB_PAGES === "true" ? "/bro" : "";
 
 export const metadata: Metadata = {
   title: {
-    default: "Figma Plugin Template",
-    template: "%s | Figma Plugin Template",
+    default: "figma-mcp",
+    template: "%s | figma-mcp",
   },
   description: "Build Figma plugins with React, Vite, TypeScript, and AI skills",
   metadataBase: new URL(SITE_URL),
@@ -24,25 +24,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Figma Plugin Template",
-    title: "Figma Plugin Template",
+    siteName: "figma-mcp",
+    title: "figma-mcp",
     description: "Build Figma plugins with React, Vite, TypeScript, and AI skills",
     url: SITE_URL,
-    images: [
-      {
-        url: "/figma-plugi-template.webp",
-        width: 1200,
-        height: 630,
-        alt: "Figma Plugin Template",
-        type: "image/webp",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Figma Plugin Template",
+    title: "figma-mcp",
     description: "Build Figma plugins with React, Vite, TypeScript, and AI skills",
-    images: ["/figma-plugi-template.webp"],
   },
 };
 
@@ -50,14 +40,13 @@ export const metadata: Metadata = {
 const websiteJsonLd = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "Figma Plugin Template Docs",
+  name: "figma-mcp Docs",
   description: "Build Figma plugins with React, Vite, TypeScript, and AI skills",
   url: SITE_URL,
-  image: `${SITE_URL}/figma-plugi-template.webp`,
   publisher: {
     "@type": "Organization",
-    name: "Figma Plugin Template",
-    url: "https://github.com/bromso/figma-plugin-template",
+    name: "figma-mcp",
+    url: "https://github.com/bromso/bro",
     logo: {
       "@type": "ImageObject",
       url: `${SITE_URL}/android-chrome-512x512.png`,

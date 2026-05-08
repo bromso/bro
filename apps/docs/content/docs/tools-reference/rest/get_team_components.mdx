@@ -1,0 +1,23 @@
+---
+title: get_team_components
+description: "REST. Return team components (cursor-paginated). Pass nextCursor as cursor to fetch the next page."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_team_components"
+  description="REST. Return team components (cursor-paginated). Pass nextCursor as cursor to fetch the next page."
+  streaming={false}
+  input={{"type":"object","properties":{"teamId":{"type":"string","minLength":1},"pageSize":{"type":"integer","exclusiveMinimum":true,"minimum":0},"cursor":{"type":"string"}},"required":["teamId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"components":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"nodeId":{"type":"string"}},"required":["key","name","description"],"additionalProperties":false}},"nextCursor":{"type":"string"}},"required":["components"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return team components (cursor-paginated). Pass nextCursor as cursor to fetch the next page.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

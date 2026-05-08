@@ -1,0 +1,23 @@
+---
+title: add_annotation
+description: "Append an annotation to a node. The annotation appears in Figma's annotation panel attached to the node. `categoryId` ties it to a category (see `figma.annotations.categories`); omit for a categoryless annotation. Returns the new entry's array index."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="add_annotation"
+  description="Append an annotation to a node. The annotation appears in Figma's annotation panel attached to the node. `categoryId` ties it to a category (see `figma.annotations.categories`); omit for a categoryless annotation. Returns the new entry's array index."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1},"label":{"type":"string","minLength":1},"categoryId":{"type":"string","minLength":1}},"required":["nodeId","label"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"index":{"type":"integer","minimum":0},"count":{"$ref":"#/properties/index"}},"required":["nodeId","index","count"],"additionalProperties":false}}
+/>
+
+## Description
+
+Append an annotation to a node. The annotation appears in Figma's annotation panel attached to the node. `categoryId` ties it to a category (see `figma.annotations.categories`); omit for a categoryless annotation. Returns the new entry's array index.
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

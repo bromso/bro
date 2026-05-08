@@ -1,0 +1,23 @@
+---
+title: extract_local_variables
+description: "Return all local variables in the current file."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-extract"
+  name="extract_local_variables"
+  description="Return all local variables in the current file."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"variables":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"resolvedType":{"type":"string","enum":["COLOR","FLOAT","STRING","BOOLEAN"]},"valuesByMode":{"type":"object","additionalProperties":{}}},"required":["id","name","resolvedType","valuesByMode"],"additionalProperties":false}}},"required":["variables"],"additionalProperties":false}}
+/>
+
+## Description
+
+Return all local variables in the current file.
+
+## See also
+
+- Pack overview: [tools-extract](/docs/tools/extract)

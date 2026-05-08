@@ -39,25 +39,47 @@ Reading top-to-bottom: the AI client speaks MCP stdio to the shim, the shim spea
 
 In cloud mode the AI client speaks Streamable HTTP to a hosted Cloudflare Worker relay; the relay forwards traffic to a paired bridge plugin that initiates a WebSocket UPSTREAM to the relay during pairing. There is no daemon — the relay owns the single pairing slot per user. See the [Phase 6 plan](https://github.com/bromso/bro/blob/master/docs/plans/2026-05-06-figma-mcp-phase-6.md) for the pairing handshake and TTL semantics.
 
+## Cloud-mode-without-plugin
+
+The `tools-rest` pack (Phase 11) introduces a third mode: tools whose handlers run server-side via the daemon, calling the Figma REST API directly with a `FIGMA_API_KEY`. No bridge plugin is required. The flow:
+
+```
++------------------+      stdio MCP       +-------------------+
+|   AI client      | <------------------> |   Stdio shim      |
++------------------+                      +---------+---------+
+                                                    |
+                                                    v
+                                          +-------------------+      HTTPS       +---------------+
+                                          |   Daemon          | ───────────────► | Figma REST API |
+                                          | (FigmaApiClient)  |                  +---------------+
+                                          +-------------------+
+```
+
+Three of the 20 REST tools mutate (`post_file_comment`, `delete_file_comment`, `post_dev_resources`); they're gated behind the `--enable-write-tools` flag. With the flag off, write tools return `E_WRITE_TOOLS_DISABLED` immediately.
+
 ## The MCP protocol surface
 
-`figma-mcp` speaks the standard MCP protocol — `initialize`, `tools/list`, `tools/call` — and nothing else. There is no custom RPC; any MCP-compliant client can drive it. The catalog is roughly 25 tools as of v1, grouped into packs that are loaded together at startup.
+`figma-mcp` speaks the standard MCP protocol — `initialize`, `tools/list`, `tools/call` — and nothing else. There is no custom RPC; any MCP-compliant client can drive it. The catalog is roughly 85 tools as of v1, grouped into packs that are loaded together at startup.
 
 ## Tool packs
 
-| Pack                | What it does                                                                                  |
-| ------------------- | --------------------------------------------------------------------------------------------- |
-| `tools-extract`     | Read selection, page, and node properties.                                                    |
-| `tools-variables`   | Read/write Figma variables (color, number, string, boolean).                                  |
-| `tools-console`     | Capture and query the bridge plugin's console output. Surfaces the AI's debugging context.    |
-| `tools-design`      | Mutate the canvas — create rectangles, frames, text, components; set fills, strokes, layout.  |
+| Pack | Scope | Editor | Tools |
+| ---- | ----- | ------ | ----- |
+| [extract](/docs/tools/extract) | Read selection, page, components, variables, styles | Universal | 4 |
+| [variables](/docs/tools/variables) | Read/write Figma variables; streamed import | Universal | 5 |
+| [console](/docs/tools/console) | Capture and query the bridge plugin's console output | Universal (plugin sandbox) | 6 |
+| [design](/docs/tools/design) | Mutate the canvas — shapes, text, fills, components | Figma Design only | 12 |
+| [figjam](/docs/tools/figjam) | Sticky notes, sections, connectors, code blocks, tables | FigJam only | 10 |
+| [slides](/docs/tools/slides) | Slide creation, layout, transitions, presentation grid | Slides only | 15 |
+| [a11y](/docs/tools/a11y) | WCAG audits, color-blindness simulation, alt-text and ARIA | Universal | 13 |
+| [rest](/docs/tools/rest) | REST-API-backed reads — works without a paired plugin | Universal (cloud-mode) | 20 |
 
 Each pack is internal to the binary; they share the protocol, transport, and figma-adapter layers and only differ in which handlers they register.
 
 ## Where things run
 
-- **Daemon process:** `figma-adapter` (placeholder), `transport` server, the four packs' server-handlers (REST-API-backed read tools).
-- **Bridge plugin process:** `figma-adapter` (real), `transport` client, the four packs' plugin-handlers (the canvas-touching tools).
+- **Daemon process:** `figma-adapter` (placeholder), `transport` server, the REST pack's server-handlers (Figma REST API-backed tools).
+- **Bridge plugin process:** `figma-adapter` (real), `transport` client, the seven plugin-side packs' handlers (the canvas-touching tools).
 - **Stdio shim process:** just `transport` client and an MCP server adapter — no Figma logic.
 
 ## Decision: why a daemon and not just an in-shim WebSocket server?

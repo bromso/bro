@@ -1,0 +1,23 @@
+---
+title: audit_contrast
+description: "WCAG 2.x contrast audit. Computes the contrast ratio between the node's first SOLID text fill and the first SOLID fill on its ancestors (resolved background). Returns AA / AAA pass/fail flags. Returns null ratio when fill or background is unresolvable (e.g. mixed fills, gradient background, no parent with a solid fill)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="audit_contrast"
+  description="WCAG 2.x contrast audit. Computes the contrast ratio between the node's first SOLID text fill and the first SOLID fill on its ancestors (resolved background). Returns AA / AAA pass/fail flags. Returns null ratio when fill or background is unresolvable (e.g. mixed fills, gradient background, no parent with a solid fill)."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"ratio":{"type":"number","nullable":true},"passesAA":{"type":"boolean","nullable":true},"passesAAA":{"type":"boolean","nullable":true},"isLargeText":{"type":"boolean"},"foreground":{"type":"string","pattern":"^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$","nullable":true},"background":{"allOf":[{"$ref":"#/properties/foreground"}],"nullable":true},"reason":{"type":"string"}},"required":["nodeId","ratio","passesAA","passesAAA","isLargeText","foreground","background"],"additionalProperties":false}}
+/>
+
+## Description
+
+WCAG 2.x contrast audit. Computes the contrast ratio between the node's first SOLID text fill and the first SOLID fill on its ancestors (resolved background). Returns AA / AAA pass/fail flags. Returns null ratio when fill or background is unresolvable (e.g. mixed fills, gradient background, no parent with a solid fill).
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

@@ -1,0 +1,23 @@
+---
+title: get_slide_grid
+description: "Slides-only. Return the full slide grid as a 2D array of slide ids (outer index = row)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="get_slide_grid"
+  description="Slides-only. Return the full slide grid as a 2D array of slide ids (outer index = row)."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"grid":{"type":"array","items":{"type":"array","items":{"type":"string"}}}},"required":["grid"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Return the full slide grid as a 2D array of slide ids (outer index = row).
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

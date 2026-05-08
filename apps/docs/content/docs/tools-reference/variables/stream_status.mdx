@@ -1,0 +1,23 @@
+---
+title: stream_status
+description: "Report progress of an in-flight or recently-completed import session."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-variables"
+  name="stream_status"
+  description="Report progress of an in-flight or recently-completed import session."
+  streaming={false}
+  input={{"type":"object","properties":{"sessionId":{"type":"string"}},"required":["sessionId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"sessionId":{"type":"string"},"lastAckedSeq":{"type":"integer","minimum":0},"applied":{"type":"integer","minimum":0},"failed":{"type":"integer","minimum":0},"atomic":{"type":"boolean"},"completed":{"type":"boolean"}},"required":["sessionId","lastAckedSeq","applied","failed","atomic","completed"],"additionalProperties":false}}
+/>
+
+## Description
+
+Report progress of an in-flight or recently-completed import session.
+
+## See also
+
+- Pack overview: [tools-variables](/docs/tools/variables)

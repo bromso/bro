@@ -1,0 +1,4 @@
+{
+  "title": "variables",
+  "pages": ["export_variables", "import_variables", "stream_status", "update_variables_batch"]
+}

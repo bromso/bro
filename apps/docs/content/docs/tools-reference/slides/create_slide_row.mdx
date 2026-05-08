@@ -1,0 +1,23 @@
+---
+title: create_slide_row
+description: "Slides-only. Create a slide row. By default, appended to the end of the slide grid."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="create_slide_row"
+  description="Slides-only. Create a slide row. By default, appended to the end of the slide grid."
+  streaming={false}
+  input={{"type":"object","properties":{"rowIndex":{"type":"integer","minimum":0}},"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE_ROW"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Create a slide row. By default, appended to the end of the slide grid.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

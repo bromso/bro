@@ -1,0 +1,35 @@
+---
+title: Document components with a11y metadata
+description: List components, then annotate each with alt-text, ARIA label, and landmark role.
+---
+
+## The prompt
+
+```text
+Using figma-mcp, list every component in the current Figma file. For each one, write an alt-text and an ARIA label based on the component's name and inferred purpose. Use the landmark role "navigation" for components named "Nav…" or "Sidebar…", "main" for components named "Page…", and skip the rest.
+```
+
+## What happens
+
+1. `extract_components` — lists components.
+2. For each: AI infers names → calls `set_alt_text`, `set_aria_label`, optionally `set_landmark_role`.
+
+Roughly 1-3 tool calls per component. The result: every component carries pluginData under the `a11y/*` namespace + (for alt-text) a visible annotation in Figma's annotation panel.
+
+## Tools used
+
+- [extract_components](/docs/tools-reference/extract/extract_components)
+- [set_alt_text](/docs/tools-reference/a11y/set_alt_text)
+- [set_aria_label](/docs/tools-reference/a11y/set_aria_label)
+- [set_landmark_role](/docs/tools-reference/a11y/set_landmark_role)
+
+## Variations
+
+- "…also run audit_a11y_summary against each component to flag remaining gaps." Adds [audit_a11y_summary](/docs/tools-reference/a11y/audit_a11y_summary).
+- "…use landmark role 'banner' for components named 'Header…'." Adjust the inference rule in the prompt.
+- "…overwrite even if alt-text is already set." The default behaviour overwrites; mention "preserve existing" in the prompt to skip when present.
+
+## Troubleshooting
+
+- "The component list is empty." You're looking at a file with no published components. Use [tools-rest's get_file_components](/docs/tools-reference/rest/get_file_components) for team-library components.
+- An ARIA label "doesn't show up in Figma's annotation panel." That's intentional — only alt-text writes a visible annotation; ARIA labels are pluginData-only.

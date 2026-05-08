@@ -1,0 +1,4 @@
+{
+  "title": "extract",
+  "pages": ["bridge_status", "extract_components", "extract_local_variables", "extract_styles"]
+}

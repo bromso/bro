@@ -1,0 +1,23 @@
+---
+title: extract_components
+description: "Return all local components."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-extract"
+  name="extract_components"
+  description="Return all local components."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"components":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"key":{"type":"string"},"description":{"type":"string"}},"required":["id","name","key"],"additionalProperties":false}}},"required":["components"],"additionalProperties":false}}
+/>
+
+## Description
+
+Return all local components.
+
+## See also
+
+- Pack overview: [tools-extract](/docs/tools/extract)

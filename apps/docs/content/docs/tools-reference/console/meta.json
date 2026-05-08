@@ -1,0 +1,11 @@
+{
+  "title": "console",
+  "pages": [
+    "clear_console",
+    "console_status",
+    "get_console_errors",
+    "get_console_logs",
+    "get_console_warnings",
+    "query_console"
+  ]
+}

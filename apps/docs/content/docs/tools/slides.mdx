@@ -1,0 +1,44 @@
+---
+title: slides pack
+description: Figma Slides tools — slide creation, layout, transitions, lifecycle, grid queries.
+---
+
+The `slides` pack covers the Slides editor: creating slides and rows, editing names and visibility, configuring transitions, and querying the slide grid. Every tool requires `editorType === "slides"`.
+
+## When to use
+
+- The AI is generating a deck from an outline.
+- You want to reorder a deck programmatically.
+- A workflow tweaks every slide's transition in one pass.
+
+## Editor
+
+Slides only.
+
+## Tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| [create_slide](/docs/tools-reference/slides/create_slide) | Create a slide; appended by default. |
+| [create_slide_row](/docs/tools-reference/slides/create_slide_row) | Create a slide row. |
+| [set_slide_name](/docs/tools-reference/slides/set_slide_name) | Set a slide's title (the slide's name is the title surface). |
+| [set_slide_skipped](/docs/tools-reference/slides/set_slide_skipped) | Toggle whether a slide is skipped during playback. |
+| [set_slide_transition](/docs/tools-reference/slides/set_slide_transition) | Set the slide-to-slide transition. |
+| [set_slide_background](/docs/tools-reference/slides/set_slide_background) | Set a slide's background paint. |
+| [move_slide](/docs/tools-reference/slides/move_slide) | Move a slide to a (rowIndex, columnIndex). |
+| [duplicate_slide](/docs/tools-reference/slides/duplicate_slide) | Clone a slide. |
+| [delete_slide](/docs/tools-reference/slides/delete_slide) | Remove a slide. |
+| [list_slides](/docs/tools-reference/slides/list_slides) | Enumerate slide ids. |
+| [list_slide_rows](/docs/tools-reference/slides/list_slide_rows) | Enumerate slide row ids. |
+| [set_active_slide](/docs/tools-reference/slides/set_active_slide) | Focus a slide. |
+| [get_slide](/docs/tools-reference/slides/get_slide) | Get a slide's name + skipped + transition. |
+| [set_slides_view](/docs/tools-reference/slides/set_slides_view) | Toggle viewport between grid and single-slide. |
+| [get_slide_grid](/docs/tools-reference/slides/get_slide_grid) | Get the 2D grid of slide ids. |
+
+## Limitations
+
+The plugin API doesn't expose presentation-mode automation, audience-side cursor chat, or speaker notes. Those surfaces are out of scope for the pack.
+
+## Recipes using this pack
+
+- [Generate slides from a markdown outline](/docs/recipes/slides-from-outline)

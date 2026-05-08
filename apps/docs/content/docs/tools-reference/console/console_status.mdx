@@ -1,0 +1,23 @@
+---
+title: console_status
+description: "Report buffer statistics: total, per-level counts, and dropped (overflowed) count."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-console"
+  name="console_status"
+  description="Report buffer statistics: total, per-level counts, and dropped (overflowed) count."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"total":{"type":"integer","minimum":0},"byLevel":{"type":"object","properties":{"log":{"type":"integer","minimum":0},"warn":{"type":"integer","minimum":0},"error":{"type":"integer","minimum":0},"info":{"type":"integer","minimum":0}},"required":["log","warn","error","info"],"additionalProperties":false},"droppedCount":{"type":"integer","minimum":0}},"required":["total","byLevel","droppedCount"],"additionalProperties":false}}
+/>
+
+## Description
+
+Report buffer statistics: total, per-level counts, and dropped (overflowed) count.
+
+## See also
+
+- Pack overview: [tools-console](/docs/tools/console)

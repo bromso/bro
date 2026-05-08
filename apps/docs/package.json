@@ -4,11 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "regen-tools": "bun scripts/generate-tool-reference.mjs",
+    "build": "bun scripts/generate-tool-reference.mjs && next build",
     "start": "next start",
-    "lint": "biome check ."
+    "lint": "biome check .",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@repo/tools-a11y": "workspace:*",
+    "@repo/tools-console": "workspace:*",
+    "@repo/tools-design": "workspace:*",
+    "@repo/tools-extract": "workspace:*",
+    "@repo/tools-figjam": "workspace:*",
+    "@repo/tools-rest": "workspace:*",
+    "@repo/tools-slides": "workspace:*",
+    "@repo/tools-variables": "workspace:*",
+    "@types/json-schema": "^7.0.15",
     "@types/mdx": "^2.0.13",
     "fumadocs-core": "^14.7.0",
     "fumadocs-mdx": "^11.10.0",
@@ -16,15 +27,21 @@
     "@ducanh2912/next-pwa": "^10.2.9",
     "next": "^15.5.0",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "zod-to-json-schema": "^3.23.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "4.1.4",
     "autoprefixer": "^10.4.21",
+    "happy-dom": "^20.9.0",
     "postcss": "^8.5.0",
     "tailwindcss": "^3.4.17",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "vitest": "4.1.4"
   }
 }

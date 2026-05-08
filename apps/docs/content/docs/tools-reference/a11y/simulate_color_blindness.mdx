@@ -1,0 +1,23 @@
+---
+title: simulate_color_blindness
+description: "Simulate how a hex color appears to a viewer with the named color-vision deficiency. Pure computation — does not touch the design. Useful for the LLM to check whether a brand color survives the deficiency before accepting it."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-a11y"
+  name="simulate_color_blindness"
+  description="Simulate how a hex color appears to a viewer with the named color-vision deficiency. Pure computation — does not touch the design. Useful for the LLM to check whether a brand color survives the deficiency before accepting it."
+  streaming={false}
+  input={{"type":"object","properties":{"hex":{"type":"string","pattern":"^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$"},"type":{"type":"string","enum":["protanopia","deuteranopia","tritanopia","achromatopsia"]}},"required":["hex","type"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"sourceHex":{"type":"string"},"simulatedHex":{"type":"string"},"type":{"type":"string","enum":["protanopia","deuteranopia","tritanopia","achromatopsia"]}},"required":["sourceHex","simulatedHex","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Simulate how a hex color appears to a viewer with the named color-vision deficiency. Pure computation — does not touch the design. Useful for the LLM to check whether a brand color survives the deficiency before accepting it.
+
+## See also
+
+- Pack overview: [tools-a11y](/docs/tools/a11y)

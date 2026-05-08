@@ -1,0 +1,23 @@
+---
+title: create_code_block
+description: "FigJam-only. Create a code block with a language label (defaults to 'plaintext')."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="create_code_block"
+  description="FigJam-only. Create a code block with a language label (defaults to 'plaintext')."
+  streaming={false}
+  input={{"type":"object","properties":{"code":{"type":"string"},"language":{"type":"string","minLength":1,"default":"plaintext"},"x":{"type":"number"},"y":{"type":"number"}},"required":["code"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["CODE_BLOCK"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Create a code block with a language label (defaults to 'plaintext').
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

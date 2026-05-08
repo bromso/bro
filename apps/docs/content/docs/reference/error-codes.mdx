@@ -1,0 +1,94 @@
+---
+title: Error codes
+description: Alphabetical reference of every E_* code surfaced by the daemon, the relay, and tool packs. Symptom → cause → fix per entry.
+---
+
+This is the canonical list of error codes the figma-mcp surface emits. Every code below either appears in a tool-call error result (`isError: true` with the code in the text payload) or is logged at `level=error` by the daemon. Where applicable, the [troubleshooting page](/docs/reference/troubleshooting) has the corresponding doctor check.
+
+## E_DAEMON_PORT_BOUND
+
+**Symptom:** Daemon fails to start: "address already in use".
+
+**Cause:** Another process is bound to the daemon's IPC socket.
+
+**Fix:** Identify the process (`lsof -nP /tmp/figma-mcp.sock` on macOS/Linux), kill it, and re-run.
+
+## E_FIGMA_API_KEY_MISSING
+
+**Symptom:** A `tools-rest` tool fails with this code.
+
+**Cause:** The daemon was started without `FIGMA_API_KEY` in its environment.
+
+**Fix:** Set the env var and restart the daemon. See [troubleshooting → figma-api-key](/docs/reference/troubleshooting#figma-api-key-rest-tools-wont-work).
+
+## E_FIGMA_EDITOR_TYPE_MISMATCH
+
+**Symptom:** A figjam, slides, or design tool fails with this code.
+
+**Cause:** The current Figma file's `editorType` doesn't match the tool's required editor (e.g. calling `create_sticky` while a Figma Design file is open).
+
+**Fix:** Open a file of the right editor type and re-invoke. Each pack page lists the required editor type — see [tools/figjam](/docs/tools/figjam), [tools/slides](/docs/tools/slides), [tools/design](/docs/tools/design).
+
+## E_FIGMA_REST_404
+
+**Symptom:** A `tools-rest` tool fails with this code.
+
+**Cause:** The Figma REST API returned 404 — the file/team/project key is wrong, or the authenticated user doesn't have access.
+
+**Fix:** Verify the key, verify the token's user has read access. Pass the right key.
+
+## E_FIGMA_REST_429
+
+**Symptom:** A `tools-rest` tool fails with this code.
+
+**Cause:** Figma REST API rate limit. Default is 60 requests/minute per token.
+
+**Fix:** Wait ~1 minute and retry. For bulk operations, add a delay between calls.
+
+## E_FIGMA_REST_AUTH
+
+**Symptom:** A `tools-rest` tool fails with this code.
+
+**Cause:** The Figma REST API returned 401 or 403 — the token is invalid, revoked, or lacks the scope for the operation.
+
+**Fix:** Generate a new personal access token at [figma.com/settings](https://www.figma.com/settings), update `FIGMA_API_KEY`, restart the daemon.
+
+## E_FIGMA_REST_UNKNOWN
+
+**Symptom:** A `tools-rest` tool fails with this code.
+
+**Cause:** Catch-all for unexpected REST API responses (5xx, network errors).
+
+**Fix:** Retry. If persistent, file a bug — the upstream behaviour may have changed.
+
+## E_PORT_CONFLICT
+
+**Symptom:** Doctor reports `socket-conflict: error`.
+
+**Cause:** A process other than the daemon is bound to the IPC socket path.
+
+**Fix:** Identify the offender, kill it, delete the socket file, re-run. See [troubleshooting → socket-conflict](/docs/reference/troubleshooting#socket-conflict-portsocket-already-taken).
+
+## E_RELAY_PAIR_FAILED
+
+**Symptom:** `setup --cloud` fails to obtain a pairing code.
+
+**Cause:** The relay (Cloudflare Worker) returned a non-2xx response.
+
+**Fix:** Check the relay's status. Try `figma-mcp setup --cloud --relay-url <override>` with a different relay base URL.
+
+## E_VERSION_DRIFT
+
+**Symptom:** Daemon logs this on tool dispatch.
+
+**Cause:** The shim's protocol version doesn't match the daemon's. Usually means a long-running daemon predates the shim's last `npx` cache update.
+
+**Fix:** Stop the daemon (`pkill -f figma-mcp`); the next shim invocation respawns at the new version.
+
+## E_WRITE_TOOLS_DISABLED
+
+**Symptom:** `post_file_comment`, `delete_file_comment`, or `post_dev_resources` fails with this code.
+
+**Cause:** The daemon was started without the `--enable-write-tools` flag (default off).
+
+**Fix:** If the use case is legitimate, restart with `figma-mcp --enable-write-tools`. The flag exists to prevent prompt-driven mass mutations; only enable it when you trust the AI's calls.

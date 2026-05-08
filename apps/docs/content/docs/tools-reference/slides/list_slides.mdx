@@ -1,0 +1,23 @@
+---
+title: list_slides
+description: "Slides-only. Enumerate slide ids. With no rowIndex, returns every slide; with a rowIndex, returns just that row's slides."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="list_slides"
+  description="Slides-only. Enumerate slide ids. With no rowIndex, returns every slide; with a rowIndex, returns just that row's slides."
+  streaming={false}
+  input={{"type":"object","properties":{"rowIndex":{"type":"integer","minimum":0}},"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeIds":{"type":"array","items":{"type":"string"}},"count":{"type":"integer","minimum":0}},"required":["nodeIds","count"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Enumerate slide ids. With no rowIndex, returns every slide; with a rowIndex, returns just that row's slides.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

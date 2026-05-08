@@ -1,0 +1,23 @@
+---
+title: delete_slide
+description: "Slides-only. Remove a slide from the deck."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="delete_slide"
+  description="Slides-only. Remove a slide from the deck."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1}},"required":["slideId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"slideId":{"type":"string"},"deleted":{"type":"boolean","enum":[true]}},"required":["slideId","deleted"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Remove a slide from the deck.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

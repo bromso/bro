@@ -1,0 +1,23 @@
+---
+title: clear_console
+description: "Clear the captured console buffer; returns how many entries were dropped."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-console"
+  name="clear_console"
+  description="Clear the captured console buffer; returns how many entries were dropped."
+  streaming={false}
+  input={{"type":"object","properties":{},"additionalProperties":false}}
+  output={{"type":"object","properties":{"cleared":{"type":"integer","minimum":0}},"required":["cleared"],"additionalProperties":false}}
+/>
+
+## Description
+
+Clear the captured console buffer; returns how many entries were dropped.
+
+## See also
+
+- Pack overview: [tools-console](/docs/tools/console)

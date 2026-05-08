@@ -1,0 +1,23 @@
+---
+title: create_text
+description: "Create a text node with the given characters and (optional) font size."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="create_text"
+  description="Create a text node with the given characters and (optional) font size."
+  streaming={false}
+  input={{"type":"object","properties":{"content":{"type":"string","minLength":1},"fontSize":{"type":"number","exclusiveMinimum":true,"minimum":0,"default":16},"x":{"type":"number"},"y":{"type":"number"}},"required":["content"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["TEXT"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Create a text node with the given characters and (optional) font size.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

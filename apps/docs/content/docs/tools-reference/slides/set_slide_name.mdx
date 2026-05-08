@@ -1,0 +1,23 @@
+---
+title: set_slide_name
+description: "Slides-only. Set the slide's title (the slide's name). Slides have no separate title placeholder; the BaseFrameMixin name IS the title surface."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="set_slide_name"
+  description="Slides-only. Set the slide's title (the slide's name). Slides have no separate title placeholder; the BaseFrameMixin name IS the title surface."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1},"name":{"type":"string","minLength":1}},"required":["slideId","name"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Set the slide's title (the slide's name). Slides have no separate title placeholder; the BaseFrameMixin name IS the title surface.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

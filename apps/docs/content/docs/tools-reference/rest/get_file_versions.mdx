@@ -1,0 +1,23 @@
+---
+title: get_file_versions
+description: "REST. Return the version history of a Figma file (paginated via before/after)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_file_versions"
+  description="REST. Return the version history of a Figma file (paginated via before/after)."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1},"pageSize":{"type":"integer","exclusiveMinimum":true,"minimum":0},"before":{"type":"string"},"after":{"type":"string"}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"versions":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"createdAt":{"type":"string"},"label":{"type":"string"},"description":{"type":"string"},"userHandle":{"type":"string"}},"required":["id","createdAt","label","description","userHandle"],"additionalProperties":false}},"pagination":{"type":"object","properties":{"prevPage":{"type":"string"},"nextPage":{"type":"string"}},"additionalProperties":false}},"required":["versions","pagination"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the version history of a Figma file (paginated via before/after).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

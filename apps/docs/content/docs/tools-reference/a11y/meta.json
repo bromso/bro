@@ -1,0 +1,18 @@
+{
+  "title": "a11y",
+  "pages": [
+    "add_annotation",
+    "audit_a11y_summary",
+    "audit_contrast",
+    "audit_target_size",
+    "get_alt_text",
+    "get_aria_label",
+    "get_landmark_role",
+    "list_annotations",
+    "remove_annotation",
+    "set_alt_text",
+    "set_aria_label",
+    "set_landmark_role",
+    "simulate_color_blindness"
+  ]
+}

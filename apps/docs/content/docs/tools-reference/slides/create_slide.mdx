@@ -1,0 +1,23 @@
+---
+title: create_slide
+description: "Slides-only. Create a slide. By default, appended to the end of the last row. Pass rowIndex/columnIndex to place explicitly."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="create_slide"
+  description="Slides-only. Create a slide. By default, appended to the end of the last row. Pass rowIndex/columnIndex to place explicitly."
+  streaming={false}
+  input={{"type":"object","properties":{"name":{"type":"string","minLength":1},"rowIndex":{"type":"integer","minimum":0},"columnIndex":{"$ref":"#/properties/rowIndex"}},"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Create a slide. By default, appended to the end of the last row. Pass rowIndex/columnIndex to place explicitly.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

@@ -1,0 +1,23 @@
+---
+title: import_variables
+description: "Stream variables into the current Figma file. Resumable + idempotent. Set atomic:true to roll back on first failure."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-variables"
+  name="import_variables"
+  description="Stream variables into the current Figma file. Resumable + idempotent. Set atomic:true to roll back on first failure."
+  streaming={true}
+  input={{"type":"object","properties":{"source":{"anyOf":[{"type":"object","properties":{"kind":{"type":"string","enum":["inline"]},"items":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","minLength":1},"collection":{"type":"string","minLength":1},"resolvedType":{"type":"string","enum":["COLOR","FLOAT","STRING","BOOLEAN"]},"valuesByMode":{"type":"object","additionalProperties":{}}},"required":["name","collection","resolvedType","valuesByMode"],"additionalProperties":false}}},"required":["kind","items"],"additionalProperties":false}]},"atomic":{"type":"boolean","default":false},"chunkSize":{"type":"integer","minimum":1,"maximum":1000,"default":100}},"required":["source"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"sessionId":{"type":"string"},"total":{"type":"integer","minimum":0},"applied":{"type":"integer","minimum":0},"failed":{"type":"integer","minimum":0},"failedDetails":{"type":"array","items":{"type":"object","properties":{"index":{"type":"integer","minimum":0},"reason":{"type":"string"},"name":{"type":"string"}},"required":["index","reason"],"additionalProperties":false},"default":[]}},"required":["sessionId","total","applied","failed"],"additionalProperties":false}}
+/>
+
+## Description
+
+Stream variables into the current Figma file. Resumable + idempotent. Set atomic:true to roll back on first failure.
+
+## See also
+
+- Pack overview: [tools-variables](/docs/tools/variables)

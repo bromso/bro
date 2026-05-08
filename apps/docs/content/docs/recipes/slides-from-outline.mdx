@@ -1,0 +1,45 @@
+---
+title: Generate slides from a markdown outline
+description: Turn a flat outline into a populated Slides deck.
+---
+
+## The prompt
+
+````text
+Using figma-mcp on the currently open Figma Slides file, create one slide per top-level heading in this outline. Set each slide's name to the heading text. Skip any slide whose heading starts with "(skip)".
+
+```
+# Welcome
+## Agenda
+## Demo
+# Outcomes
+## Q & A
+# (skip) Notes for the speaker
+```
+````
+
+## What happens
+
+The AI parses the outline, then loops:
+
+1. `create_slide` — produces a SLIDE node, returns its id.
+2. `set_slide_name` — sets the title.
+3. `set_slide_skipped` — when the heading is `(skip)`, marks the slide hidden during playback.
+
+After every iteration the AI updates a running list of `(rowIndex, columnIndex, slideId)` so the deck order matches the outline.
+
+## Tools used
+
+- [create_slide](/docs/tools-reference/slides/create_slide)
+- [set_slide_name](/docs/tools-reference/slides/set_slide_name)
+- [set_slide_skipped](/docs/tools-reference/slides/set_slide_skipped)
+
+## Variations
+
+- "…also set every slide's transition to `DISSOLVE` with a 300ms duration." Add [set_slide_transition](/docs/tools-reference/slides/set_slide_transition) per iteration.
+- "…tint each slide's background with this hex." Add [set_slide_background](/docs/tools-reference/slides/set_slide_background) per iteration.
+- "…delete every existing slide first." Run `list_slides` + `delete_slide` in a clean-up phase.
+
+## Troubleshooting
+
+- `E_FIGMA_EDITOR_TYPE_MISMATCH`. The current Figma file is not a Slides file. Open a Slides file and re-run.

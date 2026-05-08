@@ -1,0 +1,23 @@
+---
+title: get_slide
+description: "Slides-only. Return a structured summary of a slide: name, isSkipped, transition, isFirst."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="get_slide"
+  description="Slides-only. Return a structured summary of a slide: name, isSkipped, transition, isFirst."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1}},"required":["slideId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE"]},"name":{"type":"string"},"isSkipped":{"type":"boolean"},"isFirst":{"type":"boolean"},"transition":{"type":"object","properties":{"style":{"type":"string","enum":["NONE","DISSOLVE","SLIDE_FROM_LEFT","SLIDE_FROM_RIGHT","SLIDE_FROM_TOP","SLIDE_FROM_BOTTOM","PUSH_FROM_LEFT","PUSH_FROM_RIGHT","PUSH_FROM_TOP","PUSH_FROM_BOTTOM","MOVE_FROM_LEFT","MOVE_FROM_RIGHT","MOVE_FROM_TOP","MOVE_FROM_BOTTOM","SLIDE_OUT_TO_LEFT","SLIDE_OUT_TO_RIGHT","SLIDE_OUT_TO_TOP","SLIDE_OUT_TO_BOTTOM","MOVE_OUT_TO_LEFT","MOVE_OUT_TO_RIGHT","MOVE_OUT_TO_TOP","MOVE_OUT_TO_BOTTOM","SMART_ANIMATE"]},"durationSec":{"type":"number","minimum":0},"curve":{"type":"string","enum":["EASE_IN","EASE_OUT","EASE_IN_AND_OUT","LINEAR","GENTLE","QUICK","BOUNCY","SLOW"]}},"required":["style","durationSec","curve"],"additionalProperties":false}},"required":["nodeId","type","name","isSkipped","isFirst","transition"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Return a structured summary of a slide: name, isSkipped, transition, isFirst.
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

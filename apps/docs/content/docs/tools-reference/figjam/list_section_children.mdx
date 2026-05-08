@@ -1,0 +1,23 @@
+---
+title: list_section_children
+description: "FigJam-only. Return the node ids currently inside a section."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="list_section_children"
+  description="FigJam-only. Return the node ids currently inside a section."
+  streaming={false}
+  input={{"type":"object","properties":{"sectionId":{"type":"string","minLength":1}},"required":["sectionId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeIds":{"type":"array","items":{"type":"string"}},"count":{"type":"integer","minimum":0}},"required":["nodeIds","count"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Return the node ids currently inside a section.
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

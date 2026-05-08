@@ -1,0 +1,15 @@
+{
+  "title": "figjam",
+  "pages": [
+    "create_code_block",
+    "create_connector",
+    "create_section",
+    "create_shape_with_text",
+    "create_sticky",
+    "create_table",
+    "list_section_children",
+    "move_into_section",
+    "set_section_name",
+    "set_sticky_content"
+  ]
+}

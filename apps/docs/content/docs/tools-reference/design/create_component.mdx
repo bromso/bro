@@ -1,0 +1,23 @@
+---
+title: create_component
+description: "Wrap an existing node into a reusable component; returns componentId + key."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="create_component"
+  description="Wrap an existing node into a reusable component; returns componentId + key."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"componentId":{"type":"string"},"key":{"type":"string"}},"required":["componentId","key"],"additionalProperties":false}}
+/>
+
+## Description
+
+Wrap an existing node into a reusable component; returns componentId + key.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

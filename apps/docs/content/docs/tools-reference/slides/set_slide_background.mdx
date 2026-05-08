@@ -1,0 +1,23 @@
+---
+title: set_slide_background
+description: "Slides-only. Set the slide's background to a single SOLID paint (writes through to slide.fills)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-slides"
+  name="set_slide_background"
+  description="Slides-only. Set the slide's background to a single SOLID paint (writes through to slide.fills)."
+  streaming={false}
+  input={{"type":"object","properties":{"slideId":{"type":"string","minLength":1},"paint":{"type":"object","properties":{"type":{"type":"string","enum":["SOLID"]},"color":{"type":"object","properties":{"r":{"type":"number","minimum":0,"maximum":1},"g":{"$ref":"#/properties/paint/properties/color/properties/r"},"b":{"$ref":"#/properties/paint/properties/color/properties/r"}},"required":["r","g","b"],"additionalProperties":false},"opacity":{"$ref":"#/properties/paint/properties/color/properties/r"}},"required":["type","color"],"additionalProperties":false}},"required":["slideId","paint"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SLIDE"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+Slides-only. Set the slide's background to a single SOLID paint (writes through to slide.fills).
+
+## See also
+
+- Pack overview: [tools-slides](/docs/tools/slides)

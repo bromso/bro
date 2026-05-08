@@ -1,0 +1,48 @@
+---
+title: design pack
+description: Mutate the Figma Design canvas — create shapes, text, components; set fills, strokes, layout.
+---
+
+The `design` pack covers canvas mutation: creating primitive nodes, editing their content, setting paints, and packaging into components. All tools require `editorType === "figma"`; calling them in a FigJam or Slides file returns `E_FIGMA_EDITOR_TYPE_MISMATCH` immediately.
+
+## When to use
+
+- The AI is asked to assemble a wireframe from a description.
+- You want to bulk-update fills across selected nodes.
+- A workflow generates UI from prose.
+
+## Editor
+
+Figma Design only.
+
+## Tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| [create_rectangle](/docs/tools-reference/design/create_rectangle) | Create a rectangle. |
+| [create_frame](/docs/tools-reference/design/create_frame) | Create a frame (auto-layout-capable container). |
+| [create_ellipse](/docs/tools-reference/design/create_ellipse) | Create an ellipse. |
+| [create_line](/docs/tools-reference/design/create_line) | Create a line between two endpoints. |
+| [create_text](/docs/tools-reference/design/create_text) | Create a text node. |
+| [set_text_content](/docs/tools-reference/design/set_text_content) | Replace a text node's characters. |
+| [set_fill](/docs/tools-reference/design/set_fill) | Set a node's fill (single SOLID paint). |
+| [set_stroke](/docs/tools-reference/design/set_stroke) | Set a node's stroke + weight. |
+| [resize_node](/docs/tools-reference/design/resize_node) | Resize a node's bounding box. |
+| [clone_node](/docs/tools-reference/design/clone_node) | Duplicate a node; returns the clone's id. |
+| [delete_node](/docs/tools-reference/design/delete_node) | Remove a node. |
+| [create_component](/docs/tools-reference/design/create_component) | Wrap a node into a component definition. |
+
+## Paint shape
+
+`set_fill` and `set_stroke` accept a single SOLID paint:
+
+```json
+{ "type": "SOLID", "color": { "r": 1, "g": 0, "b": 0 }, "opacity": 0.5 }
+```
+
+Multi-paint variants (gradients, image fills) are not supported in v1.
+
+## Recipes using this pack
+
+- [Build a UI from a description](/docs/recipes/ui-from-description)
+- [Document components](/docs/recipes/document-components)

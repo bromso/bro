@@ -1,0 +1,23 @@
+---
+title: move_into_section
+description: "FigJam-only. Add node ids to a section's children list."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="move_into_section"
+  description="FigJam-only. Add node ids to a section's children list."
+  streaming={false}
+  input={{"type":"object","properties":{"sectionId":{"type":"string","minLength":1},"nodeIds":{"type":"array","items":{"type":"string","minLength":1}}},"required":["sectionId","nodeIds"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"sectionId":{"type":"string"},"moved":{"type":"integer","minimum":0}},"required":["sectionId","moved"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Add node ids to a section's children list.
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

@@ -1,0 +1,23 @@
+---
+title: create_section
+description: "FigJam-only. Create a labeled section that can group nodes."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-figjam"
+  name="create_section"
+  description="FigJam-only. Create a labeled section that can group nodes."
+  streaming={false}
+  input={{"type":"object","properties":{"name":{"type":"string","minLength":1},"x":{"type":"number"},"y":{"type":"number"},"width":{"type":"number","exclusiveMinimum":true,"minimum":0},"height":{"$ref":"#/properties/width"}},"required":["name","x","y","width","height"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"},"type":{"type":"string","enum":["SECTION"]}},"required":["nodeId","type"],"additionalProperties":false}}
+/>
+
+## Description
+
+FigJam-only. Create a labeled section that can group nodes.
+
+## See also
+
+- Pack overview: [tools-figjam](/docs/tools/figjam)

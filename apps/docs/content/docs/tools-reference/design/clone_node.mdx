@@ -1,0 +1,23 @@
+---
+title: clone_node
+description: "Clone a node and return the id of the new copy."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-design"
+  name="clone_node"
+  description="Clone a node and return the id of the new copy."
+  streaming={false}
+  input={{"type":"object","properties":{"nodeId":{"type":"string","minLength":1}},"required":["nodeId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"nodeId":{"type":"string"}},"required":["nodeId"],"additionalProperties":false}}
+/>
+
+## Description
+
+Clone a node and return the id of the new copy.
+
+## See also
+
+- Pack overview: [tools-design](/docs/tools/design)

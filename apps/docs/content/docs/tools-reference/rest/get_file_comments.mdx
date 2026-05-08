@@ -1,0 +1,23 @@
+---
+title: get_file_comments
+description: "REST. Return the file's comments."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_file_comments"
+  description="REST. Return the file's comments."
+  streaming={false}
+  input={{"type":"object","properties":{"fileKey":{"type":"string","minLength":1}},"required":["fileKey"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"comments":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"message":{"type":"string"},"parentId":{"type":"string"},"userHandle":{"type":"string"},"createdAt":{"type":"string"},"x":{"type":"number"},"y":{"type":"number"}},"required":["id","message","userHandle","createdAt"],"additionalProperties":false}}},"required":["comments"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return the file's comments.
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)
