@@ -215,7 +215,8 @@ import type { FsAdapter } from "./cli/config-writer";
 import { writeConfig } from "./cli/config-writer";
 import { detectClients, type Platform } from "./cli/detect";
 import { dispatch } from "./cli/dispatch";
-import { formatDoctorJson, formatDoctorText, runDoctor } from "./cli/doctor";
+import { type Fixer, formatDoctorJson, formatDoctorText, runDoctor } from "./cli/doctor";
+import { createStaleLockfileFixer } from "./cli/fixers/stale-lockfile";
 import { runOpenFigma } from "./cli/open-figma";
 import { resolveManifestPath } from "./cli/print-path";
 import { formatSetupTable, runSetup } from "./cli/setup";
@@ -295,7 +296,7 @@ async function handleSetup(flags: {
   }
 }
 
-async function handleDoctor(flags: { json: boolean }): Promise<void> {
+async function handleDoctor(flags: { json: boolean; fix: boolean }): Promise<void> {
   const homeDir = (process.env.HOME ?? process.env.USERPROFILE) as string;
   const platform = process.platform as Platform;
   const ipc = pickIpcTransport({ platform });
@@ -304,6 +305,8 @@ async function handleDoctor(flags: { json: boolean }): Promise<void> {
     isPidAlive: isPidAliveDefault,
   });
   const clients = detectClients({ homeDir, platform, fileExists: existsSync, env: process.env });
+
+  const fixers = new Map<string, Fixer>([["daemon-liveness", createStaleLockfileFixer(lockfile)]]);
 
   const report = await runDoctor({
     checks: [
@@ -320,6 +323,8 @@ async function handleDoctor(flags: { json: boolean }): Promise<void> {
       ),
       createFigmaApiKeyCheck({ env: process.env }),
     ],
+    fixers,
+    applyFixes: flags.fix,
   });
   process.stdout.write(
     flags.json ? `${formatDoctorJson(report)}\n` : `${formatDoctorText(report)}\n`
