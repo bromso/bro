@@ -10,12 +10,18 @@
 export interface Env {
   RELAY: DurableObjectNamespace;
   LOOKUP: DurableObjectNamespace;
+  OAUTH_SESSION: DurableObjectNamespace;
   PAIRING_CODE_TTL_MS: string;
   RPC_TIMEOUT_MS: string;
+  OAUTH_SESSION_TTL_MS: string;
+  OAUTH_CALLBACK_URL: string;
+  FIGMA_OAUTH_CLIENT_ID?: string;
+  FIGMA_OAUTH_CLIENT_SECRET?: string;
 }
 
 export { RelayDurableObject } from "./durable-object";
 export { LookupDurableObject } from "./lookup-do";
+export { OauthSessionDurableObject } from "./oauth-session-do";
 
 const newSessionId = (): string => `ses_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 

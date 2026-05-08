@@ -11,10 +11,20 @@ class_name = "RelayDurableObject"
 name = "LOOKUP"
 class_name = "LookupDurableObject"
 
+[[durable_objects.bindings]]
+name = "OAUTH_SESSION"
+class_name = "OauthSessionDurableObject"
+
 [[migrations]]
 tag = "v1"
 new_classes = ["RelayDurableObject", "LookupDurableObject"]
 
+[[migrations]]
+tag = "v2"
+new_classes = ["OauthSessionDurableObject"]
+
 [vars]
 PAIRING_CODE_TTL_MS = "300000"
 RPC_TIMEOUT_MS = "30000"
+OAUTH_SESSION_TTL_MS = "300000"
+OAUTH_CALLBACK_URL = "https://figma-mcp-relay.bromso.workers.dev/oauth/callback"
