@@ -7,6 +7,7 @@ export type CliCommand =
       flags: {
         dryRun: boolean;
         cloud: boolean;
+        oauth: boolean;
         openFigma: boolean;
         client: string | null;
         relayUrl: string | null;
@@ -31,6 +32,7 @@ export function dispatch(options: DispatchOptions): CliCommand {
       flags: {
         dryRun: rest.includes("--dry-run"),
         cloud: rest.includes("--cloud"),
+        oauth: rest.includes("--oauth"),
         openFigma: rest.includes("--open-figma"),
         client: takeValue(rest, "--client"),
         relayUrl: takeValue(rest, "--relay-url"),

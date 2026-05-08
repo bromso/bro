@@ -39,6 +39,21 @@ describe("dispatch", () => {
     expect(cmd.flags.client).toBe("cursor");
   });
 
+  it("setup --cloud --oauth sets the oauth flag (Phase 21 plumbing)", () => {
+    const cmd = dispatch({
+      argv: ["node", "main.js", "setup", "--cloud", "--oauth"],
+    });
+    if (cmd.kind !== "setup") throw new Error("expected setup");
+    expect(cmd.flags.cloud).toBe(true);
+    expect(cmd.flags.oauth).toBe(true);
+  });
+
+  it("setup without --oauth defaults oauth to false", () => {
+    const cmd = dispatch({ argv: ["node", "main.js", "setup", "--cloud"] });
+    if (cmd.kind !== "setup") throw new Error("expected setup");
+    expect(cmd.flags.oauth).toBe(false);
+  });
+
   it("doctor --json sets json flag", () => {
     const cmd = dispatch({ argv: ["node", "main.js", "doctor", "--json"] });
     if (cmd.kind !== "doctor") throw new Error("expected doctor");
