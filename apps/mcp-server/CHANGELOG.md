@@ -1,5 +1,21 @@
 # @bromso/figma-mcp
 
+## 1.4.0
+
+### Minor Changes
+
+- [#27](https://github.com/bromso/bro/pull/27) [`64d0f5c`](https://github.com/bromso/bro/commit/64d0f5c0f8e3cda574907aa72efdc6c762504e27) Thanks [@bromso](https://github.com/bromso)! - `figma-mcp doctor --fix` mode. The new flag runs the existing 6 doctor
+  checks, then auto-applies fixes for the two automatable failure modes:
+
+  - `daemon-liveness` with a stale lockfile → `LockfileManager.clear()`.
+  - `ai-client-configs` with config drift → re-runs the per-client setup
+    write against detected clients (idempotent).
+
+  Non-automatable checks (plugin-pairing, socket-conflict, recent-errors,
+  figma-api-key) print their manual fix instructions but take no action.
+
+  The default `figma-mcp doctor` (no flag) is unchanged.
+
 ## 1.3.1
 
 ### Patch Changes
