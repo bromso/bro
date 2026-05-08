@@ -216,6 +216,7 @@ import { writeConfig } from "./cli/config-writer";
 import { detectClients, type Platform } from "./cli/detect";
 import { dispatch } from "./cli/dispatch";
 import { type Fixer, formatDoctorJson, formatDoctorText, runDoctor } from "./cli/doctor";
+import { createAiClientConfigsFixer } from "./cli/fixers/ai-client-configs";
 import { createStaleLockfileFixer } from "./cli/fixers/stale-lockfile";
 import { runOpenFigma } from "./cli/open-figma";
 import { resolveManifestPath } from "./cli/print-path";
@@ -306,7 +307,19 @@ async function handleDoctor(flags: { json: boolean; fix: boolean }): Promise<voi
   });
   const clients = detectClients({ homeDir, platform, fileExists: existsSync, env: process.env });
 
-  const fixers = new Map<string, Fixer>([["daemon-liveness", createStaleLockfileFixer(lockfile)]]);
+  const fixerEntry = { command: "npx", args: ["-y", "@bromso/figma-mcp"] };
+  const fixers = new Map<string, Fixer>([
+    ["daemon-liveness", createStaleLockfileFixer(lockfile)],
+    [
+      "ai-client-configs",
+      createAiClientConfigsFixer({
+        clients,
+        mcpServerName: "figma",
+        entry: fixerEntry,
+        writeConfig: (a) => writeConfig({ ...a, fs: nodeFsAdapter() }),
+      }),
+    ],
+  ]);
 
   const report = await runDoctor({
     checks: [
