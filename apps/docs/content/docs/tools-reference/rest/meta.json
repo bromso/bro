@@ -1,7 +1,9 @@
 {
   "title": "rest",
   "pages": [
+    "create_webhook",
     "delete_file_comment",
+    "delete_webhook",
     "get_dev_resources",
     "get_file_branches",
     "get_file_comments",
@@ -19,7 +21,11 @@
     "get_team_projects",
     "get_team_styles",
     "get_user_me",
+    "get_webhook",
+    "get_webhook_requests",
+    "list_team_webhooks",
     "post_dev_resources",
-    "post_file_comment"
+    "post_file_comment",
+    "update_webhook"
   ]
 }

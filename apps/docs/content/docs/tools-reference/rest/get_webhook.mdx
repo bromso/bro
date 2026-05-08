@@ -1,0 +1,23 @@
+---
+title: get_webhook
+description: "REST. Return a single webhook by id (Figma webhooks v2)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_webhook"
+  description="REST. Return a single webhook by id (Figma webhooks v2)."
+  streaming={false}
+  input={{"type":"object","properties":{"webhookId":{"type":"string","minLength":1}},"required":["webhookId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"webhook":{"type":"object","properties":{"id":{"type":"string"},"eventType":{"type":"string","enum":["FILE_UPDATE","FILE_VERSION_UPDATE","FILE_DELETE","LIBRARY_PUBLISH","FILE_COMMENT","DEV_MODE_STATUS_UPDATE"]},"teamId":{"type":"string"},"status":{"type":"string","enum":["ACTIVE","PAUSED"]},"endpoint":{"type":"string"},"passcode":{"type":"string"},"description":{"type":"string"}},"required":["id","eventType","teamId","status","endpoint","passcode"],"additionalProperties":false}},"required":["webhook"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return a single webhook by id (Figma webhooks v2).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)
