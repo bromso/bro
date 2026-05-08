@@ -1,0 +1,23 @@
+---
+title: list_team_webhooks
+description: "REST. Return all webhooks owned by a team (Figma webhooks v2)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="list_team_webhooks"
+  description="REST. Return all webhooks owned by a team (Figma webhooks v2)."
+  streaming={false}
+  input={{"type":"object","properties":{"teamId":{"type":"string","minLength":1}},"required":["teamId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"webhooks":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"eventType":{"type":"string","enum":["FILE_UPDATE","FILE_VERSION_UPDATE","FILE_DELETE","LIBRARY_PUBLISH","FILE_COMMENT","DEV_MODE_STATUS_UPDATE"]},"teamId":{"type":"string"},"status":{"type":"string","enum":["ACTIVE","PAUSED"]},"endpoint":{"type":"string"},"passcode":{"type":"string"},"description":{"type":"string"}},"required":["id","eventType","teamId","status","endpoint","passcode"],"additionalProperties":false}}},"required":["webhooks"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return all webhooks owned by a team (Figma webhooks v2).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

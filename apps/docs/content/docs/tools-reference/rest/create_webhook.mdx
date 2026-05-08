@@ -1,0 +1,23 @@
+---
+title: create_webhook
+description: "REST. Create a webhook for the given team + event type. WRITE — gated behind --enable-write-tools (default off)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="create_webhook"
+  description="REST. Create a webhook for the given team + event type. WRITE — gated behind --enable-write-tools (default off)."
+  streaming={false}
+  input={{"type":"object","properties":{"eventType":{"type":"string","enum":["FILE_UPDATE","FILE_VERSION_UPDATE","FILE_DELETE","LIBRARY_PUBLISH","FILE_COMMENT","DEV_MODE_STATUS_UPDATE"]},"teamId":{"type":"string","minLength":1},"endpoint":{"type":"string","format":"uri"},"passcode":{"type":"string","minLength":1},"status":{"type":"string","enum":["ACTIVE","PAUSED"]},"description":{"type":"string"}},"required":["eventType","teamId","endpoint","passcode"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"webhook":{"type":"object","properties":{"id":{"type":"string"},"eventType":{"type":"string","enum":["FILE_UPDATE","FILE_VERSION_UPDATE","FILE_DELETE","LIBRARY_PUBLISH","FILE_COMMENT","DEV_MODE_STATUS_UPDATE"]},"teamId":{"type":"string"},"status":{"type":"string","enum":["ACTIVE","PAUSED"]},"endpoint":{"type":"string"},"passcode":{"type":"string"},"description":{"type":"string"}},"required":["id","eventType","teamId","status","endpoint","passcode"],"additionalProperties":false}},"required":["webhook"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Create a webhook for the given team + event type. WRITE — gated behind --enable-write-tools (default off).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)

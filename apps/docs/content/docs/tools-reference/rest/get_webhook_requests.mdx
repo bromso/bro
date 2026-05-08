@@ -1,0 +1,23 @@
+---
+title: get_webhook_requests
+description: "REST. Return recent delivery attempts for a webhook (Figma webhooks v2)."
+---
+
+import { ToolReference } from "@/components/tool-reference";
+
+<ToolReference
+  pack="tools-rest"
+  name="get_webhook_requests"
+  description="REST. Return recent delivery attempts for a webhook (Figma webhooks v2)."
+  streaming={false}
+  input={{"type":"object","properties":{"webhookId":{"type":"string","minLength":1},"pageSize":{"type":"integer","exclusiveMinimum":true,"minimum":0}},"required":["webhookId"],"additionalProperties":false}}
+  output={{"type":"object","properties":{"requests":{"type":"array","items":{"type":"object","properties":{"webhookId":{"type":"string"},"request":{"type":"object","properties":{"id":{"type":"string"},"endpoint":{"type":"string"},"sentAt":{"type":"string"}},"required":["id","endpoint","sentAt"],"additionalProperties":false},"response":{"type":"object","properties":{"status":{"type":"string"},"receivedAt":{"type":"string"}},"required":["status","receivedAt"],"additionalProperties":false},"errorMessage":{"type":"string"}},"required":["webhookId","request","response"],"additionalProperties":false}}},"required":["requests"],"additionalProperties":false}}
+/>
+
+## Description
+
+REST. Return recent delivery attempts for a webhook (Figma webhooks v2).
+
+## See also
+
+- Pack overview: [tools-rest](/docs/tools/rest)
