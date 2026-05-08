@@ -20,6 +20,9 @@ import type {
   GetTeamProjects,
   GetTeamStyles,
   GetUserMe,
+  GetWebhook,
+  GetWebhookRequests,
+  ListTeamWebhooks,
   PostDevResources,
   PostFileComment,
 } from "./tools";
@@ -456,6 +459,86 @@ export function createPostDevResourcesServerHandler(
           nodeId: d.node_id,
           name: d.name,
           url: d.url,
+        })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+// ---- v2 webhooks ----
+
+const narrowWebhook = (w: {
+  id: string;
+  event_type:
+    | "FILE_UPDATE"
+    | "FILE_VERSION_UPDATE"
+    | "FILE_DELETE"
+    | "LIBRARY_PUBLISH"
+    | "FILE_COMMENT"
+    | "DEV_MODE_STATUS_UPDATE";
+  team_id: string;
+  status: "ACTIVE" | "PAUSED";
+  endpoint: string;
+  passcode: string;
+  description?: string;
+}) => ({
+  id: w.id,
+  eventType: w.event_type,
+  teamId: w.team_id,
+  status: w.status,
+  endpoint: w.endpoint,
+  passcode: w.passcode,
+  ...(w.description !== undefined ? { description: w.description } : {}),
+});
+
+export function createListTeamWebhooksServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof ListTeamWebhooks> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "list_team_webhooks");
+    try {
+      const r = await api.listTeamWebhooks(args.teamId);
+      return { webhooks: r.webhooks.map(narrowWebhook) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetWebhookServerHandler(deps: RestDeps): ServerHandler<typeof GetWebhook> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_webhook");
+    try {
+      const r = await api.getWebhook(args.webhookId);
+      return { webhook: narrowWebhook(r.webhook) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetWebhookRequestsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetWebhookRequests> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_webhook_requests");
+    try {
+      const r = await api.getWebhookRequests(args.webhookId, { pageSize: args.pageSize });
+      return {
+        requests: r.requests.map((req) => ({
+          webhookId: req.webhook_id,
+          request: {
+            id: req.request_info.id,
+            endpoint: req.request_info.endpoint,
+            sentAt: req.request_info.sent_at,
+          },
+          response: {
+            status: req.response_info.status,
+            receivedAt: req.response_info.received_at,
+          },
+          ...(req.error_msg !== undefined ? { errorMessage: req.error_msg } : {}),
         })),
       };
     } catch (err) {

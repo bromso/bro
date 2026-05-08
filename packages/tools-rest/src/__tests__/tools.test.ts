@@ -18,6 +18,9 @@ import {
   GetTeamProjects,
   GetTeamStyles,
   GetUserMe,
+  GetWebhook,
+  GetWebhookRequests,
+  ListTeamWebhooks,
   PostDevResources,
   PostFileComment,
 } from "../tools";
@@ -312,5 +315,82 @@ describe("PostDevResources schema", () => {
         resources: [{ fileKey: "ABC", nodeId: "1:2", name: "X", url: "" }],
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ListTeamWebhooks schema", () => {
+  it("requires teamId", () => {
+    expect(ListTeamWebhooks.input.safeParse({ teamId: "T1" }).success).toBe(true);
+    expect(ListTeamWebhooks.input.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects empty teamId", () => {
+    expect(ListTeamWebhooks.input.safeParse({ teamId: "" }).success).toBe(false);
+  });
+
+  it("rejects extraneous keys (strict)", () => {
+    expect(ListTeamWebhooks.input.safeParse({ teamId: "T1", extra: 1 }).success).toBe(false);
+  });
+
+  it("output is { webhooks: [...] }", () => {
+    expect(ListTeamWebhooks.output.safeParse({ webhooks: [] }).success).toBe(true);
+    expect(
+      ListTeamWebhooks.output.safeParse({
+        webhooks: [
+          {
+            id: "wh1",
+            eventType: "FILE_UPDATE",
+            teamId: "T1",
+            status: "ACTIVE",
+            endpoint: "https://e",
+            passcode: "p",
+          },
+        ],
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetWebhook schema", () => {
+  it("requires webhookId", () => {
+    expect(GetWebhook.input.safeParse({ webhookId: "wh1" }).success).toBe(true);
+    expect(GetWebhook.input.safeParse({}).success).toBe(false);
+  });
+
+  it("output is { webhook: {...} }", () => {
+    expect(
+      GetWebhook.output.safeParse({
+        webhook: {
+          id: "wh1",
+          eventType: "FILE_COMMENT",
+          teamId: "T1",
+          status: "PAUSED",
+          endpoint: "https://e",
+          passcode: "p",
+        },
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("GetWebhookRequests schema", () => {
+  it("requires webhookId", () => {
+    expect(GetWebhookRequests.input.safeParse({ webhookId: "wh1" }).success).toBe(true);
+  });
+
+  it("accepts optional pageSize", () => {
+    expect(GetWebhookRequests.input.safeParse({ webhookId: "wh1", pageSize: 10 }).success).toBe(
+      true
+    );
+  });
+
+  it("rejects non-positive pageSize", () => {
+    expect(GetWebhookRequests.input.safeParse({ webhookId: "wh1", pageSize: 0 }).success).toBe(
+      false
+    );
+  });
+
+  it("output is { requests: [...] }", () => {
+    expect(GetWebhookRequests.output.safeParse({ requests: [] }).success).toBe(true);
   });
 });

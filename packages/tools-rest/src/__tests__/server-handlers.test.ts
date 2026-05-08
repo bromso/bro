@@ -19,6 +19,9 @@ import {
   createGetTeamProjectsServerHandler,
   createGetTeamStylesServerHandler,
   createGetUserMeServerHandler,
+  createGetWebhookRequestsServerHandler,
+  createGetWebhookServerHandler,
+  createListTeamWebhooksServerHandler,
   createPostDevResourcesServerHandler,
   createPostFileCommentServerHandler,
 } from "../server-handlers";
@@ -513,5 +516,139 @@ describe("post_dev_resources server handler", () => {
         ctx
       )
     ).rejects.toThrow(/boom/);
+  });
+});
+
+describe("list_team_webhooks server handler", () => {
+  it("returns the seeded webhooks (narrowed)", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedTeamWebhooks("T1", [
+      {
+        id: "wh1",
+        event_type: "FILE_UPDATE",
+        team_id: "T1",
+        status: "ACTIVE",
+        endpoint: "https://e",
+        passcode: "p",
+        description: "d",
+      },
+    ]);
+    const handler = createListTeamWebhooksServerHandler({ figmaApi });
+    const r = await handler({ teamId: "T1" }, ctx);
+    expect(r.webhooks).toHaveLength(1);
+    expect(r.webhooks[0]).toEqual({
+      id: "wh1",
+      eventType: "FILE_UPDATE",
+      teamId: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+      description: "d",
+    });
+  });
+
+  it("E_FIGMA_API_KEY_MISSING when no client is wired", async () => {
+    const handler = createListTeamWebhooksServerHandler({ figmaApi: null });
+    await expect(handler({ teamId: "T1" }, ctx)).rejects.toThrow(/E_FIGMA_API_KEY_MISSING/);
+  });
+
+  it("propagates underlying errors through mapRestError", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.listTeamWebhooks = async () => {
+      throw new Error("boom");
+    };
+    const handler = createListTeamWebhooksServerHandler({ figmaApi });
+    await expect(handler({ teamId: "T1" }, ctx)).rejects.toThrow(/boom/);
+  });
+});
+
+describe("get_webhook server handler", () => {
+  it("returns the webhook narrowed", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_COMMENT",
+      team_id: "T1",
+      status: "PAUSED",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const handler = createGetWebhookServerHandler({ figmaApi });
+    const r = await handler({ webhookId: "wh1" }, ctx);
+    expect(r.webhook.id).toBe("wh1");
+    expect(r.webhook.eventType).toBe("FILE_COMMENT");
+    expect(r.webhook.status).toBe("PAUSED");
+  });
+
+  it("propagates E_FIGMA_REST_404 when the webhook is missing", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetWebhookServerHandler({ figmaApi });
+    await expect(handler({ webhookId: "missing" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
+});
+
+describe("get_webhook_requests server handler", () => {
+  it("returns narrowed delivery logs", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    figmaApi.__seedWebhookRequests("wh1", [
+      {
+        webhook_id: "wh1",
+        request_info: {
+          id: "r1",
+          endpoint: "https://e",
+          payload: { hello: "world" },
+          sent_at: "2026-01-01T00:00:00Z",
+        },
+        response_info: { status: "200", received_at: "2026-01-01T00:00:01Z" },
+        error_msg: "none",
+      },
+    ]);
+    const handler = createGetWebhookRequestsServerHandler({ figmaApi });
+    const r = await handler({ webhookId: "wh1", pageSize: 10 }, ctx);
+    expect(r.requests).toHaveLength(1);
+    expect(r.requests[0].request.id).toBe("r1");
+    expect(r.requests[0].response.status).toBe("200");
+    expect(r.requests[0].errorMessage).toBe("none");
+  });
+
+  it("omits errorMessage when none", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    figmaApi.__seedWebhookRequests("wh1", [
+      {
+        webhook_id: "wh1",
+        request_info: {
+          id: "r1",
+          endpoint: "https://e",
+          payload: {},
+          sent_at: "2026-01-01T00:00:00Z",
+        },
+        response_info: { status: "200", received_at: "2026-01-01T00:00:01Z" },
+      },
+    ]);
+    const handler = createGetWebhookRequestsServerHandler({ figmaApi });
+    const r = await handler({ webhookId: "wh1" }, ctx);
+    expect(r.requests[0].errorMessage).toBeUndefined();
+  });
+
+  it("propagates E_FIGMA_REST_404 when the webhook is missing", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetWebhookRequestsServerHandler({ figmaApi });
+    await expect(handler({ webhookId: "missing" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
   });
 });

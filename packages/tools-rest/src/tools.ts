@@ -326,3 +326,69 @@ export const PostDevResources = defineTool({
     .strict(),
   output: z.object({ devResources: z.array(DevResourceShape) }),
 });
+
+// ---- v2 webhooks ----
+
+const WebhookEventType = z.enum([
+  "FILE_UPDATE",
+  "FILE_VERSION_UPDATE",
+  "FILE_DELETE",
+  "LIBRARY_PUBLISH",
+  "FILE_COMMENT",
+  "DEV_MODE_STATUS_UPDATE",
+]);
+
+const WebhookStatus = z.enum(["ACTIVE", "PAUSED"]);
+
+const WebhookSummary = z.object({
+  id: z.string(),
+  eventType: WebhookEventType,
+  teamId: z.string(),
+  status: WebhookStatus,
+  endpoint: z.string(),
+  passcode: z.string(),
+  description: z.string().optional(),
+});
+
+const WebhookRequestLog = z.object({
+  webhookId: z.string(),
+  request: z.object({
+    id: z.string(),
+    endpoint: z.string(),
+    sentAt: z.string(),
+  }),
+  response: z.object({
+    status: z.string(),
+    receivedAt: z.string(),
+  }),
+  errorMessage: z.string().optional(),
+});
+
+export const ListTeamWebhooks = defineTool({
+  name: "list_team_webhooks",
+  description: "REST. Return all webhooks owned by a team (Figma webhooks v2).",
+  streaming: false,
+  input: z.object({ teamId: z.string().min(1) }).strict(),
+  output: z.object({ webhooks: z.array(WebhookSummary) }),
+});
+
+export const GetWebhook = defineTool({
+  name: "get_webhook",
+  description: "REST. Return a single webhook by id (Figma webhooks v2).",
+  streaming: false,
+  input: z.object({ webhookId: z.string().min(1) }).strict(),
+  output: z.object({ webhook: WebhookSummary }),
+});
+
+export const GetWebhookRequests = defineTool({
+  name: "get_webhook_requests",
+  description: "REST. Return recent delivery attempts for a webhook (Figma webhooks v2).",
+  streaming: false,
+  input: z
+    .object({
+      webhookId: z.string().min(1),
+      pageSize: z.number().int().positive().optional(),
+    })
+    .strict(),
+  output: z.object({ requests: z.array(WebhookRequestLog) }),
+});
