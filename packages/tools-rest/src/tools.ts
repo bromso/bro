@@ -392,3 +392,46 @@ export const GetWebhookRequests = defineTool({
     .strict(),
   output: z.object({ requests: z.array(WebhookRequestLog) }),
 });
+
+export const CreateWebhook = defineTool({
+  name: "create_webhook",
+  description:
+    "REST. Create a webhook for the given team + event type. WRITE — gated behind --enable-write-tools (default off).",
+  streaming: false,
+  input: z
+    .object({
+      eventType: WebhookEventType,
+      teamId: z.string().min(1),
+      endpoint: z.string().url(),
+      passcode: z.string().min(1),
+      status: WebhookStatus.optional(),
+      description: z.string().optional(),
+    })
+    .strict(),
+  output: z.object({ webhook: WebhookSummary }),
+});
+
+export const UpdateWebhook = defineTool({
+  name: "update_webhook",
+  description:
+    "REST. Update a webhook's endpoint/passcode/status/description. WRITE — gated behind --enable-write-tools (default off).",
+  streaming: false,
+  input: z
+    .object({
+      webhookId: z.string().min(1),
+      endpoint: z.string().url().optional(),
+      passcode: z.string().min(1).optional(),
+      status: WebhookStatus.optional(),
+      description: z.string().optional(),
+    })
+    .strict(),
+  output: z.object({ webhook: WebhookSummary }),
+});
+
+export const DeleteWebhook = defineTool({
+  name: "delete_webhook",
+  description: "REST. Delete a webhook. WRITE — gated behind --enable-write-tools (default off).",
+  streaming: false,
+  input: z.object({ webhookId: z.string().min(1) }).strict(),
+  output: z.object({ ok: z.literal(true) }),
+});

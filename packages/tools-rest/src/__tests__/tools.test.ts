@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  CreateWebhook,
   DeleteFileComment,
+  DeleteWebhook,
   GetDevResources,
   GetFileBranches,
   GetFileComments,
@@ -23,6 +25,7 @@ import {
   ListTeamWebhooks,
   PostDevResources,
   PostFileComment,
+  UpdateWebhook,
 } from "../tools";
 
 describe("GetFileMetadata schema", () => {
@@ -392,5 +395,149 @@ describe("GetWebhookRequests schema", () => {
 
   it("output is { requests: [...] }", () => {
     expect(GetWebhookRequests.output.safeParse({ requests: [] }).success).toBe(true);
+  });
+});
+
+describe("CreateWebhook schema", () => {
+  it("requires eventType + teamId + endpoint + passcode", () => {
+    expect(
+      CreateWebhook.input.safeParse({
+        eventType: "FILE_UPDATE",
+        teamId: "T1",
+        endpoint: "https://e",
+        passcode: "p",
+      }).success
+    ).toBe(true);
+    expect(
+      CreateWebhook.input.safeParse({
+        eventType: "FILE_UPDATE",
+        teamId: "T1",
+        endpoint: "https://e",
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts all six event types", () => {
+    for (const eventType of [
+      "FILE_UPDATE",
+      "FILE_VERSION_UPDATE",
+      "FILE_DELETE",
+      "LIBRARY_PUBLISH",
+      "FILE_COMMENT",
+      "DEV_MODE_STATUS_UPDATE",
+    ]) {
+      expect(
+        CreateWebhook.input.safeParse({
+          eventType,
+          teamId: "T1",
+          endpoint: "https://e",
+          passcode: "p",
+        }).success
+      ).toBe(true);
+    }
+  });
+
+  it("rejects unknown event types", () => {
+    expect(
+      CreateWebhook.input.safeParse({
+        eventType: "BOGUS",
+        teamId: "T1",
+        endpoint: "https://e",
+        passcode: "p",
+      }).success
+    ).toBe(false);
+  });
+
+  it("status is ACTIVE | PAUSED only", () => {
+    for (const status of ["ACTIVE", "PAUSED"]) {
+      expect(
+        CreateWebhook.input.safeParse({
+          eventType: "FILE_UPDATE",
+          teamId: "T1",
+          endpoint: "https://e",
+          passcode: "p",
+          status,
+        }).success
+      ).toBe(true);
+    }
+    expect(
+      CreateWebhook.input.safeParse({
+        eventType: "FILE_UPDATE",
+        teamId: "T1",
+        endpoint: "https://e",
+        passcode: "p",
+        status: "DEAD",
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects extraneous keys (strict)", () => {
+    expect(
+      CreateWebhook.input.safeParse({
+        eventType: "FILE_UPDATE",
+        teamId: "T1",
+        endpoint: "https://e",
+        passcode: "p",
+        extra: 1,
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-URL endpoint values", () => {
+    expect(
+      CreateWebhook.input.safeParse({
+        eventType: "FILE_UPDATE",
+        teamId: "T1",
+        endpoint: "not-a-url",
+        passcode: "p",
+      }).success
+    ).toBe(false);
+  });
+
+  it("description is WRITE-annotated", () => {
+    expect(CreateWebhook.description).toMatch(/WRITE/i);
+  });
+});
+
+describe("UpdateWebhook schema", () => {
+  it("requires only webhookId", () => {
+    expect(UpdateWebhook.input.safeParse({ webhookId: "wh1" }).success).toBe(true);
+  });
+
+  it("accepts partial updates", () => {
+    expect(UpdateWebhook.input.safeParse({ webhookId: "wh1", status: "PAUSED" }).success).toBe(
+      true
+    );
+    expect(
+      UpdateWebhook.input.safeParse({ webhookId: "wh1", endpoint: "https://e2" }).success
+    ).toBe(true);
+  });
+
+  it("rejects unknown status values", () => {
+    expect(UpdateWebhook.input.safeParse({ webhookId: "wh1", status: "DEAD" }).success).toBe(false);
+  });
+
+  it("rejects non-URL endpoint values", () => {
+    expect(UpdateWebhook.input.safeParse({ webhookId: "wh1", endpoint: "not-a-url" }).success).toBe(
+      false
+    );
+  });
+
+  it("description is WRITE-annotated", () => {
+    expect(UpdateWebhook.description).toMatch(/WRITE/i);
+  });
+});
+
+describe("DeleteWebhook schema", () => {
+  it("requires webhookId", () => {
+    expect(DeleteWebhook.input.safeParse({ webhookId: "wh1" }).success).toBe(true);
+  });
+
+  it("output is { ok: true }", () => {
+    expect(DeleteWebhook.output.safeParse({ ok: true }).success).toBe(true);
+  });
+
+  it("description is WRITE-annotated", () => {
+    expect(DeleteWebhook.description).toMatch(/WRITE/i);
   });
 });
