@@ -1,5 +1,23 @@
 # @repo/figma-api-client
 
+## 0.3.0
+
+### Minor Changes
+
+- [#32](https://github.com/bromso/bro/pull/32) [`5a59da5`](https://github.com/bromso/bro/commit/5a59da510731dbca729e8f4ccee79ecd0df9581f) Thanks [@bromso](https://github.com/bromso)! - `tools-rest` gains 6 webhook tools backed by the Figma webhooks v2 API.
+  Three reads (`list_team_webhooks`, `get_webhook`, `get_webhook_requests`)
+  and three writes (`create_webhook`, `update_webhook`, `delete_webhook`).
+  Writes are gated behind `--enable-write-tools` like the existing rest
+  write tools.
+
+  `@repo/figma-api-client` adds `requestV2` to hit Figma's v2 API surface
+  without breaking the existing 20 v1 tools.
+
+  Out of scope: webhook delivery handling (figma-mcp doesn't host the
+  endpoint a webhook posts to — that's the user's app), event-type
+  filtering beyond Figma's documented enum, OAuth-based webhook ownership
+  (PAT only).
+
 ## 0.2.0
 
 ### Minor Changes
