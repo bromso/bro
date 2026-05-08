@@ -79,7 +79,7 @@ The scope is the package or app. Use `!` after the scope (`feat(mcp-server)!:`) 
 
 ## Changesets policy
 
-Every user-facing change requires a changeset:
+Every change to a **publishable** package requires a changeset:
 
 ```bash
 bun changeset
@@ -91,6 +91,18 @@ bun changeset
 - **Major bumps** must have a `!` in the matching commit.
 
 The release workflow consumes pending changesets on every merge to `master` and either opens a "Version Packages" PR or publishes to npm — see `.github/workflows/release.yml`.
+
+### Don't add a changeset that only references ignored packages
+
+The `.changeset/config.json` `ignore` list contains packages that never publish to npm: `@repo/docs`, `@repo/storybook`, `@repo/relay`, `@repo/bridge-plugin`, `@repo/ui`, `@repo/common`. These deploy to other surfaces (GitHub Pages, Cloudflare, Figma Community).
+
+A changeset that touches **only** ignored packages is a footgun: `changesets/action@v1` checks for the file's existence, not its contents. With at least one changeset present, the action takes the version+PR path. The version step then produces no diff (every referenced package is ignored), and the action force-pushes an empty branch and tries to open a PR — which fails with `"No commits between master and changeset-release/master"`.
+
+This blocks **all subsequent merges** from triggering a real publish until the offending file is deleted. We've hit this twice (PR #13, PR #25); fix the trap by simply not adding a changeset for changes that only affect ignored packages.
+
+**Quick rule**: if every package your PR touches has `"private": true` AND appears in the `ignore` list, do NOT add a changeset. The work is documented in commit messages and any plan docs in `docs/plans/`.
+
+If you're unsure, run `bun changeset status` after creating the file — if it reports nothing to bump (or only ignored entries), delete the changeset before merging.
 
 ## Coverage gates
 
