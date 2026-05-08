@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Phase 21 — OAuth client-side scaffold.
  *
@@ -48,10 +49,10 @@ export async function loadOAuthTokens(path: string): Promise<OAuthTokenSet | nul
   let raw: string;
   try {
     raw = await readFile(path, "utf-8");
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
-    // Permission errors etc. — treat as "no usable token" so the daemon
-    // re-runs the OAuth flow rather than crashing.
+  } catch {
+    // ENOENT (no token on disk yet), permission errors, etc. — treat all
+    // failure modes as "no usable token" so the daemon re-runs the OAuth
+    // flow rather than crashing on a half-readable file.
     return null;
   }
   let parsed: unknown;

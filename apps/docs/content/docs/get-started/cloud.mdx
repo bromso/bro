@@ -55,10 +55,26 @@ You then enter the code in the bridge plugin's "Pair via cloud" prompt; the plug
 - `--relay-url <url>` overrides the relay base URL (useful for self-hosted relays).
 - `--client <id>` writes only the named client's config (`claude-code`, `cursor`, etc.).
 
+## OAuth (Phase 22)
+
+Cloud mode v1 is PAT-only — you generate a token at `figma.com/settings` and export it as `FIGMA_API_KEY`. Phase 21 has shipped the daemon-side machinery for OAuth (token storage, bearer-token auth on `FigmaApiClient`, and a `--cloud --oauth` flag), but the relay-side `/oauth/start` and `/oauth/callback` endpoints aren't built yet.
+
+Today, `figma-mcp setup --cloud --oauth` is recognized but exits with a "Phase 22 required" pointer to this page rather than starting an unfinished flow.
+
+The planned end-to-end flow (Phase 22):
+
+1. `figma-mcp setup --cloud --oauth` opens the relay's `/oauth/start` URL in the user's browser.
+2. The user authorizes the bromso OAuth app on figma.com; Figma redirects back to the relay's `/oauth/callback` with an auth code.
+3. The relay exchanges the code for an `access_token` + `refresh_token` and pipes them down to the daemon over the existing pairing channel.
+4. The daemon writes them to `~/.figma-mcp/oauth.json` (mode `0600`) and uses them for REST calls — refreshing automatically when within 60s of expiry.
+
+Until Phase 22 lands, stick with the PAT-based setup above.
+
 ## Troubleshooting
 
 - `E_FIGMA_API_KEY_MISSING` from a REST tool — the env var isn't visible to the daemon. Restart the daemon after exporting it.
 - `E_RELAY_PAIR_FAILED` from `setup --cloud` — the relay returned a non-2xx. Check the relay's status, or override the URL.
 - "Pairing code expired" in the bridge plugin — codes have a 5-minute TTL. Rerun `setup --cloud`.
+- `--oauth` prints a "Phase 22 required" message — see the OAuth section above; OAuth is end-to-end not yet wired up.
 
 See also: [error-codes reference](/docs/reference/error-codes).

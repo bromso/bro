@@ -80,6 +80,12 @@ Streamable HTTP is the cloud-mode entry; stdio is the local-mode entry. Mixing t
 
 Pairing codes minted by `setup --cloud` expire after 5 minutes. If you delay drag-importing the bridge plugin past the TTL, the relay rejects the plugin's pair attempt and returns `PairingExpired`. Re-run `setup --cloud` to mint a fresh code, then drag-import within the TTL window.
 
+### OAuth setup not yet supported
+
+Running `figma-mcp setup --cloud --oauth` recognizes the flag (it's plumbed through dispatch) but exits cleanly with a "Phase 22 required" pointer to the docs rather than starting an OAuth flow. The daemon-side machinery (token storage, bearer-token auth, `/oauth/refresh` exchange) shipped in Phase 21; the relay-side `/oauth/start` and `/oauth/callback` endpoints land in Phase 22.
+
+For now, use the PAT-based [cloud setup](/docs/get-started/cloud) — generate a token at `figma.com/settings`, export it as `FIGMA_API_KEY`, run the daemon. Once Phase 22 lands, an `--oauth` re-run will swap the PAT for an OAuth bearer token without breaking the existing setup.
+
 ## When all else fails
 
 - Re-run `figma-mcp doctor --json` and attach the output to a GitHub issue.

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Phase 21 — OAuth refresh-token exchange.
  *
