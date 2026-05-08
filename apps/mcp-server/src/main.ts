@@ -122,7 +122,10 @@ import {
   setStickyContentPluginHandler,
 } from "@repo/tools-figjam";
 import {
+  CreateWebhook,
+  createCreateWebhookServerHandler,
   createDeleteFileCommentServerHandler,
+  createDeleteWebhookServerHandler,
   createGetDevResourcesServerHandler,
   createGetFileBranchesServerHandler,
   createGetFileCommentsServerHandler,
@@ -140,9 +143,14 @@ import {
   createGetTeamProjectsServerHandler,
   createGetTeamStylesServerHandler,
   createGetUserMeServerHandler,
+  createGetWebhookRequestsServerHandler,
+  createGetWebhookServerHandler,
+  createListTeamWebhooksServerHandler,
   createPostDevResourcesServerHandler,
   createPostFileCommentServerHandler,
+  createUpdateWebhookServerHandler,
   DeleteFileComment,
+  DeleteWebhook,
   GetDevResources,
   GetFileBranches,
   GetFileComments,
@@ -160,8 +168,12 @@ import {
   GetTeamProjects,
   GetTeamStyles,
   GetUserMe,
+  GetWebhook,
+  GetWebhookRequests,
+  ListTeamWebhooks,
   PostDevResources,
   PostFileComment,
+  UpdateWebhook,
 } from "@repo/tools-rest";
 import {
   CreateSlide,
@@ -687,6 +699,12 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
             GetTeamStyles,
             GetDevResources,
             PostDevResources,
+            ListTeamWebhooks,
+            GetWebhook,
+            GetWebhookRequests,
+            CreateWebhook,
+            UpdateWebhook,
+            DeleteWebhook,
           ],
           registerServer: (reg) => {
             reg.register(GetFileMetadata, createGetFileMetadataServerHandler({ figmaApi }));
@@ -726,6 +744,30 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
             reg.register(
               PostDevResources,
               createPostDevResourcesServerHandler({
+                figmaApi,
+                enableWriteTools: opts.enableWriteTools,
+              })
+            );
+            reg.register(ListTeamWebhooks, createListTeamWebhooksServerHandler({ figmaApi }));
+            reg.register(GetWebhook, createGetWebhookServerHandler({ figmaApi }));
+            reg.register(GetWebhookRequests, createGetWebhookRequestsServerHandler({ figmaApi }));
+            reg.register(
+              CreateWebhook,
+              createCreateWebhookServerHandler({
+                figmaApi,
+                enableWriteTools: opts.enableWriteTools,
+              })
+            );
+            reg.register(
+              UpdateWebhook,
+              createUpdateWebhookServerHandler({
+                figmaApi,
+                enableWriteTools: opts.enableWriteTools,
+              })
+            );
+            reg.register(
+              DeleteWebhook,
+              createDeleteWebhookServerHandler({
                 figmaApi,
                 enableWriteTools: opts.enableWriteTools,
               })
@@ -819,6 +861,12 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
       GetTeamStyles,
       GetDevResources,
       PostDevResources,
+      ListTeamWebhooks,
+      GetWebhook,
+      GetWebhookRequests,
+      CreateWebhook,
+      UpdateWebhook,
+      DeleteWebhook,
       AuditContrast,
       AuditTargetSize,
       SimulateColorBlindness,

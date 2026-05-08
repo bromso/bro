@@ -180,3 +180,54 @@ export interface DevResourceInput {
 export interface DevResourcesResponse {
   readonly dev_resources: readonly DevResource[];
 }
+
+// ---- v2 webhooks ----
+
+export type WebhookV2Status = "ACTIVE" | "PAUSED";
+
+export type WebhookV2EventType =
+  | "FILE_UPDATE"
+  | "FILE_VERSION_UPDATE"
+  | "FILE_DELETE"
+  | "LIBRARY_PUBLISH"
+  | "FILE_COMMENT"
+  | "DEV_MODE_STATUS_UPDATE";
+
+export interface WebhookV2 {
+  readonly id: string;
+  readonly event_type: WebhookV2EventType;
+  readonly team_id: string;
+  readonly status: WebhookV2Status;
+  readonly client_id?: string;
+  readonly endpoint: string;
+  readonly passcode: string;
+  readonly description?: string;
+  readonly protocol_version?: string;
+}
+
+export interface WebhookV2RequestLog {
+  readonly webhook_id: string;
+  readonly request_info: {
+    readonly id: string;
+    readonly endpoint: string;
+    readonly payload: unknown;
+    readonly sent_at: string;
+  };
+  readonly response_info: {
+    readonly status: string;
+    readonly received_at: string;
+  };
+  readonly error_msg?: string;
+}
+
+export interface WebhookV2Response {
+  readonly webhook: WebhookV2;
+}
+
+export interface TeamWebhooksResponse {
+  readonly webhooks: readonly WebhookV2[];
+}
+
+export interface WebhookRequestsResponse {
+  readonly requests: readonly WebhookV2RequestLog[];
+}

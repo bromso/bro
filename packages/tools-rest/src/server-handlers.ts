@@ -2,7 +2,9 @@ import type { FigmaApi } from "@repo/figma-api-client";
 import type { ServerHandler } from "@repo/protocol";
 import { mapRestError, requireApiKey, requireWriteEnabled } from "./guards";
 import type {
+  CreateWebhook,
   DeleteFileComment,
+  DeleteWebhook,
   GetDevResources,
   GetFileBranches,
   GetFileComments,
@@ -20,8 +22,12 @@ import type {
   GetTeamProjects,
   GetTeamStyles,
   GetUserMe,
+  GetWebhook,
+  GetWebhookRequests,
+  ListTeamWebhooks,
   PostDevResources,
   PostFileComment,
+  UpdateWebhook,
 } from "./tools";
 
 export interface RestDeps {
@@ -458,6 +464,143 @@ export function createPostDevResourcesServerHandler(
           url: d.url,
         })),
       };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+// ---- v2 webhooks ----
+
+const narrowWebhook = (w: {
+  id: string;
+  event_type:
+    | "FILE_UPDATE"
+    | "FILE_VERSION_UPDATE"
+    | "FILE_DELETE"
+    | "LIBRARY_PUBLISH"
+    | "FILE_COMMENT"
+    | "DEV_MODE_STATUS_UPDATE";
+  team_id: string;
+  status: "ACTIVE" | "PAUSED";
+  endpoint: string;
+  passcode: string;
+  description?: string;
+}) => ({
+  id: w.id,
+  eventType: w.event_type,
+  teamId: w.team_id,
+  status: w.status,
+  endpoint: w.endpoint,
+  passcode: w.passcode,
+  ...(w.description !== undefined ? { description: w.description } : {}),
+});
+
+export function createListTeamWebhooksServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof ListTeamWebhooks> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "list_team_webhooks");
+    try {
+      const r = await api.listTeamWebhooks(args.teamId);
+      return { webhooks: r.webhooks.map(narrowWebhook) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetWebhookServerHandler(deps: RestDeps): ServerHandler<typeof GetWebhook> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_webhook");
+    try {
+      const r = await api.getWebhook(args.webhookId);
+      return { webhook: narrowWebhook(r.webhook) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createGetWebhookRequestsServerHandler(
+  deps: RestDeps
+): ServerHandler<typeof GetWebhookRequests> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "get_webhook_requests");
+    try {
+      const r = await api.getWebhookRequests(args.webhookId, { pageSize: args.pageSize });
+      return {
+        requests: r.requests.map((req) => ({
+          webhookId: req.webhook_id,
+          request: {
+            id: req.request_info.id,
+            endpoint: req.request_info.endpoint,
+            sentAt: req.request_info.sent_at,
+          },
+          response: {
+            status: req.response_info.status,
+            receivedAt: req.response_info.received_at,
+          },
+          ...(req.error_msg !== undefined ? { errorMessage: req.error_msg } : {}),
+        })),
+      };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createCreateWebhookServerHandler(
+  deps: RestWriteDeps
+): ServerHandler<typeof CreateWebhook> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "create_webhook");
+    requireWriteEnabled(deps, "create_webhook");
+    try {
+      const r = await api.createWebhook({
+        event_type: args.eventType,
+        team_id: args.teamId,
+        endpoint: args.endpoint,
+        passcode: args.passcode,
+        ...(args.status !== undefined ? { status: args.status } : {}),
+        ...(args.description !== undefined ? { description: args.description } : {}),
+      });
+      return { webhook: narrowWebhook(r.webhook) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createUpdateWebhookServerHandler(
+  deps: RestWriteDeps
+): ServerHandler<typeof UpdateWebhook> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "update_webhook");
+    requireWriteEnabled(deps, "update_webhook");
+    try {
+      const r = await api.updateWebhook(args.webhookId, {
+        ...(args.endpoint !== undefined ? { endpoint: args.endpoint } : {}),
+        ...(args.passcode !== undefined ? { passcode: args.passcode } : {}),
+        ...(args.status !== undefined ? { status: args.status } : {}),
+        ...(args.description !== undefined ? { description: args.description } : {}),
+      });
+      return { webhook: narrowWebhook(r.webhook) };
+    } catch (err) {
+      mapRestError(err);
+    }
+  };
+}
+
+export function createDeleteWebhookServerHandler(
+  deps: RestWriteDeps
+): ServerHandler<typeof DeleteWebhook> {
+  return async (args) => {
+    const api = requireApiKey(deps.figmaApi, "delete_webhook");
+    requireWriteEnabled(deps, "delete_webhook");
+    try {
+      await api.deleteWebhook(args.webhookId);
+      return { ok: true as const };
     } catch (err) {
       mapRestError(err);
     }

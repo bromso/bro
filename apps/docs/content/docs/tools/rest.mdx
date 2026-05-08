@@ -1,6 +1,6 @@
 ---
 title: rest pack
-description: Cloud-mode-without-plugin reads — 20 tools backed by the Figma REST API. Three are write-gated.
+description: Cloud-mode-without-plugin reads — 26 tools backed by the Figma REST API. Six are write-gated.
 ---
 
 The `rest` pack is architecturally different from every other pack: tools call the Figma REST API directly via `FIGMA_API_KEY` in the daemon's environment. They work whenever the env var is set — even if the bridge plugin is not paired and Figma Desktop is not running. This is the entire point of "cloud mode without plugin."
@@ -74,6 +74,19 @@ Three tools mutate files (`post_file_comment`, `delete_file_comment`, `post_dev_
 | [get_team_styles](/docs/tools-reference/rest/get_team_styles) | Cursor-paginated team styles. |
 | [get_dev_resources](/docs/tools-reference/rest/get_dev_resources) | Read Dev Mode resources. |
 | [post_dev_resources](/docs/tools-reference/rest/post_dev_resources) | **Write-gated** — add Dev Mode resources. |
+
+### Webhooks (3 write-gated)
+
+Backed by Figma's webhooks v2 API. Reads list/inspect; writes create/update/delete subscriptions. The MCP server does not host the endpoint that webhook payloads post to — the user's app does.
+
+| Tool | What it does |
+| ---- | ------------ |
+| [list_team_webhooks](/docs/tools-reference/rest/list_team_webhooks) | Read all webhooks owned by a team. |
+| [get_webhook](/docs/tools-reference/rest/get_webhook) | Read a single webhook by id. |
+| [get_webhook_requests](/docs/tools-reference/rest/get_webhook_requests) | Read recent delivery attempts for a webhook. |
+| [create_webhook](/docs/tools-reference/rest/create_webhook) | **Write-gated** — register a webhook for a team + event type. |
+| [update_webhook](/docs/tools-reference/rest/update_webhook) | **Write-gated** — update endpoint / passcode / status / description. |
+| [delete_webhook](/docs/tools-reference/rest/delete_webhook) | **Write-gated** — remove a webhook subscription. |
 
 ## Recipes using this pack
 

@@ -1,7 +1,9 @@
 import { FigmaApiFake } from "@repo/figma-api-client";
 import { describe, expect, it } from "vitest";
 import {
+  createCreateWebhookServerHandler,
   createDeleteFileCommentServerHandler,
+  createDeleteWebhookServerHandler,
   createGetDevResourcesServerHandler,
   createGetFileBranchesServerHandler,
   createGetFileCommentsServerHandler,
@@ -19,8 +21,12 @@ import {
   createGetTeamProjectsServerHandler,
   createGetTeamStylesServerHandler,
   createGetUserMeServerHandler,
+  createGetWebhookRequestsServerHandler,
+  createGetWebhookServerHandler,
+  createListTeamWebhooksServerHandler,
   createPostDevResourcesServerHandler,
   createPostFileCommentServerHandler,
+  createUpdateWebhookServerHandler,
 } from "../server-handlers";
 
 const noopLogger = {
@@ -513,5 +519,325 @@ describe("post_dev_resources server handler", () => {
         ctx
       )
     ).rejects.toThrow(/boom/);
+  });
+});
+
+describe("list_team_webhooks server handler", () => {
+  it("returns the seeded webhooks (narrowed)", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedTeamWebhooks("T1", [
+      {
+        id: "wh1",
+        event_type: "FILE_UPDATE",
+        team_id: "T1",
+        status: "ACTIVE",
+        endpoint: "https://e",
+        passcode: "p",
+        description: "d",
+      },
+    ]);
+    const handler = createListTeamWebhooksServerHandler({ figmaApi });
+    const r = await handler({ teamId: "T1" }, ctx);
+    expect(r.webhooks).toHaveLength(1);
+    expect(r.webhooks[0]).toEqual({
+      id: "wh1",
+      eventType: "FILE_UPDATE",
+      teamId: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+      description: "d",
+    });
+  });
+
+  it("E_FIGMA_API_KEY_MISSING when no client is wired", async () => {
+    const handler = createListTeamWebhooksServerHandler({ figmaApi: null });
+    await expect(handler({ teamId: "T1" }, ctx)).rejects.toThrow(/E_FIGMA_API_KEY_MISSING/);
+  });
+
+  it("propagates underlying errors through mapRestError", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.listTeamWebhooks = async () => {
+      throw new Error("boom");
+    };
+    const handler = createListTeamWebhooksServerHandler({ figmaApi });
+    await expect(handler({ teamId: "T1" }, ctx)).rejects.toThrow(/boom/);
+  });
+});
+
+describe("get_webhook server handler", () => {
+  it("returns the webhook narrowed", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_COMMENT",
+      team_id: "T1",
+      status: "PAUSED",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const handler = createGetWebhookServerHandler({ figmaApi });
+    const r = await handler({ webhookId: "wh1" }, ctx);
+    expect(r.webhook.id).toBe("wh1");
+    expect(r.webhook.eventType).toBe("FILE_COMMENT");
+    expect(r.webhook.status).toBe("PAUSED");
+  });
+
+  it("propagates E_FIGMA_REST_404 when the webhook is missing", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetWebhookServerHandler({ figmaApi });
+    await expect(handler({ webhookId: "missing" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
+});
+
+describe("get_webhook_requests server handler", () => {
+  it("returns narrowed delivery logs", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    figmaApi.__seedWebhookRequests("wh1", [
+      {
+        webhook_id: "wh1",
+        request_info: {
+          id: "r1",
+          endpoint: "https://e",
+          payload: { hello: "world" },
+          sent_at: "2026-01-01T00:00:00Z",
+        },
+        response_info: { status: "200", received_at: "2026-01-01T00:00:01Z" },
+        error_msg: "none",
+      },
+    ]);
+    const handler = createGetWebhookRequestsServerHandler({ figmaApi });
+    const r = await handler({ webhookId: "wh1", pageSize: 10 }, ctx);
+    expect(r.requests).toHaveLength(1);
+    expect(r.requests[0].request.id).toBe("r1");
+    expect(r.requests[0].response.status).toBe("200");
+    expect(r.requests[0].errorMessage).toBe("none");
+  });
+
+  it("omits errorMessage when none", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    figmaApi.__seedWebhookRequests("wh1", [
+      {
+        webhook_id: "wh1",
+        request_info: {
+          id: "r1",
+          endpoint: "https://e",
+          payload: {},
+          sent_at: "2026-01-01T00:00:00Z",
+        },
+        response_info: { status: "200", received_at: "2026-01-01T00:00:01Z" },
+      },
+    ]);
+    const handler = createGetWebhookRequestsServerHandler({ figmaApi });
+    const r = await handler({ webhookId: "wh1" }, ctx);
+    expect(r.requests[0].errorMessage).toBeUndefined();
+  });
+
+  it("propagates E_FIGMA_REST_404 when the webhook is missing", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createGetWebhookRequestsServerHandler({ figmaApi });
+    await expect(handler({ webhookId: "missing" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
+});
+
+describe("create_webhook server handler", () => {
+  it("E_WRITE_TOOLS_DISABLED when gate is closed", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createCreateWebhookServerHandler({ figmaApi, enableWriteTools: false });
+    await expect(
+      handler(
+        {
+          eventType: "FILE_UPDATE",
+          teamId: "T1",
+          endpoint: "https://e",
+          passcode: "p",
+        },
+        ctx
+      )
+    ).rejects.toThrow(/E_WRITE_TOOLS_DISABLED/);
+  });
+
+  it("creates when gate is open", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createCreateWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler(
+      {
+        eventType: "FILE_UPDATE",
+        teamId: "T1",
+        endpoint: "https://e",
+        passcode: "p",
+        description: "test",
+      },
+      ctx
+    );
+    expect(r.webhook.id).toMatch(/^wh/);
+    expect(r.webhook.eventType).toBe("FILE_UPDATE");
+    expect(r.webhook.teamId).toBe("T1");
+    expect(r.webhook.status).toBe("ACTIVE");
+    expect(r.webhook.description).toBe("test");
+    // verify side-effect: now listable
+    const list = await figmaApi.listTeamWebhooks("T1");
+    expect(list.webhooks).toHaveLength(1);
+  });
+
+  it("E_FIGMA_API_KEY_MISSING precedes the write-gate check", async () => {
+    const handler = createCreateWebhookServerHandler({ figmaApi: null, enableWriteTools: true });
+    await expect(
+      handler(
+        {
+          eventType: "FILE_UPDATE",
+          teamId: "T1",
+          endpoint: "https://e",
+          passcode: "p",
+        },
+        ctx
+      )
+    ).rejects.toThrow(/E_FIGMA_API_KEY_MISSING/);
+  });
+
+  it("propagates underlying client errors through mapRestError", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.createWebhook = async () => {
+      throw new Error("boom");
+    };
+    const handler = createCreateWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(
+      handler(
+        {
+          eventType: "FILE_UPDATE",
+          teamId: "T1",
+          endpoint: "https://e",
+          passcode: "p",
+        },
+        ctx
+      )
+    ).rejects.toThrow(/boom/);
+  });
+});
+
+describe("update_webhook server handler", () => {
+  it("E_WRITE_TOOLS_DISABLED when gate is closed", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createUpdateWebhookServerHandler({ figmaApi, enableWriteTools: false });
+    await expect(handler({ webhookId: "wh1", status: "PAUSED" }, ctx)).rejects.toThrow(
+      /E_WRITE_TOOLS_DISABLED/
+    );
+  });
+
+  it("updates when gate is open", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const handler = createUpdateWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler(
+      { webhookId: "wh1", status: "PAUSED", endpoint: "https://e2", description: "d2" },
+      ctx
+    );
+    expect(r.webhook.status).toBe("PAUSED");
+    expect(r.webhook.endpoint).toBe("https://e2");
+    expect(r.webhook.description).toBe("d2");
+  });
+
+  it("propagates E_FIGMA_REST_404 when the webhook is missing", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createUpdateWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(handler({ webhookId: "missing", status: "PAUSED" }, ctx)).rejects.toThrow(
+      /E_FIGMA_REST_404/
+    );
+  });
+
+  it("propagates underlying client errors through mapRestError", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.updateWebhook = async () => {
+      throw new Error("boom");
+    };
+    const handler = createUpdateWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(handler({ webhookId: "wh1", status: "PAUSED" }, ctx)).rejects.toThrow(/boom/);
+  });
+
+  it("E_FIGMA_API_KEY_MISSING when no client is wired", async () => {
+    const handler = createUpdateWebhookServerHandler({ figmaApi: null, enableWriteTools: true });
+    await expect(handler({ webhookId: "wh1" }, ctx)).rejects.toThrow(/E_FIGMA_API_KEY_MISSING/);
+  });
+
+  it("supports passcode-only updates (no other fields)", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const handler = createUpdateWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler({ webhookId: "wh1", passcode: "p2" }, ctx);
+    expect(r.webhook.passcode).toBe("p2");
+  });
+});
+
+describe("delete_webhook server handler", () => {
+  it("E_WRITE_TOOLS_DISABLED when gate is closed", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createDeleteWebhookServerHandler({ figmaApi, enableWriteTools: false });
+    await expect(handler({ webhookId: "wh1" }, ctx)).rejects.toThrow(/E_WRITE_TOOLS_DISABLED/);
+  });
+
+  it("deletes when gate is open", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.__seedWebhook({
+      id: "wh1",
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      status: "ACTIVE",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const handler = createDeleteWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    const r = await handler({ webhookId: "wh1" }, ctx);
+    expect(r).toEqual({ ok: true });
+    await expect(figmaApi.getWebhook("wh1")).rejects.toThrow();
+  });
+
+  it("propagates E_FIGMA_REST_404 when the webhook is missing", async () => {
+    const figmaApi = new FigmaApiFake();
+    const handler = createDeleteWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(handler({ webhookId: "missing" }, ctx)).rejects.toThrow(/E_FIGMA_REST_404/);
+  });
+
+  it("propagates underlying client errors through mapRestError", async () => {
+    const figmaApi = new FigmaApiFake();
+    figmaApi.deleteWebhook = async () => {
+      throw new Error("boom");
+    };
+    const handler = createDeleteWebhookServerHandler({ figmaApi, enableWriteTools: true });
+    await expect(handler({ webhookId: "wh1" }, ctx)).rejects.toThrow(/boom/);
+  });
+
+  it("E_FIGMA_API_KEY_MISSING when no client is wired", async () => {
+    const handler = createDeleteWebhookServerHandler({ figmaApi: null, enableWriteTools: true });
+    await expect(handler({ webhookId: "wh1" }, ctx)).rejects.toThrow(/E_FIGMA_API_KEY_MISSING/);
   });
 });
