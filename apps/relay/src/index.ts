@@ -7,6 +7,7 @@
  *   POST /mcp/{sessionId}       → AI Streamable HTTP (Task 6.7)
  *   POST /oauth/start           → daemon-initiated OAuth (Phase 22 Task 2)
  *   GET  /oauth/callback        → Figma redirect lands here (Phase 22 Task 3)
+ *   GET  /oauth/result?sid=...  → daemon polls for tokens (Phase 22 Task 4)
  */
 
 /**
@@ -362,6 +363,24 @@ export default {
         return Response.json({ error: "E_OAUTH_MISSING_SID" }, { status: 400 });
       }
       return handleOAuthStart(env, sid);
+    }
+
+    if (url.pathname === "/oauth/result") {
+      if (request.method !== "GET") {
+        return new Response("method not allowed", { status: 405 });
+      }
+      const sid = url.searchParams.get("sid");
+      if (!sid) {
+        return Response.json({ error: "E_OAUTH_MISSING_SID" }, { status: 400 });
+      }
+      if (!SID_PATTERN.test(sid)) {
+        return Response.json({ error: "E_OAUTH_INVALID_SID" }, { status: 400 });
+      }
+      const sessionDo = env.OAUTH_SESSION.get(env.OAUTH_SESSION.idFromName(sid));
+      // Proxy verbatim — the DO already returns 202/200/410/404 with the
+      // right shape (200 carries `{tokens}` JSON; 202 has no body; 410/404
+      // are plain text). Daemon distinguishes by status code, not body.
+      return sessionDo.fetch("https://do/result", { method: "GET" });
     }
 
     if (url.pathname === "/oauth/callback") {
