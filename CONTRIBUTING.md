@@ -132,6 +132,18 @@ The canonical example is `packages/tools-extract/`. To add a new pack `tools-foo
 
 The docs site's per-tool reference under `apps/docs/content/docs/tools-reference/` is auto-generated. After your PR merges, the **Tool reference drift** workflow (`.github/workflows/tool-reference-drift.yml`) regenerates the MDX and opens a follow-up PR if anything has changed. You don't need to commit the regenerated MDX yourself — though you can run `bun run --filter @repo/docs regen-tools` locally if you want to preview the new pages.
 
+## Docs PR previews
+
+Any PR that touches `apps/docs/**`, a tool pack, or `@repo/figma-api-client` triggers `.github/workflows/docs-pr-preview.yml`. The workflow builds the docs site against the PR's HEAD and uploads the static `out/` directory as a `docs-preview` artifact. The bot leaves a comment on the PR with download + serve instructions:
+
+```bash
+gh run download <run-id> --name docs-preview --dir /tmp/preview
+bunx serve /tmp/preview
+# Visit http://localhost:3000/bro/docs/
+```
+
+Artifacts are retained for 7 days. Useful for reviewing content changes (recipes, pack overviews, the auto-generated tool reference) without merging first.
+
 ## Shipping the bridge plugin to Figma Community
 
 The bundled bridge plugin in `apps/bridge-plugin/` is built into the published `@bromso/figma-mcp` artifact. To list it on the [Figma Plugin Community](https://www.figma.com/community):
