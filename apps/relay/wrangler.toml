@@ -28,3 +28,9 @@ PAIRING_CODE_TTL_MS = "300000"
 RPC_TIMEOUT_MS = "30000"
 OAUTH_SESSION_TTL_MS = "300000"
 OAUTH_CALLBACK_URL = "https://figma-mcp-relay.bromso.workers.dev/oauth/callback"
+# OAuth client credentials are placeholders here. Production deployment MUST
+# override both via `wrangler secret put FIGMA_OAUTH_CLIENT_ID` and
+# `wrangler secret put FIGMA_OAUTH_CLIENT_SECRET` — secrets win over [vars].
+# Empty strings would surface E_OAUTH_NOT_CONFIGURED at the /oauth/start route.
+FIGMA_OAUTH_CLIENT_ID = "test-client-id"
+FIGMA_OAUTH_CLIENT_SECRET = "test-client-secret"
