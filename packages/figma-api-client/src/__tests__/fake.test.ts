@@ -152,3 +152,141 @@ describe("FigmaApiFake.getTeamComponents — pagination", () => {
     expect(r.meta.cursor?.after).toBe(100);
   });
 });
+
+describe("FigmaApiFake — v2 webhooks", () => {
+  const seedWebhook = {
+    id: "wh1",
+    event_type: "FILE_UPDATE" as const,
+    team_id: "T1",
+    status: "ACTIVE" as const,
+    endpoint: "https://e",
+    passcode: "p",
+  };
+
+  it("listTeamWebhooks returns seeded webhooks", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedTeamWebhooks("T1", [seedWebhook]);
+    const r = await fake.listTeamWebhooks("T1");
+    expect(r.webhooks).toHaveLength(1);
+    expect(r.webhooks[0].id).toBe("wh1");
+  });
+
+  it("listTeamWebhooks returns empty list for unknown team", async () => {
+    const fake = new FigmaApiFake();
+    const r = await fake.listTeamWebhooks("T9");
+    expect(r.webhooks).toEqual([]);
+  });
+
+  it("getWebhook returns seeded webhook + 404 for missing", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedWebhook(seedWebhook);
+    expect((await fake.getWebhook("wh1")).webhook.id).toBe("wh1");
+    await expect(fake.getWebhook("missing")).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+
+  it("getWebhookRequests returns seeded requests", async () => {
+    const fake = new FigmaApiFake();
+    fake.__seedWebhook(seedWebhook);
+    fake.__seedWebhookRequests("wh1", [
+      {
+        webhook_id: "wh1",
+        request_info: {
+          id: "r1",
+          endpoint: "https://e",
+          payload: {},
+          sent_at: "2026-01-01T00:00:00Z",
+        },
+        response_info: { status: "200", received_at: "2026-01-01T00:00:01Z" },
+      },
+    ]);
+    const r = await fake.getWebhookRequests("wh1");
+    expect(r.requests).toHaveLength(1);
+  });
+
+  it("getWebhookRequests throws 404 for missing webhook", async () => {
+    const fake = new FigmaApiFake();
+    await expect(fake.getWebhookRequests("missing")).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+
+  it("createWebhook adds to team list and storage", async () => {
+    const fake = new FigmaApiFake();
+    const r = await fake.createWebhook({
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      endpoint: "https://e",
+      passcode: "p",
+      description: "test",
+    });
+    expect(r.webhook.id).toMatch(/^wh/);
+    expect(r.webhook.status).toBe("ACTIVE");
+    expect(r.webhook.description).toBe("test");
+    const list = await fake.listTeamWebhooks("T1");
+    expect(list.webhooks).toHaveLength(1);
+  });
+
+  it("createWebhook respects PAUSED status", async () => {
+    const fake = new FigmaApiFake();
+    const r = await fake.createWebhook({
+      event_type: "FILE_COMMENT",
+      team_id: "T1",
+      endpoint: "https://e",
+      passcode: "p",
+      status: "PAUSED",
+    });
+    expect(r.webhook.status).toBe("PAUSED");
+  });
+
+  it("updateWebhook merges fields", async () => {
+    const fake = new FigmaApiFake();
+    const created = await fake.createWebhook({
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const r = await fake.updateWebhook(created.webhook.id, {
+      status: "PAUSED",
+      endpoint: "https://e2",
+      passcode: "p2",
+      description: "d",
+    });
+    expect(r.webhook.status).toBe("PAUSED");
+    expect(r.webhook.endpoint).toBe("https://e2");
+    expect(r.webhook.passcode).toBe("p2");
+    expect(r.webhook.description).toBe("d");
+  });
+
+  it("updateWebhook throws 404 for missing webhook", async () => {
+    const fake = new FigmaApiFake();
+    await expect(fake.updateWebhook("missing", { status: "PAUSED" })).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+
+  it("deleteWebhook removes the webhook", async () => {
+    const fake = new FigmaApiFake();
+    const created = await fake.createWebhook({
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    await fake.deleteWebhook(created.webhook.id);
+    const list = await fake.listTeamWebhooks("T1");
+    expect(list.webhooks).toEqual([]);
+    await expect(fake.getWebhook(created.webhook.id)).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+
+  it("deleteWebhook throws 404 for missing webhook", async () => {
+    const fake = new FigmaApiFake();
+    await expect(fake.deleteWebhook("missing")).rejects.toMatchObject({
+      code: "E_FIGMA_REST_404",
+    });
+  });
+});

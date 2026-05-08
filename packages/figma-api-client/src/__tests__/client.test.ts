@@ -207,3 +207,117 @@ describe("FigmaApiClient — write methods", () => {
     expect((init as RequestInit).method).toBe("DELETE");
   });
 });
+
+describe("FigmaApiClient — v2 webhooks", () => {
+  it("GET /v2/teams/<team_id>/webhooks", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(mkResp({ webhooks: [] }));
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    await client.listTeamWebhooks("T1");
+    expect(fetchFn.mock.calls[0][0]).toBe("https://api.figma.com/v2/teams/T1/webhooks");
+  });
+
+  it("GET /v2/webhooks/<id>", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      mkResp({
+        webhook: {
+          id: "wh1",
+          event_type: "FILE_UPDATE",
+          team_id: "T1",
+          status: "ACTIVE",
+          endpoint: "https://e",
+          passcode: "p",
+        },
+      })
+    );
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    const r = await client.getWebhook("wh1");
+    expect(fetchFn.mock.calls[0][0]).toBe("https://api.figma.com/v2/webhooks/wh1");
+    expect(r.webhook.id).toBe("wh1");
+  });
+
+  it("GET /v2/webhooks/<id>/requests with optional page_size", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(mkResp({ requests: [] }));
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    await client.getWebhookRequests("wh1", { pageSize: 25 });
+    const url = new URL(fetchFn.mock.calls[0][0] as string);
+    expect(url.pathname).toBe("/v2/webhooks/wh1/requests");
+    expect(url.searchParams.get("page_size")).toBe("25");
+  });
+
+  it("POST /v2/webhooks (create)", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      mkResp({
+        webhook: {
+          id: "wh1",
+          event_type: "FILE_UPDATE",
+          team_id: "T1",
+          status: "ACTIVE",
+          endpoint: "https://e",
+          passcode: "p",
+        },
+      })
+    );
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    const r = await client.createWebhook({
+      event_type: "FILE_UPDATE",
+      team_id: "T1",
+      endpoint: "https://e",
+      passcode: "p",
+    });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://api.figma.com/v2/webhooks");
+    expect((init as RequestInit).method).toBe("POST");
+    expect((init as RequestInit).body).toContain("FILE_UPDATE");
+    expect(r.webhook.id).toBe("wh1");
+  });
+
+  it("PUT /v2/webhooks/<id> (update)", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      mkResp({
+        webhook: {
+          id: "wh1",
+          event_type: "FILE_UPDATE",
+          team_id: "T1",
+          status: "PAUSED",
+          endpoint: "https://e2",
+          passcode: "p",
+        },
+      })
+    );
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    await client.updateWebhook("wh1", { status: "PAUSED", endpoint: "https://e2" });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://api.figma.com/v2/webhooks/wh1");
+    expect((init as RequestInit).method).toBe("PUT");
+    expect((init as RequestInit).body).toContain("PAUSED");
+  });
+
+  it("DELETE /v2/webhooks/<id>", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    await client.deleteWebhook("wh1");
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://api.figma.com/v2/webhooks/wh1");
+    expect((init as RequestInit).method).toBe("DELETE");
+  });
+
+  it("custom baseUrl override falls through to /v2 sibling", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(mkResp({ webhooks: [] }));
+    const client = new FigmaApiClient({
+      apiKey: "k",
+      fetchFn,
+      baseUrl: "https://example.test/v1",
+    });
+    await client.listTeamWebhooks("T1");
+    expect(fetchFn.mock.calls[0][0]).toBe("https://example.test/v2/teams/T1/webhooks");
+  });
+
+  it("propagates v2 error responses through FigmaApiError", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(mkResp({ err: "no" }, { status: 404 }));
+    const client = new FigmaApiClient({ apiKey: "k", fetchFn });
+    await expect(client.getWebhook("MISSING")).rejects.toMatchObject({
+      status: 404,
+      code: "E_FIGMA_REST_404",
+    });
+  });
+});

@@ -18,8 +18,15 @@ import type {
   StylesResponse,
   TeamComponentsResponse,
   TeamStylesResponse,
+  TeamWebhooksResponse,
   UserMeResponse,
   VersionsResponse,
+  WebhookRequestsResponse,
+  WebhookV2,
+  WebhookV2EventType,
+  WebhookV2RequestLog,
+  WebhookV2Response,
+  WebhookV2Status,
 } from "./types";
 
 const notFound = (msg: string) =>
@@ -49,8 +56,12 @@ export class FigmaApiFake {
   private teamComponents = new Map<string, TeamComponentsResponse>();
   private teamStyles = new Map<string, TeamStylesResponse>();
   private devResources = new Map<string, DevResource[]>();
+  private teamWebhooks = new Map<string, WebhookV2[]>();
+  private webhooks = new Map<string, WebhookV2>();
+  private webhookRequests = new Map<string, WebhookV2RequestLog[]>();
   private commentCounter = 0;
   private devResourceCounter = 0;
+  private webhookCounter = 0;
 
   // ---- seeders ----
   __seedMe(me: UserMeResponse) {
@@ -94,6 +105,21 @@ export class FigmaApiFake {
   }
   __seedDevResources(key: string, r: readonly DevResource[]) {
     this.devResources.set(key, [...r]);
+  }
+  __seedTeamWebhooks(teamId: string, webhooks: readonly WebhookV2[]) {
+    this.teamWebhooks.set(teamId, [...webhooks]);
+    for (const w of webhooks) this.webhooks.set(w.id, w);
+  }
+  __seedWebhook(webhook: WebhookV2) {
+    this.webhooks.set(webhook.id, webhook);
+    const list = this.teamWebhooks.get(webhook.team_id) ?? [];
+    if (!list.some((w) => w.id === webhook.id)) {
+      list.push(webhook);
+      this.teamWebhooks.set(webhook.team_id, list);
+    }
+  }
+  __seedWebhookRequests(webhookId: string, requests: readonly WebhookV2RequestLog[]) {
+    this.webhookRequests.set(webhookId, [...requests]);
   }
 
   // ---- read methods ----
@@ -264,5 +290,86 @@ export class FigmaApiFake {
       this.devResources.set(c.file_key, list);
     }
     return { dev_resources: created };
+  }
+
+  // ---- v2 webhooks ----
+
+  async listTeamWebhooks(teamId: string): Promise<TeamWebhooksResponse> {
+    return { webhooks: this.teamWebhooks.get(teamId) ?? [] };
+  }
+
+  async getWebhook(webhookId: string): Promise<WebhookV2Response> {
+    const w = this.webhooks.get(webhookId);
+    if (!w) throw notFound(`webhook not found: ${webhookId}`);
+    return { webhook: w };
+  }
+
+  async getWebhookRequests(
+    webhookId: string,
+    _opts: { pageSize?: number } = {}
+  ): Promise<WebhookRequestsResponse> {
+    if (!this.webhooks.has(webhookId)) throw notFound(`webhook not found: ${webhookId}`);
+    return { requests: this.webhookRequests.get(webhookId) ?? [] };
+  }
+
+  async createWebhook(input: {
+    event_type: WebhookV2EventType;
+    team_id: string;
+    endpoint: string;
+    passcode: string;
+    status?: WebhookV2Status;
+    description?: string;
+  }): Promise<WebhookV2Response> {
+    const w: WebhookV2 = {
+      id: `wh${++this.webhookCounter}`,
+      event_type: input.event_type,
+      team_id: input.team_id,
+      status: input.status ?? "ACTIVE",
+      endpoint: input.endpoint,
+      passcode: input.passcode,
+      ...(input.description !== undefined ? { description: input.description } : {}),
+    };
+    this.webhooks.set(w.id, w);
+    const list = this.teamWebhooks.get(w.team_id) ?? [];
+    list.push(w);
+    this.teamWebhooks.set(w.team_id, list);
+    return { webhook: w };
+  }
+
+  async updateWebhook(
+    webhookId: string,
+    input: {
+      endpoint?: string;
+      passcode?: string;
+      status?: WebhookV2Status;
+      description?: string;
+    }
+  ): Promise<WebhookV2Response> {
+    const existing = this.webhooks.get(webhookId);
+    if (!existing) throw notFound(`webhook not found: ${webhookId}`);
+    const updated: WebhookV2 = {
+      ...existing,
+      ...(input.endpoint !== undefined ? { endpoint: input.endpoint } : {}),
+      ...(input.passcode !== undefined ? { passcode: input.passcode } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+    };
+    this.webhooks.set(webhookId, updated);
+    const list = this.teamWebhooks.get(updated.team_id) ?? [];
+    const idx = list.findIndex((w) => w.id === webhookId);
+    if (idx !== -1) list[idx] = updated;
+    this.teamWebhooks.set(updated.team_id, list);
+    return { webhook: updated };
+  }
+
+  async deleteWebhook(webhookId: string): Promise<void> {
+    const existing = this.webhooks.get(webhookId);
+    if (!existing) throw notFound(`webhook not found: ${webhookId}`);
+    this.webhooks.delete(webhookId);
+    const list = this.teamWebhooks.get(existing.team_id) ?? [];
+    const idx = list.findIndex((w) => w.id === webhookId);
+    if (idx !== -1) list.splice(idx, 1);
+    this.teamWebhooks.set(existing.team_id, list);
+    this.webhookRequests.delete(webhookId);
   }
 }

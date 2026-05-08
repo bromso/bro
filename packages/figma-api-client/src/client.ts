@@ -17,8 +17,13 @@ import type {
   StylesResponse,
   TeamComponentsResponse,
   TeamStylesResponse,
+  TeamWebhooksResponse,
   UserMeResponse,
   VersionsResponse,
+  WebhookRequestsResponse,
+  WebhookV2EventType,
+  WebhookV2Response,
+  WebhookV2Status,
 } from "./types";
 
 export interface FigmaApiClientOptions {
@@ -42,12 +47,39 @@ export class FigmaApiClient {
 
   // ---- helpers ----
 
+  /**
+   * Phase 19: v2 endpoints (webhooks) live at `/v2/...`. Compute the v2
+   * base URL by swapping the `/v1` suffix on `this.baseUrl` so any test
+   * override (e.g. `https://example.test/v1`) still falls through cleanly
+   * to `https://example.test/v2`.
+   */
+  private get v2BaseUrl(): string {
+    return this.baseUrl.replace(/\/v1$/, "/v2");
+  }
+
   private async request<T>(
-    method: "GET" | "POST" | "DELETE",
+    method: "GET" | "POST" | "DELETE" | "PUT",
     path: string,
     init: { query?: Record<string, string | number | undefined>; body?: unknown } = {}
   ): Promise<T> {
-    const url = new URL(`${this.baseUrl}${path}`);
+    return this.fetchTo<T>(this.baseUrl, method, path, init);
+  }
+
+  private async requestV2<T>(
+    method: "GET" | "POST" | "DELETE" | "PUT",
+    path: string,
+    init: { query?: Record<string, string | number | undefined>; body?: unknown } = {}
+  ): Promise<T> {
+    return this.fetchTo<T>(this.v2BaseUrl, method, path, init);
+  }
+
+  private async fetchTo<T>(
+    base: string,
+    method: "GET" | "POST" | "DELETE" | "PUT",
+    path: string,
+    init: { query?: Record<string, string | number | undefined>; body?: unknown }
+  ): Promise<T> {
+    const url = new URL(`${base}${path}`);
     if (init.query) {
       for (const [k, v] of Object.entries(init.query)) {
         if (v === undefined) continue;
@@ -222,5 +254,51 @@ export class FigmaApiClient {
 
   postDevResources(resources: readonly DevResourceInput[]): Promise<DevResourcesResponse> {
     return this.request("POST", "/dev_resources", { body: { dev_resources: resources } });
+  }
+
+  // ---- v2 webhooks ----
+
+  listTeamWebhooks(teamId: string): Promise<TeamWebhooksResponse> {
+    return this.requestV2("GET", `/teams/${teamId}/webhooks`);
+  }
+
+  getWebhook(webhookId: string): Promise<WebhookV2Response> {
+    return this.requestV2("GET", `/webhooks/${webhookId}`);
+  }
+
+  getWebhookRequests(
+    webhookId: string,
+    opts: { pageSize?: number } = {}
+  ): Promise<WebhookRequestsResponse> {
+    return this.requestV2("GET", `/webhooks/${webhookId}/requests`, {
+      query: { page_size: opts.pageSize },
+    });
+  }
+
+  createWebhook(input: {
+    event_type: WebhookV2EventType;
+    team_id: string;
+    endpoint: string;
+    passcode: string;
+    status?: WebhookV2Status;
+    description?: string;
+  }): Promise<WebhookV2Response> {
+    return this.requestV2("POST", "/webhooks", { body: input });
+  }
+
+  updateWebhook(
+    webhookId: string,
+    input: {
+      endpoint?: string;
+      passcode?: string;
+      status?: WebhookV2Status;
+      description?: string;
+    }
+  ): Promise<WebhookV2Response> {
+    return this.requestV2("PUT", `/webhooks/${webhookId}`, { body: input });
+  }
+
+  deleteWebhook(webhookId: string): Promise<void> {
+    return this.requestV2("DELETE", `/webhooks/${webhookId}`);
   }
 }
