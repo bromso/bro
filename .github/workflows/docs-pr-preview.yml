@@ -1,0 +1,113 @@
+name: Docs PR preview
+
+# Builds the docs site for any PR that touches it and uploads the static
+# `out/` directory as an artifact. Reviewers download the artifact from
+# the PR's checks tab and serve locally:
+#
+#   gh run download <run-id> --name docs-preview --dir /tmp/preview
+#   bunx serve /tmp/preview
+#
+# Then visit http://localhost:3000/bro/docs/.
+#
+# Cheaper than Cloudflare Pages / Vercel previews (no third-party setup,
+# no per-PR auto-URL). Trade-off: reviewer has to download + serve.
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "apps/docs/**"
+      - "packages/tools-extract/src/**"
+      - "packages/tools-variables/src/**"
+      - "packages/tools-console/src/**"
+      - "packages/tools-design/src/**"
+      - "packages/tools-figjam/src/**"
+      - "packages/tools-slides/src/**"
+      - "packages/tools-a11y/src/**"
+      - "packages/tools-rest/src/**"
+      - "packages/figma-api-client/src/**"
+      - ".github/workflows/docs-pr-preview.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # One build per PR; cancel in-flight on subsequent pushes.
+  group: docs-pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build docs (regenerates tool reference + next build)
+        run: bun run --filter @repo/docs build
+        env:
+          GITHUB_PAGES: "true"
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: apps/docs/out/
+          retention-days: 7
+
+      - name: Comment on PR with download instructions
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER);
+            const runId = process.env.RUN_ID;
+            const marker = "<!-- docs-pr-preview -->";
+            const body = [
+              marker,
+              "## Docs preview",
+              "",
+              "The docs site built successfully against this PR. Download and serve locally:",
+              "",
+              "```bash",
+              `gh run download ${runId} --name docs-preview --dir /tmp/preview`,
+              "bunx serve /tmp/preview",
+              "```",
+              "",
+              "Then visit `http://localhost:3000/bro/docs/`.",
+              "",
+              "_Artifact retained for 7 days. Re-runs of this workflow update this comment._",
+            ].join("\n");
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find((c) => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
