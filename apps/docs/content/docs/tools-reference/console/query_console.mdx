@@ -1,6 +1,6 @@
 ---
 title: query_console
-description: "Filter captured console entries by JS regex on the message text. Pattern compiled with no flags."
+description: "Filter captured console entries by JS regex on the message text. Pattern compiled with no flags. Pattern is capped at 200 chars; each message is truncated to its first 1000 chars before matching to bound worst-case backtracking."
 ---
 
 import { ToolReference } from "@/components/tool-reference";
@@ -8,15 +8,15 @@ import { ToolReference } from "@/components/tool-reference";
 <ToolReference
   pack="tools-console"
   name="query_console"
-  description="Filter captured console entries by JS regex on the message text. Pattern compiled with no flags."
+  description="Filter captured console entries by JS regex on the message text. Pattern compiled with no flags. Pattern is capped at 200 chars; each message is truncated to its first 1000 chars before matching to bound worst-case backtracking."
   streaming={false}
-  input={{"type":"object","properties":{"pattern":{"type":"string","minLength":1},"limit":{"type":"integer","minimum":1,"maximum":1000}},"required":["pattern"],"additionalProperties":false}}
+  input={{"type":"object","properties":{"pattern":{"type":"string","minLength":1,"maxLength":200},"limit":{"type":"integer","minimum":1,"maximum":1000}},"required":["pattern"],"additionalProperties":false}}
   output={{"type":"object","properties":{"entries":{"type":"array","items":{"type":"object","properties":{"level":{"type":"string","enum":["log","warn","error","info"]},"message":{"type":"string"},"timestamp":{"type":"integer","minimum":0}},"required":["level","message","timestamp"],"additionalProperties":false}}},"required":["entries"],"additionalProperties":false}}
 />
 
 ## Description
 
-Filter captured console entries by JS regex on the message text. Pattern compiled with no flags.
+Filter captured console entries by JS regex on the message text. Pattern compiled with no flags. Pattern is capped at 200 chars; each message is truncated to its first 1000 chars before matching to bound worst-case backtracking.
 
 ## See also
 
