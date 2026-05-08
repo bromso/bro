@@ -230,6 +230,7 @@ import { dispatch } from "./cli/dispatch";
 import { type Fixer, formatDoctorJson, formatDoctorText, runDoctor } from "./cli/doctor";
 import { createAiClientConfigsFixer } from "./cli/fixers/ai-client-configs";
 import { createStaleLockfileFixer } from "./cli/fixers/stale-lockfile";
+import { runOAuthFlow } from "./cli/oauth-flow";
 import { runOpenFigma } from "./cli/open-figma";
 import { resolveManifestPath } from "./cli/print-path";
 import { formatSetupTable, runSetup } from "./cli/setup";
@@ -281,18 +282,30 @@ async function handleSetup(flags: {
   client: string | null;
   relayUrl: string | null;
 }): Promise<void> {
-  // Phase 21 — `--oauth` is recognized by the dispatcher so users don't get
-  // an "unknown flag" surprise, but the relay-side callback that exchanges
-  // the auth code for a token lands in Phase 22. Short-circuit with a
-  // pointer to the docs and the (still-supported) PAT-based cloud flow.
+  // Phase 22 — `--cloud --oauth` runs the real browser-based OAuth flow:
+  // generates a sid, asks the relay to mint an authorize URL, opens the
+  // browser, polls /oauth/result, and writes tokens to ~/.figma-mcp/oauth.json.
+  // PAT-based cloud mode (Phase 6) still works without --oauth.
   if (flags.cloud && flags.oauth) {
+    const relayUrl = flags.relayUrl ?? DEFAULT_RELAY_URL;
+    const tokenPath = join(homedir(), ".figma-mcp", "oauth.json");
     process.stdout.write(
       [
-        "--oauth flag is recognized but requires the Phase 22 relay-side callback.",
-        "See https://bromso.github.io/bro/docs/get-started/cloud for the current cloud-mode (PAT-based) flow.",
+        "Opening Figma in your browser to authorize…",
+        "(If the browser doesn't open, copy the URL printed above into it manually.)",
         "",
       ].join("\n")
     );
+    try {
+      await runOAuthFlow({ relayUrl, tokenPath });
+    } catch (err) {
+      process.stderr.write(
+        `OAuth flow failed: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+      process.exitCode = 1;
+      return;
+    }
+    process.stdout.write(`Tokens saved to ${tokenPath}. You can now run figma-mcp doctor.\n`);
     return;
   }
 
