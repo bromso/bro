@@ -220,6 +220,7 @@ import { type IpcTransportPair, pickIpcTransport } from "@repo/transport";
 import { createAiClientConfigsCheck } from "./cli/checks/ai-client-configs";
 import { createDaemonLivenessCheck } from "./cli/checks/daemon-liveness";
 import { createFigmaApiKeyCheck } from "./cli/checks/figma-api-key";
+import { createOAuthCheck } from "./cli/checks/oauth";
 import { createPluginPairingCheck, type PluginPairingProbe } from "./cli/checks/plugin-pairing";
 import { createRecentErrorsCheck } from "./cli/checks/recent-errors";
 import { createSocketConflictCheck } from "./cli/checks/socket-conflict";
@@ -376,6 +377,7 @@ async function handleDoctor(flags: { json: boolean; fix: boolean }): Promise<voi
         readFile(p, "utf-8")
       ),
       createFigmaApiKeyCheck({ env: process.env }),
+      createOAuthCheck({ tokenPath: join(homeDir, ".figma-mcp", "oauth.json") }),
     ],
     fixers,
     applyFixes: flags.fix,
