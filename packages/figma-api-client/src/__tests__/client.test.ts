@@ -321,3 +321,83 @@ describe("FigmaApiClient — v2 webhooks", () => {
     });
   });
 });
+
+describe("FigmaApiClient — OAuth bearer-token auth (Phase 21)", () => {
+  it("sends Authorization: Bearer <token> when oauthToken is configured", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(mkResp({ id: "u1", email: "", handle: "j", img_url: "" }));
+    const client = new FigmaApiClient({ oauthToken: "oauth-abc", fetchFn });
+    await client.getMe();
+    const init = fetchFn.mock.calls[0][1] as RequestInit;
+    expect(init.headers).toMatchObject({ Authorization: "Bearer oauth-abc" });
+    // Phase 21 contract: when OAuth wins, X-Figma-Token must NOT be sent.
+    expect((init.headers as Record<string, string>)["X-Figma-Token"]).toBeUndefined();
+  });
+
+  it("invokes getOauthToken per request (allows dynamic refresh)", async () => {
+    // Each call returns a fresh Response — Response bodies are single-use.
+    const fetchFn = vi
+      .fn()
+      .mockImplementation(async () => mkResp({ id: "u1", email: "", handle: "j", img_url: "" }));
+    const tokens = ["t-first", "t-second", "t-third"];
+    let i = 0;
+    const getOauthToken = vi.fn(async () => tokens[i++] ?? "t-fallback");
+    const client = new FigmaApiClient({ getOauthToken, fetchFn });
+    await client.getMe();
+    await client.getMe();
+    await client.getMe();
+    expect(getOauthToken).toHaveBeenCalledTimes(3);
+    expect((fetchFn.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      Authorization: "Bearer t-first",
+    });
+    expect((fetchFn.mock.calls[1][1] as RequestInit).headers).toMatchObject({
+      Authorization: "Bearer t-second",
+    });
+    expect((fetchFn.mock.calls[2][1] as RequestInit).headers).toMatchObject({
+      Authorization: "Bearer t-third",
+    });
+  });
+
+  it("priority — oauthToken wins when both apiKey and oauthToken are passed", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(mkResp({ id: "u1", email: "", handle: "j", img_url: "" }));
+    const client = new FigmaApiClient({ apiKey: "PAT", oauthToken: "OAUTH", fetchFn });
+    await client.getMe();
+    const headers = (fetchFn.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer OAUTH");
+    expect(headers["X-Figma-Token"]).toBeUndefined();
+  });
+
+  it("priority — getOauthToken wins over a static oauthToken", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(mkResp({ id: "u1", email: "", handle: "j", img_url: "" }));
+    const getOauthToken = vi.fn(async () => "DYNAMIC");
+    const client = new FigmaApiClient({
+      oauthToken: "STATIC",
+      getOauthToken,
+      fetchFn,
+    });
+    await client.getMe();
+    expect(getOauthToken).toHaveBeenCalledTimes(1);
+    const headers = (fetchFn.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer DYNAMIC");
+  });
+
+  it("throws at construction when neither apiKey nor any oauth source is provided", () => {
+    expect(() => new FigmaApiClient({} as never)).toThrow(/apiKey|oauth/i);
+  });
+
+  it("PAT-only construction is unchanged (backwards compatibility)", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(mkResp({ id: "u1", email: "", handle: "j", img_url: "" }));
+    const client = new FigmaApiClient({ apiKey: "still-works", fetchFn });
+    await client.getMe();
+    const headers = (fetchFn.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(headers["X-Figma-Token"]).toBe("still-works");
+    expect(headers.Authorization).toBeUndefined();
+  });
+});
