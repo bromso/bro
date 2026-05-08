@@ -1,0 +1,86 @@
+name: Tool reference drift
+
+# Runs the docs site's tool-reference generator against the live tool packs.
+# If the regenerated MDX disagrees with what's committed, opens a PR with
+# the updated reference. This keeps the docs in sync as packs gain tools
+# without requiring a manual `bun run --filter @repo/docs regen-tools`
+# step in every contributor PR.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "packages/tools-extract/src/**"
+      - "packages/tools-variables/src/**"
+      - "packages/tools-console/src/**"
+      - "packages/tools-design/src/**"
+      - "packages/tools-figjam/src/**"
+      - "packages/tools-slides/src/**"
+      - "packages/tools-a11y/src/**"
+      - "packages/tools-rest/src/**"
+      - "apps/docs/scripts/generate-tool-reference.mjs"
+      - ".github/workflows/tool-reference-drift.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: tool-reference-drift
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Regenerate tool reference
+        run: bun run --filter @repo/docs regen-tools
+
+      - name: Check for drift
+        id: drift
+        run: |
+          if [ -n "$(git status --porcelain apps/docs/content/docs/tools-reference)" ]; then
+            echo "has_drift=true" >> "$GITHUB_OUTPUT"
+            echo "Drift detected:"
+            git status apps/docs/content/docs/tools-reference
+          else
+            echo "has_drift=false" >> "$GITHUB_OUTPUT"
+            echo "No drift detected — tool reference is in sync."
+          fi
+
+      - name: Open / update drift PR
+        if: steps.drift.outputs.has_drift == 'true'
+        uses: peter-evans/create-pull-request@v6
+        env:
+          TRIGGER_SHA: ${{ github.sha }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: bot/regenerate-tool-reference
+          base: master
+          title: "docs(site): regenerate tool reference (auto)"
+          commit-message: "docs(site): regenerate tool reference (auto)"
+          body: |
+            The tool-reference-drift workflow detected drift between the
+            committed tool reference MDX and what the generator produces
+            against the current tool packs.
+
+            This PR re-runs `bun run --filter @repo/docs regen-tools` and
+            commits the regenerated MDX. Merge to bring the docs back in
+            sync.
+
+            Triggered by master push.
+          add-paths: |
+            apps/docs/content/docs/tools-reference/**
+          delete-branch: true
