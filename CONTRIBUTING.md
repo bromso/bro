@@ -130,6 +130,8 @@ The canonical example is `packages/tools-extract/`. To add a new pack `tools-foo
 6. Wire the pack into `apps/mcp-server/src/main.ts` (registry + shim catalog) and `apps/bridge-plugin/src/plugin.ts` (runtime handler registration).
 7. Add a changeset and a Phase plan if the pack ships >5 tools.
 
+The docs site's per-tool reference under `apps/docs/content/docs/tools-reference/` is auto-generated. After your PR merges, the **Tool reference drift** workflow (`.github/workflows/tool-reference-drift.yml`) regenerates the MDX and opens a follow-up PR if anything has changed. You don't need to commit the regenerated MDX yourself — though you can run `bun run --filter @repo/docs regen-tools` locally if you want to preview the new pages.
+
 ## Shipping the bridge plugin to Figma Community
 
 The bundled bridge plugin in `apps/bridge-plugin/` is built into the published `@bromso/figma-mcp` artifact. To list it on the [Figma Plugin Community](https://www.figma.com/community):
