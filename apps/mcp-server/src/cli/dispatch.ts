@@ -12,7 +12,7 @@ export type CliCommand =
         relayUrl: string | null;
       };
     }
-  | { kind: "doctor"; flags: { json: boolean } };
+  | { kind: "doctor"; flags: { json: boolean; fix: boolean } };
 
 export interface DispatchOptions {
   readonly argv: readonly string[];
@@ -38,7 +38,10 @@ export function dispatch(options: DispatchOptions): CliCommand {
     };
   }
   if (sub === "doctor") {
-    return { kind: "doctor", flags: { json: args.includes("--json") } };
+    return {
+      kind: "doctor",
+      flags: { json: args.includes("--json"), fix: args.includes("--fix") },
+    };
   }
   return {
     kind: "runtime",
