@@ -60,7 +60,10 @@
       "!**/.source",
       "!**/out",
       "!**/coverage",
-      "!**/bun.lock"
+      "!**/bun.lock",
+      "!**/public/sw*.js",
+      "!**/public/swe-worker-*.js",
+      "!**/public/workbox-*.js"
     ]
   }
 }
