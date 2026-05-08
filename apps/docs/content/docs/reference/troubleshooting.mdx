@@ -13,7 +13,9 @@ For a flat reference of every E_* code, see [Error codes](/docs/reference/error-
 
 **Symptom.** Doctor reports `daemon-liveness: error — pid <N> in lockfile is not running`.
 **Cause.** A previous daemon crashed without cleaning up `~/.figma-mcp/daemon.lock`. The next shim still trusts the lockfile and refuses to spawn.
-**Fix.** Delete `~/.figma-mcp/daemon.lock` and re-run any tool. The shim auto-spawns a fresh daemon. (Phase 7 doctor reports this; a future `doctor --fix` will auto-clean.)
+**Fix.** Delete `~/.figma-mcp/daemon.lock` and re-run any tool. The shim auto-spawns a fresh daemon.
+
+**Auto-fix:** `figma-mcp doctor --fix` clears the stale lockfile in this case.
 
 ### `plugin-pairing` (plugin not paired)
 
@@ -26,6 +28,8 @@ For a flat reference of every E_* code, see [Error codes](/docs/reference/error-
 **Symptom.** Doctor reports `ai-client-configs: warn — entry path mismatch for cursor`.
 **Cause.** A previous setup run wrote a config; later, the user moved/renamed/uninstalled the binary, or hand-edited the config. The entry now points at a stale path.
 **Fix.** Re-run `npx @bromso/figma-mcp setup --client cursor` to overwrite. Or hand-edit the JSON. The setup CLI is idempotent.
+
+**Auto-fix:** `figma-mcp doctor --fix` re-applies the per-client setup write against every detected client (idempotent for already-correct ones).
 
 ### `recent-errors` (daemon log tail)
 
