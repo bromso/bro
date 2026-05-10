@@ -37,6 +37,20 @@ For a flat reference of every E_* code, see [Error codes](/docs/reference/error-
 **Cause.** The daemon is hitting an unhandled error path — usually a transport disconnect, occasionally a tool-handler crash.
 **Fix.** Inspect `~/.figma-mcp/daemon.log` (the last 60s window). If the error is `ECONNRESET`, the bridge plugin disconnected — restart it. Otherwise, file an issue with the log excerpt.
 
+### `oauth` (OAuth token state)
+
+**Symptom.** Doctor reports `oauth: warn — no OAuth token file at ~/.figma-mcp/oauth.json` or `oauth: error — OAuth token file is missing required fields`.
+
+**Cause.** Either the OAuth flow has never been completed (warn), the access token is within 60s of expiry (warn — auto-refreshes on the next REST call), or the file is corrupt/unreadable (error).
+
+**Fix.**
+- Warn (no token file) and you only use REST tools → set `FIGMA_API_KEY` (PAT-only is a valid posture).
+- Warn (no token file) and you want full OAuth → run `figma-mcp setup --cloud --oauth`.
+- Warn (expires within 60s) → no action needed; the daemon refreshes the token lazily.
+- Error → delete `~/.figma-mcp/oauth.json` and re-run `figma-mcp setup --cloud --oauth`.
+
+The check is complementary to `figma-api-key` — both can be set up; the daemon prefers the OAuth bearer token when present and falls back to the PAT otherwise.
+
 ### `figma-api-key` (REST tools won't work)
 
 **Symptom.** Doctor reports `figma-api-key: warn — FIGMA_API_KEY not set`.
@@ -80,11 +94,16 @@ Streamable HTTP is the cloud-mode entry; stdio is the local-mode entry. Mixing t
 
 Pairing codes minted by `setup --cloud` expire after 5 minutes. If you delay drag-importing the bridge plugin past the TTL, the relay rejects the plugin's pair attempt and returns `PairingExpired`. Re-run `setup --cloud` to mint a fresh code, then drag-import within the TTL window.
 
-### OAuth setup not yet supported
+### OAuth flow timed out or failed
 
-Running `figma-mcp setup --cloud --oauth` recognizes the flag (it's plumbed through dispatch) but exits cleanly with a "Phase 22 required" pointer to the docs rather than starting an OAuth flow. The daemon-side machinery (token storage, bearer-token auth, `/oauth/refresh` exchange) shipped in Phase 21; the relay-side `/oauth/start` and `/oauth/callback` endpoints land in Phase 22.
+`figma-mcp setup --cloud --oauth` opens your browser, polls the relay for 5 minutes, and writes tokens to `~/.figma-mcp/oauth.json` on success. Typical failures:
 
-For now, use the PAT-based [cloud setup](/docs/get-started/cloud) — generate a token at `figma.com/settings`, export it as `FIGMA_API_KEY`, run the daemon. Once Phase 22 lands, an `--oauth` re-run will swap the PAT for an OAuth bearer token without breaking the existing setup.
+- `E_OAUTH_START_FAILED: 500` — the relay is missing `FIGMA_OAUTH_CLIENT_ID/SECRET`. The relay operator needs to register a Figma OAuth app and set the secrets via `wrangler secret put`. See [Cloud → OAuth setup → Maintainer-side prerequisites](/docs/get-started/cloud).
+- `E_OAUTH_TIMEOUT` — you took longer than 5 minutes to authorize. Re-run `setup --cloud --oauth`.
+- `E_OAUTH_SESSION_EXPIRED` — the relay's in-flight session timed out. Re-run `setup --cloud --oauth`.
+- `E_OAUTH_REFRESH_NOT_CONFIGURED` (at REST-call time) — the access token expired but `FIGMA_OAUTH_CLIENT_ID/SECRET` aren't set on the daemon, so it can't auto-refresh. Either set those env vars on the daemon (matching the relay's secrets) or re-run `setup --cloud --oauth` to mint a fresh token pair.
+
+PAT-based cloud mode (Phase 6) keeps working unchanged — OAuth is opt-in.
 
 ## When all else fails
 

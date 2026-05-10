@@ -55,26 +55,61 @@ You then enter the code in the bridge plugin's "Pair via cloud" prompt; the plug
 - `--relay-url <url>` overrides the relay base URL (useful for self-hosted relays).
 - `--client <id>` writes only the named client's config (`claude-code`, `cursor`, etc.).
 
-## OAuth (Phase 22)
+## OAuth setup
 
-Cloud mode v1 is PAT-only — you generate a token at `figma.com/settings` and export it as `FIGMA_API_KEY`. Phase 21 has shipped the daemon-side machinery for OAuth (token storage, bearer-token auth on `FigmaApiClient`, and a `--cloud --oauth` flag), but the relay-side `/oauth/start` and `/oauth/callback` endpoints aren't built yet.
+OAuth replaces the personal access token with a browser-based flow. The user authorizes once on `figma.com`; the relay holds the OAuth client credentials and never exposes them to the daemon.
 
-Today, `figma-mcp setup --cloud --oauth` is recognized but exits with a "Phase 22 required" pointer to this page rather than starting an unfinished flow.
+```bash
+figma-mcp setup --cloud --oauth
+```
 
-The planned end-to-end flow (Phase 22):
+The CLI:
 
-1. `figma-mcp setup --cloud --oauth` opens the relay's `/oauth/start` URL in the user's browser.
-2. The user authorizes the bromso OAuth app on figma.com; Figma redirects back to the relay's `/oauth/callback` with an auth code.
-3. The relay exchanges the code for an `access_token` + `refresh_token` and pipes them down to the daemon over the existing pairing channel.
-4. The daemon writes them to `~/.figma-mcp/oauth.json` (mode `0600`) and uses them for REST calls — refreshing automatically when within 60s of expiry.
+1. Generates a session id (`sid_<random>`).
+2. POSTs to the relay's `/oauth/start?sid=<sid>` and receives a Figma authorize URL.
+3. Opens your browser at that URL. You log into Figma and approve the requested scopes.
+4. Figma redirects to the relay's `/oauth/callback`. The relay exchanges the auth code for an `access_token` + `refresh_token` against Figma's `/v1/oauth/token`.
+5. The daemon, in parallel, polls the relay's `/oauth/result?sid=<sid>` once per second.
+6. When the relay returns `200 {tokens}`, the daemon writes them to `~/.figma-mcp/oauth.json` (mode `0600`).
 
-Until Phase 22 lands, stick with the PAT-based setup above.
+The daemon's `FigmaApiClient` then uses the OAuth bearer token instead of a PAT. When the access token nears expiry (within 60s), the daemon transparently refreshes it via Figma's `/v1/oauth/refresh` and updates the file.
+
+If the polling window expires (5 minutes) or the user denies consent, the CLI fails with a clean error — re-run `setup --cloud --oauth` to start fresh.
+
+### Maintainer-side prerequisites (one-time)
+
+OAuth requires a registered Figma OAuth app on the relay's side. This is a one-time setup the relay operator (typically the project maintainer) does:
+
+1. Visit https://www.figma.com/developers/apps and create a new OAuth app.
+2. Set the redirect URI to your relay's `/oauth/callback` URL (e.g. `https://figma-mcp-relay.bromso.workers.dev/oauth/callback`).
+3. Note the `client_id` and `client_secret`.
+4. On the relay deployment:
+   ```bash
+   wrangler secret put FIGMA_OAUTH_CLIENT_ID
+   wrangler secret put FIGMA_OAUTH_CLIENT_SECRET
+   ```
+   These override the placeholder values in `wrangler.toml`.
+5. Confirm `OAUTH_CALLBACK_URL` in `wrangler.toml` matches step 2 exactly.
+6. Redeploy: `wrangler deploy`.
+
+Self-hosted relays follow the same steps with their own host. The PAT-based cloud mode above continues to work without any of this — OAuth is opt-in.
+
+### Verifying
+
+```bash
+figma-mcp doctor
+```
+
+The `oauth` check should report `ok` with the access-token expiry timestamp. If it reports `warn` (no token file), re-run `setup --cloud --oauth`.
 
 ## Troubleshooting
 
 - `E_FIGMA_API_KEY_MISSING` from a REST tool — the env var isn't visible to the daemon. Restart the daemon after exporting it.
 - `E_RELAY_PAIR_FAILED` from `setup --cloud` — the relay returned a non-2xx. Check the relay's status, or override the URL.
 - "Pairing code expired" in the bridge plugin — codes have a 5-minute TTL. Rerun `setup --cloud`.
-- `--oauth` prints a "Phase 22 required" message — see the OAuth section above; OAuth is end-to-end not yet wired up.
+- `--oauth` fails with `E_OAUTH_START_FAILED: 500` — the relay is missing `FIGMA_OAUTH_CLIENT_ID/SECRET`. Contact the relay operator (or for self-hosted, complete the maintainer steps above).
+- `--oauth` fails with `E_OAUTH_TIMEOUT` — the 5-minute polling window elapsed before consent completed. Re-run `setup --cloud --oauth`.
+- `--oauth` fails with `E_OAUTH_SESSION_EXPIRED` — the relay-side session expired. Re-run `setup --cloud --oauth`.
+- `oauth` doctor check reports `error` — token file is corrupt; re-run `setup --cloud --oauth`.
 
 See also: [error-codes reference](/docs/reference/error-codes).

@@ -220,6 +220,7 @@ import { type IpcTransportPair, pickIpcTransport } from "@repo/transport";
 import { createAiClientConfigsCheck } from "./cli/checks/ai-client-configs";
 import { createDaemonLivenessCheck } from "./cli/checks/daemon-liveness";
 import { createFigmaApiKeyCheck } from "./cli/checks/figma-api-key";
+import { createOAuthCheck } from "./cli/checks/oauth";
 import { createPluginPairingCheck, type PluginPairingProbe } from "./cli/checks/plugin-pairing";
 import { createRecentErrorsCheck } from "./cli/checks/recent-errors";
 import { createSocketConflictCheck } from "./cli/checks/socket-conflict";
@@ -230,6 +231,8 @@ import { dispatch } from "./cli/dispatch";
 import { type Fixer, formatDoctorJson, formatDoctorText, runDoctor } from "./cli/doctor";
 import { createAiClientConfigsFixer } from "./cli/fixers/ai-client-configs";
 import { createStaleLockfileFixer } from "./cli/fixers/stale-lockfile";
+import { runOAuthFlow } from "./cli/oauth-flow";
+import { createOAuthProvider } from "./cli/oauth-provider";
 import { runOpenFigma } from "./cli/open-figma";
 import { resolveManifestPath } from "./cli/print-path";
 import { formatSetupTable, runSetup } from "./cli/setup";
@@ -281,18 +284,30 @@ async function handleSetup(flags: {
   client: string | null;
   relayUrl: string | null;
 }): Promise<void> {
-  // Phase 21 — `--oauth` is recognized by the dispatcher so users don't get
-  // an "unknown flag" surprise, but the relay-side callback that exchanges
-  // the auth code for a token lands in Phase 22. Short-circuit with a
-  // pointer to the docs and the (still-supported) PAT-based cloud flow.
+  // Phase 22 — `--cloud --oauth` runs the real browser-based OAuth flow:
+  // generates a sid, asks the relay to mint an authorize URL, opens the
+  // browser, polls /oauth/result, and writes tokens to ~/.figma-mcp/oauth.json.
+  // PAT-based cloud mode (Phase 6) still works without --oauth.
   if (flags.cloud && flags.oauth) {
+    const relayUrl = flags.relayUrl ?? DEFAULT_RELAY_URL;
+    const tokenPath = join(homedir(), ".figma-mcp", "oauth.json");
     process.stdout.write(
       [
-        "--oauth flag is recognized but requires the Phase 22 relay-side callback.",
-        "See https://bromso.github.io/bro/docs/get-started/cloud for the current cloud-mode (PAT-based) flow.",
+        "Opening Figma in your browser to authorize…",
+        "(If the browser doesn't open, copy the URL printed above into it manually.)",
         "",
       ].join("\n")
     );
+    try {
+      await runOAuthFlow({ relayUrl, tokenPath });
+    } catch (err) {
+      process.stderr.write(
+        `OAuth flow failed: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+      process.exitCode = 1;
+      return;
+    }
+    process.stdout.write(`Tokens saved to ${tokenPath}. You can now run figma-mcp doctor.\n`);
     return;
   }
 
@@ -363,6 +378,7 @@ async function handleDoctor(flags: { json: boolean; fix: boolean }): Promise<voi
         readFile(p, "utf-8")
       ),
       createFigmaApiKeyCheck({ env: process.env }),
+      createOAuthCheck({ tokenPath: join(homeDir, ".figma-mcp", "oauth.json") }),
     ],
     fixers,
     applyFixes: flags.fix,
@@ -441,10 +457,26 @@ async function runRuntime(opts: { enableWriteTools: boolean }): Promise<void> {
   const ipc = pickIpcTransport({ platform });
   const lockfile = new LockfileManager({ path: LOCK_PATH, isPidAlive: isPidAliveDefault });
 
-  // Phase 11: build the typed REST client once. `null` when FIGMA_API_KEY is
-  // unset — REST handlers surface E_FIGMA_API_KEY_MISSING via requireApiKey.
+  // Phase 11: build the typed REST client once. `null` when neither auth mode
+  // is configured — REST handlers surface E_FIGMA_API_KEY_MISSING via
+  // requireApiKey.
+  // Phase 22: if `~/.figma-mcp/oauth.json` exists, prefer OAuth via the
+  // dynamic `getOauthToken` provider (lazy refresh on expiry, 60s file cache).
+  // Otherwise fall back to FIGMA_API_KEY (Phase 11). When both are set,
+  // OAuth wins by construction — `getOauthToken` is checked first inside
+  // FigmaApiClient.
   const figmaApiKey = process.env.FIGMA_API_KEY;
-  const figmaApi = figmaApiKey ? new FigmaApiClient({ apiKey: figmaApiKey }) : null;
+  const oauthTokenPath = join(DEFAULT_DIR, "oauth.json");
+  const oauthFileExists = existsSync(oauthTokenPath);
+  let figmaApi: FigmaApiClient | null = null;
+  if (oauthFileExists) {
+    figmaApi = new FigmaApiClient({
+      apiKey: figmaApiKey,
+      getOauthToken: createOAuthProvider({ tokenPath: oauthTokenPath }),
+    });
+  } else if (figmaApiKey) {
+    figmaApi = new FigmaApiClient({ apiKey: figmaApiKey });
+  }
 
   const startup = await resolveStartup({
     argv: process.argv,
