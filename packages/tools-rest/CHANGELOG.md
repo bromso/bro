@@ -1,5 +1,13 @@
 # @repo/tools-rest
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`322f32d`](https://github.com/bromso/bro/commit/322f32d7558a13a539c8bc3dfb93a5e478dc1d58)]:
+  - @repo/figma-api-client@0.4.0
+  - @repo/protocol@0.1.3
+
 ## 0.2.0
 
 ### Minor Changes
