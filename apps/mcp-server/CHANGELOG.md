@@ -1,5 +1,28 @@
 # @bromso/figma-mcp
 
+## 1.6.0
+
+### Minor Changes
+
+- [#37](https://github.com/bromso/bro/pull/37) [`322f32d`](https://github.com/bromso/bro/commit/322f32d7558a13a539c8bc3dfb93a5e478dc1d58) Thanks [@bromso](https://github.com/bromso)! - OAuth client-side scaffold (Phase 21 of 2).
+
+  `@repo/figma-api-client` gains:
+
+  - `OAuthTokenSet` type + `OAuthTokenStore` (`load/save/isExpired`).
+  - Bearer-token auth — `FigmaApiClient` accepts `oauthToken: string` or `getOauthToken: () => Promise<string>` alongside the existing PAT-only `apiKey`. When both are configured, OAuth wins. Existing PAT users see no behavior change.
+  - `refreshOAuthToken()` — POSTs Figma's `/v1/oauth/refresh` with the standard urlencoded body and returns a new `OAuthTokenSet`.
+
+  `@bromso/figma-mcp` recognizes `figma-mcp setup --cloud --oauth`, prints a "Phase 22 required" message, and exits cleanly. The flag's wire-up to the relay's callback endpoint lands in Phase 22.
+
+  Out of scope: relay-side `/oauth/start` and `/oauth/callback` endpoints (Phase 22), Figma OAuth app registration (manual maintainer step), browser-open helper, end-to-end token-acquisition flow.
+
+### Patch Changes
+
+- Updated dependencies [[`322f32d`](https://github.com/bromso/bro/commit/322f32d7558a13a539c8bc3dfb93a5e478dc1d58)]:
+  - @repo/figma-api-client@0.4.0
+  - @repo/protocol@0.1.3
+  - @repo/tools-rest@0.2.1
+
 ## 1.5.0
 
 ### Minor Changes
