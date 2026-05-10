@@ -276,10 +276,26 @@ async function main(): Promise<void> {
 async function handleSetup(flags: {
   dryRun: boolean;
   cloud: boolean;
+  oauth: boolean;
   openFigma: boolean;
   client: string | null;
   relayUrl: string | null;
 }): Promise<void> {
+  // Phase 21 — `--oauth` is recognized by the dispatcher so users don't get
+  // an "unknown flag" surprise, but the relay-side callback that exchanges
+  // the auth code for a token lands in Phase 22. Short-circuit with a
+  // pointer to the docs and the (still-supported) PAT-based cloud flow.
+  if (flags.cloud && flags.oauth) {
+    process.stdout.write(
+      [
+        "--oauth flag is recognized but requires the Phase 22 relay-side callback.",
+        "See https://bromso.github.io/bro/docs/get-started/cloud for the current cloud-mode (PAT-based) flow.",
+        "",
+      ].join("\n")
+    );
+    return;
+  }
+
   const homeDir = (process.env.HOME ?? process.env.USERPROFILE) as string;
   const platform = process.platform as Platform;
   const fileExists = (p: string) => existsSync(p);

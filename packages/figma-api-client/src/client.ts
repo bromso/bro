@@ -27,7 +27,24 @@ import type {
 } from "./types";
 
 export interface FigmaApiClientOptions {
-  readonly apiKey: string;
+  /**
+   * Personal Access Token. Sent as the `X-Figma-Token` header (existing
+   * Phase 11 behavior). Optional now that OAuth is supported, but still the
+   * default for self-hosted users.
+   */
+  readonly apiKey?: string;
+  /**
+   * Static OAuth bearer token. Sent as `Authorization: Bearer <token>`.
+   * If both `apiKey` and `oauthToken` are configured, OAuth wins —
+   * Phase 21 lets PAT users opt into OAuth without a config wipe.
+   */
+  readonly oauthToken?: string;
+  /**
+   * Dynamic OAuth bearer-token provider. Called once per request, so it
+   * can transparently refresh expired tokens. Beats `oauthToken` when
+   * both are configured.
+   */
+  readonly getOauthToken?: () => Promise<string>;
   readonly fetchFn?: typeof fetch;
   readonly baseUrl?: string;
 }
@@ -35,14 +52,37 @@ export interface FigmaApiClientOptions {
 const DEFAULT_BASE_URL = "https://api.figma.com/v1";
 
 export class FigmaApiClient {
-  private readonly apiKey: string;
+  private readonly apiKey: string | undefined;
+  private readonly oauthToken: string | undefined;
+  private readonly getOauthTokenFn: (() => Promise<string>) | undefined;
   private readonly fetchFn: typeof fetch;
   private readonly baseUrl: string;
 
   constructor(opts: FigmaApiClientOptions) {
     this.apiKey = opts.apiKey;
+    this.oauthToken = opts.oauthToken;
+    this.getOauthTokenFn = opts.getOauthToken;
     this.fetchFn = opts.fetchFn ?? fetch;
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
+    if (!this.apiKey && !this.oauthToken && !this.getOauthTokenFn) {
+      throw new Error("FigmaApiClient: provide apiKey, oauthToken, or getOauthToken");
+    }
+  }
+
+  /**
+   * Resolve the auth header for one request. OAuth wins over PAT — if a
+   * dynamic provider is configured it's called per request so the daemon
+   * can refresh tokens transparently.
+   */
+  private async getAuthHeader(): Promise<Record<string, string>> {
+    if (this.getOauthTokenFn) {
+      const tok = await this.getOauthTokenFn();
+      return { Authorization: `Bearer ${tok}` };
+    }
+    if (this.oauthToken) {
+      return { Authorization: `Bearer ${this.oauthToken}` };
+    }
+    return { "X-Figma-Token": this.apiKey ?? "" };
   }
 
   // ---- helpers ----
@@ -86,10 +126,11 @@ export class FigmaApiClient {
         url.searchParams.set(k, String(v));
       }
     }
+    const auth = await this.getAuthHeader();
     const fetchInit: RequestInit = {
       method,
       headers: {
-        "X-Figma-Token": this.apiKey,
+        ...auth,
         ...(init.body ? { "Content-Type": "application/json" } : {}),
       },
       ...(init.body ? { body: JSON.stringify(init.body) } : {}),
