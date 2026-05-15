@@ -2,6 +2,35 @@
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
   "version": "0.2",
   "language": "en",
+  "useGitignore": true,
+  "noConfigSearch": true,
+  "files": [
+    "**/*.{ts,tsx,js,jsx,mjs,cjs}",
+    "**/*.{md,mdx}",
+    "**/*.{json,jsonc}",
+    "**/*.{scss,css}",
+    "**/*.{html,svg}"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    ".next",
+    ".turbo",
+    ".vite",
+    ".cache",
+    ".changeset",
+    ".husky",
+    ".vscode",
+    "dist",
+    "build",
+    "coverage",
+    "storybook-static",
+    "bun.lock",
+    "bun.lockb",
+    "package-lock.json",
+    "*.tsbuildinfo",
+    "*.min.js",
+    "*.min.css"
+  ],
   "words": [
     "addgroup",
     "adduser",
@@ -13,6 +42,7 @@
     "dockercompose",
     "esbenp",
     "eslintcache",
+    "figjam",
     "formulahendry",
     "fumadocs",
     "graphqlrc",
@@ -32,22 +62,12 @@
     "tsbuildinfo",
     "turbopack",
     "turborepo",
+    "Turborepo",
     "vaul",
     "Vercel",
     "vincaslt",
     "vivaxy",
     "vsicons",
     "webben"
-  ],
-  "ignorePaths": [
-    "node_modules",
-    ".next",
-    ".turbo",
-    "dist",
-    "build",
-    "bun.lockb",
-    "package-lock.json",
-    "*.min.js",
-    "*.min.css"
   ]
 }
