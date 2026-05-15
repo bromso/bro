@@ -23,5 +23,9 @@
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "cSpell.words": ["figjam", "Turborepo"]
+  "cSpell.spellCheckOnlyWorkspaceFiles": true,
+  "cSpell.maxNumberOfProblems": 100,
+  "cSpell.maxDuplicateProblems": 5,
+  "cSpell.checkLimit": 500,
+  "cSpell.useGitignore": true
 }
